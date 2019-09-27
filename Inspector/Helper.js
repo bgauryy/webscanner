@@ -2,7 +2,7 @@ function reduceByProperties(arr, properties) {
     const newArray = [];
 
     for (let i = 0; i < arr.length; i++) {
-        let index = arr[i];
+        const index = arr[i];
         let isExists = false;
 
         for (let j = 0; j < newArray.length; j++) {
@@ -43,4 +43,4 @@ function filterProperties(arr, properties) {
 module.exports = {
     reduceByProperties,
     filterProperties
-}
+};

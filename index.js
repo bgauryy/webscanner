@@ -1,24 +1,18 @@
-//Fix events (document,window... get one.co.il as example)
-//create scripts flow graph
-//Create iframes flow (postMessage/onMessage/Broadcast...)
-//Fix/Change json view 
-//Variables usage (between scripts)
-
 const Inspector = require('./Inspector/Inspector');
-const Logger = require('../../../IdeaProjects/pxWebInspector/utils/Logger');
-const Time = require('../../../IdeaProjects/pxWebInspector/utils/Time');
+const Logger = require('./utils/Logger');
+const Time = require('./utils/Time');
 const minimist = require('minimist');
-const {publishData} = require('../../../IdeaProjects/pxWebInspector/server.js');
+const {publishData} = require('./server.js');
 
 const args = minimist(process.argv.slice(2));
-const url = args.u || 'https://www.argos.co.uk/'
-const userAgent = args.ua || "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36";
+const url = args.u || 'https://www.argos.co.uk/';
+const userAgent = args.ua || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36';
 const externalPort = args.rp || 3333;
 const disablePX = !!args.x;
 
 if (!url) {
     Logger.debug('URL parameter is missing to pxWebInspector command (-u)');
-    return;
+    throw new Error('URL required');
 }
 
 Logger.debug(`Inspecting ${url}`);
@@ -36,7 +30,7 @@ async function run(opts) {
         throw data.err;
     }
     publishData(JSON.stringify(data), opts.externalPort, Time.stopMeasure(mId));
-    return data
+    return data;
 }
 
 

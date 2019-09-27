@@ -74,6 +74,7 @@ function registerFrameEvents(frames) {
         client.Page.frameRequestedNavigation((frame) => {
             frameEventHandler(frame, frames, 'requestNavigation');
         });
+        //eslint-disable-next-line
         client.Page.navigatedWithinDocument((frame) => {
             //nothing
         });
@@ -109,7 +110,7 @@ function setUserAgent(userAgent) {
 }
 
 async function getAllDOMEvents(DOMEvents) {
-    let evaluationRes = await client.Runtime.evaluate({ expression: `document.querySelectorAll("*");` });
+    let evaluationRes = await client.Runtime.evaluate({ expression: 'document.querySelectorAll("*");' });
     const { result } = await client.Runtime.getProperties({ objectId: evaluationRes.result.objectId });
     const elementsObjects = result.map(e => e.value);
 
@@ -128,20 +129,20 @@ async function getAllDOMEvents(DOMEvents) {
         }
     }
 
-    evaluationRes = await client.Runtime.evaluate({ expression: `document` });
+    evaluationRes = await client.Runtime.evaluate({ expression: 'document' });
     const documentEvents = await client.DOMDebugger.getEventListeners({ objectId: evaluationRes.result.objectId });
     if (documentEvents && documentEvents.listeners) {
         for (let i = 0; i < documentEvents.listeners.length; i++) {
-            const object = { className: "HTMLDocument", description: "document" };
+            const object = { className: 'HTMLDocument', description: 'document' };
             DOMEvents.push({ ...documentEvents.listeners[i], ...object });
         }
     }
 
-    evaluationRes = await client.Runtime.evaluate({ expression: `window` });
+    evaluationRes = await client.Runtime.evaluate({ expression: 'window' });
     const windowEvents = await client.DOMDebugger.getEventListeners({ objectId: evaluationRes.result.objectId });
     if (windowEvents && windowEvents.listeners) {
         for (let i = 0; i < windowEvents.listeners.length; i++) {
-            const object = { className: "Window", description: "Window" };
+            const object = { className: 'Window', description: 'Window' };
             DOMEvents.push({ ...windowEvents.listeners[i], ...object });
         }
     }

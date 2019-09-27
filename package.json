@@ -3,13 +3,15 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "inspect": "node index.js"
+    "inspect": "node index.js",
+    "lint": "eslint index.js Inspector public utils --fix"
   },
   "dependencies": {
     "chrome-launcher": "^0.10.5",
     "chrome-remote-interface": "^0.27.1",
     "minimist": "^1.2.0",
-    "express": "^4.16.4"
+    "express": "^4.16.4",
+    "eslint": "^6.4.0"
   },
   "license": "MIT"
 }

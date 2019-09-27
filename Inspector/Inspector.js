@@ -1,9 +1,7 @@
-const url = require('url');
 const chromeLauncher = require('chrome-launcher');
 const CRI = require('chrome-remote-interface');
 const ChromeInterface = require('./ChromeDelegate.js');
-const Logger = require('../../../../IdeaProjects/pxWebInspector/utils/Logger');
-const Helper = require('./Helper');
+const Logger = require('../utils/Logger.js');
 
 let chrome;
 
@@ -28,13 +26,13 @@ async function inspectURL(opts) {
         chrome = await chromeLauncher.launch(chromeLauncherPts);
 
         if (!chrome) {
-            throw new Error(`chromeLauncher missing`);
+            throw new Error('chromeLauncher missing');
         }
 
         chromeClient = await CRI();
 
         if (!chromeClient) {
-            throw new Error(`chrome-remote-interface missing`);
+            throw new Error('chrome-remote-interface missing');
         }
 
         await ChromeInterface.setClient(chromeClient, opts.disablePX);
@@ -62,14 +60,14 @@ async function inspectURL(opts) {
         if (chromeClient) {
             try {
                 await chromeClient.close();
-                Logger.debug(`closed chrome client`)
+                Logger.debug('closed chrome client');
             } catch (e) {
-                Logger.error(e)
+                Logger.error(e);
             }
         }
         try {
             await chrome.kill();
-            Logger.debug(`closed chrome process`)
+            Logger.debug('closed chrome process');
         } catch (e) {
             Logger.error(e);
         }
