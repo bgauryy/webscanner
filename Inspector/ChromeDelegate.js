@@ -3,20 +3,21 @@ let client;
 async function setClient(_client, disablePX) {
     client = _client;
 
-    const { Debugger, Network, Page, Runtime, DOM, Performance } = client;
+    const {Debugger, Network, Page, Runtime, DOM, Performance} = client;
 
     //Enable browser permissions
     await Performance.enable();
     await Page.enable();
     await DOM.enable();
     await Debugger.enable();
-    await Debugger.setAsyncCallStackDepth({ maxDepth: 1000 });
+    await Debugger.setAsyncCallStackDepth({maxDepth: 1000});
     await Runtime.enable();
-    await Runtime.setMaxCallStackSizeToCapture({ size: 1000 });
+    await Runtime.setMaxCallStackSizeToCapture({size: 1000});
     await Network.enable();
 
+    //TODO  - remove
     if (disablePX) {
-        await Network.setBlockedURLs({ urls: ['*perimeterx.net*', '*/init.js'] });
+        await Network.setBlockedURLs({urls: ['*perimeterx.net*', '*/init.js']});
     }
 
     //Clear storage
@@ -29,7 +30,7 @@ function getMetrics() {
 }
 
 function navigate(url) {
-    return client.Page.navigate({ url });
+    return client.Page.navigate({url});
 }
 
 function waitDOMContentLoaded() {
@@ -50,7 +51,7 @@ function registerFrameEvents(frames) {
         frameEventHandler(frame, frames, 'loading');
     });
 
-    client.Page.frameNavigated(({ frame }) => {
+    client.Page.frameNavigated(({frame}) => {
         frameEventHandler(frame, frames, 'navigated');
     });
 
@@ -97,7 +98,7 @@ function setOnNetworkRequestObj(network) {
     network.responses = {};
 
     client.Network.requestWillBeSent((networkObj) => {
-        network.push({ url: networkObj.request.url, ...networkObj });
+        network.push({url: networkObj.request.url, ...networkObj});
     });
 
     client.Network.responseReceived((responseObj) => {
@@ -106,12 +107,12 @@ function setOnNetworkRequestObj(network) {
 }
 
 function setUserAgent(userAgent) {
-    return client.Emulation.setUserAgentOverride({ userAgent });
+    return client.Emulation.setUserAgentOverride({userAgent});
 }
 
 async function getAllDOMEvents(DOMEvents) {
-    let evaluationRes = await client.Runtime.evaluate({ expression: 'document.querySelectorAll("*");' });
-    const { result } = await client.Runtime.getProperties({ objectId: evaluationRes.result.objectId });
+    let evaluationRes = await client.Runtime.evaluate({expression: 'document.querySelectorAll("*");'});
+    const {result} = await client.Runtime.getProperties({objectId: evaluationRes.result.objectId});
     const elementsObjects = result.map(e => e.value);
 
     for (let i = 0; i < elementsObjects.length; i++) {
@@ -120,30 +121,30 @@ async function getAllDOMEvents(DOMEvents) {
         if (!object || !object.objectId) {
             continue;
         }
-        const events = await client.DOMDebugger.getEventListeners({ objectId: object.objectId });
+        const events = await client.DOMDebugger.getEventListeners({objectId: object.objectId});
         for (let i = 0; i < events.listeners.length; i++) {
             delete object.objectId;
             delete object.subtype;
             delete object.type;
-            DOMEvents.push({ ...events.listeners[i], ...object });
+            DOMEvents.push({...events.listeners[i], ...object});
         }
     }
 
-    evaluationRes = await client.Runtime.evaluate({ expression: 'document' });
-    const documentEvents = await client.DOMDebugger.getEventListeners({ objectId: evaluationRes.result.objectId });
+    evaluationRes = await client.Runtime.evaluate({expression: 'document'});
+    const documentEvents = await client.DOMDebugger.getEventListeners({objectId: evaluationRes.result.objectId});
     if (documentEvents && documentEvents.listeners) {
         for (let i = 0; i < documentEvents.listeners.length; i++) {
-            const object = { className: 'HTMLDocument', description: 'document' };
-            DOMEvents.push({ ...documentEvents.listeners[i], ...object });
+            const object = {className: 'HTMLDocument', description: 'document'};
+            DOMEvents.push({...documentEvents.listeners[i], ...object});
         }
     }
 
-    evaluationRes = await client.Runtime.evaluate({ expression: 'window' });
-    const windowEvents = await client.DOMDebugger.getEventListeners({ objectId: evaluationRes.result.objectId });
+    evaluationRes = await client.Runtime.evaluate({expression: 'window'});
+    const windowEvents = await client.DOMDebugger.getEventListeners({objectId: evaluationRes.result.objectId});
     if (windowEvents && windowEvents.listeners) {
         for (let i = 0; i < windowEvents.listeners.length; i++) {
-            const object = { className: 'Window', description: 'Window' };
-            DOMEvents.push({ ...windowEvents.listeners[i], ...object });
+            const object = {className: 'Window', description: 'Window'};
+            DOMEvents.push({...windowEvents.listeners[i], ...object});
         }
     }
 }
