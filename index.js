@@ -13,7 +13,6 @@ getArgs();
 
 Server.init({port: port, path: path.join(__dirname, 'public')});
 
-
 run({url, chrome: {chromeLauncherOpts: null, userAgent}});
 
 async function run(opts) {
