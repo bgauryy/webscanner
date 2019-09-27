@@ -9,7 +9,7 @@
   "dependencies": {
     "chrome-launcher": "^0.10.5",
     "chrome-remote-interface": "^0.27.1",
-    "minimist": "^1.2.0",
+    "optimist": "^0.6.1",
     "express": "^4.16.4",
     "eslint": "^6.4.0"
   },

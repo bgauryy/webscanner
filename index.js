@@ -1,41 +1,41 @@
+const path = require('path');
+const argv = require('optimist').argv;
 const Inspector = require('./Inspector/Inspector');
 const Logger = require('./utils/Logger');
 const Time = require('./utils/Time');
-const minimist = require('minimist');
-const {publishData} = require('./server.js');
+const Server = require('./server.js');
 
-const args = minimist(process.argv.slice(2));
-const url = args.u || 'https://www.argos.co.uk/';
-const userAgent = args.ua || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36';
-const externalPort = args.rp || 3333;
-const disablePX = !!args.x;
+let url = 'https://www.example.com';
+let userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36';
+let port = 3333;
 
-if (!url) {
-    Logger.debug('URL parameter is missing to pxWebInspector command (-u)');
-    throw new Error('URL required');
-}
+getArgs();
 
-Logger.debug(`Inspecting ${url}`);
-Logger.debug(`UserAgent: ${userAgent}`);
-Logger.debug(`ExternalPort: ${externalPort}`);
-Logger.debug(`Disable PX scripts: ${disablePX}`);
+Server.init({port: port, path: path.join(__dirname, 'public')});
 
-run({url, userAgent, externalPort, disablePX});
+
+run({url, chrome: {chromeLauncherOpts: null, userAgent}});
 
 async function run(opts) {
     const mId = Time.measure();
-    const data = await Inspector.inspectURL(opts);
+    const data = await Inspector.run(opts);
+    const stopTime = Time.stopMeasure(mId);
 
     if (data.err) {
         throw data.err;
     }
-    publishData(JSON.stringify(data), opts.externalPort, Time.stopMeasure(mId));
+    const url = Server.publish(JSON.stringify(data));
+    Logger.log(`Time: ${stopTime}\n${url}`);
+
     return data;
 }
 
-
-
-
+function getArgs() {
+    url = argv.url || url;
+    userAgent = argv.userAgent || userAgent;
+    port = argv.port || port;
+    Logger.log(`url: ${url}\nuserAgent: ${userAgent}\nport: ${port}`);
+}
 
 
 

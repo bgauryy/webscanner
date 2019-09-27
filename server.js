@@ -2,25 +2,35 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const app = express();
+const Logger = require('./utils/Logger');
 
-function publishData(data, serverPort, time) {
-    fs.writeFile(path.join(__dirname, 'public', 'data.json'), data, 'utf8', () => {
-        app.use(express.static('public'));
-        const server = app.listen(serverPort, () => {
-            process.on('exit', closeServer.bind(this, server));
-            process.on('SIGINT', closeServer.bind(this, server));
-            process.on('SIGUSR1', closeServer.bind(this, server));
-            process.on('SIGUSR2', closeServer.bind(this, server));
-            process.on('uncaughtException', closeServer.bind(this, server));
-            console.log(`Inspection time: ${time} seconds`);
-            console.log(`See results at http://localhost:${serverPort}`);
-        });
-    })
+const DATA_FILE = 'data.json';
+
+let port;
+let publicDir;
+
+function init(opts) {
+    port = opts.port;
+    publicDir = opts.path;
 }
 
-function closeServer(server) {
+function publish(data) {
+    fs.writeFile(path.join(publicDir, DATA_FILE), data, 'utf8', () => {
+        app.use(express.static(publicDir));
+        const server = app.listen(port, () => {
+            process.on('exit', terminate.bind(this, server));
+            process.on('SIGINT', terminate.bind(this, server));
+            process.on('SIGUSR1', terminate.bind(this, server));
+            process.on('SIGUSR2', terminate.bind(this, server));
+            process.on('uncaughtException', terminate.bind(this, server));
+        });
+    });
+    return `http://localhost:${port}`;
+}
+
+function terminate(server) {
     try {
-        console.log('Closing Server');
+        Logger.log('terminating Server');
         server.close();
     } catch (e) {
         throw e;
@@ -28,5 +38,6 @@ function closeServer(server) {
 }
 
 module.exports = {
-    publishData
+    init,
+    publish
 };

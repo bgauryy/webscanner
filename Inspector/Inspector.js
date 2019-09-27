@@ -5,9 +5,9 @@ const Logger = require('../utils/Logger.js');
 
 let chrome;
 
-async function inspectURL(opts) {
+async function run(opts) {
     const url = opts.url;
-    const userAgent = opts.userAgent;
+    const userAgent = opts.chrome.userAgent;
     const chromeLauncherPts = opts.chromeLauncherOpts || {
         port: 9222,
         chromeFlags: ['--headless', '--disable-gpu']
@@ -51,7 +51,7 @@ async function inspectURL(opts) {
 
         await sleep(5);
 
-        const { metrics } = await ChromeInterface.getMetrics();
+        const {metrics} = await ChromeInterface.getMetrics();
         data.metrics = metrics;
     } catch (err) {
         Logger.error(err);
@@ -77,7 +77,7 @@ async function inspectURL(opts) {
 
 function processData(data) {
     if (data.err) {
-        return { error: data.err };
+        return {error: data.err};
     }
 
     const responseData = {};
@@ -91,7 +91,7 @@ function processData(data) {
 
 function processScripts(data) {
     return data.scripts.map(script => {
-        const res = { ...script, frameId: script.executionContextAuxData.frameId };
+        const res = {...script, frameId: script.executionContextAuxData.frameId};
         res.contextId = res.executionContextId;
         delete res.contextId;
         delete res.executionContextAuxData;
@@ -135,5 +135,5 @@ function sleep(timeout) {
 }
 
 module.exports = {
-    inspectURL
+    run
 };
