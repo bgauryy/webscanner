@@ -18,7 +18,7 @@ run({url, chrome: {chromeLauncherOpts: null, userAgent}});
 
 async function run(opts) {
     const mId = Time.measure();
-    const data = await Inspector.inspectURL(opts);
+    const data = await Inspector.run(opts);
     const stopTime = Time.stopMeasure(mId);
 
     if (data.err) {

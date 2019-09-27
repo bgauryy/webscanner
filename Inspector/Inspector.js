@@ -5,7 +5,7 @@ const Logger = require('../utils/Logger.js');
 
 let chrome;
 
-async function inspectURL(opts) {
+async function run(opts) {
     const url = opts.url;
     const userAgent = opts.chrome.userAgent;
     const chromeLauncherPts = opts.chromeLauncherOpts || {
@@ -135,5 +135,5 @@ function sleep(timeout) {
 }
 
 module.exports = {
-    inspectURL
+    run
 };
