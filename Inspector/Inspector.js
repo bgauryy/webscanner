@@ -27,7 +27,7 @@ async function run(opts) {
         return processData(session.data);
     } catch (err) {
         Logger.error(err);
-        session.data = err;
+        return err;
     } finally {
         session.kill();
     }
