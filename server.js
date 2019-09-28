@@ -30,7 +30,7 @@ function publish(data) {
 
 function terminate(server) {
     try {
-        Logger.log('terminating Server');
+        Logger.debug('terminating Server');
         server.close();
     } catch (e) {
         throw e;
