@@ -162,7 +162,7 @@ function setScriptsListener() {
 
 async function getMetrics() {
     const metrics = await this.client.Performance.getMetrics();
-    this.data.metrics = metrics
+    this.data.metrics = metrics;
 }
 
 function navigate(url) {
