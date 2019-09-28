@@ -1,3 +1,5 @@
+const colors = require('colors');
+
 const LOG = {
     DEBUG: 0,
     ERROR: 1,
@@ -14,26 +16,30 @@ function setLogLevel(_logLevel) {
 
 function log(str) {
     if (logLevel <= LOG.LOG) {
-        console.log(str);
+        console.log(colors.green(getMessage(str)));
     }
 }
 
 function warn(str) {
     if (logLevel <= LOG.WARN) {
-        console.warn(str);
+        console.log(colors.yellow(getMessage(str)));
     }
 }
 
 function error(str) {
     if (logLevel <= LOG.ERROR) {
-        console.error(str);
+        console.log(colors.red(getMessage(str)));
     }
 }
 
 function debug(str) {
     if (logLevel <= LOG.DEBUG) {
-        console.debug(str);
+        console.log(colors.cyan(getMessage(str)));
     }
+}
+
+function getMessage(msg) {
+    return `webInspector: ${msg}`;
 }
 
 module.exports = {

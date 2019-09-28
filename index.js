@@ -24,7 +24,8 @@ async function run(opts) {
         throw data.err;
     }
     const url = Server.publish(JSON.stringify(data));
-    Logger.log(`Time: ${stopTime}\n${url}`);
+    Logger.log(`Time: ${stopTime}`);
+    Logger.log(`${url}`);
 
     return data;
 }
