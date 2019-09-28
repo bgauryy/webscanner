@@ -7,34 +7,44 @@ const Server = require('./server.js');
 
 let url = 'https://www.example.com';
 let userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36';
-let port = 3000;
+let uiPort = null;
+let logLevel = null;
 
-getArgs();
+run();
 
-Server.init({port: port, path: path.join(__dirname, 'public')});
+async function run() {
+    setArgs();
+    Logger.setLogLevel(logLevel);
 
-run({url, userAgent, chrome: {chromeLauncherOpts: null}});
+    if (uiPort) {
+        Server.init({port: uiPort, path: path.join(__dirname, 'public')});
+    }
 
-async function run(opts) {
     const mId = Time.measure();
-    const data = await Inspector.run(opts);
-    const stopTime = Time.stopMeasure(mId);
+    const data = await Inspector.run({url, userAgent, chrome: {chromeLauncherOpts: null}});
+    const stopTime = Time.stopMeasure(mId).toFixed(2);
 
     if (data.err) {
         throw data.err;
     }
-    const url = Server.publish(JSON.stringify(data));
-    Logger.log(`Time: ${stopTime}`);
-    Logger.log(`${url}`);
+
+    if (uiPort) {
+        const url = Server.publish(JSON.stringify(data));
+        Logger.info(`Time: ${stopTime}`);
+        Logger.info(`Results: ${url}`);
+    }
+
+    Logger.debug('Done');
 
     return data;
 }
 
-function getArgs() {
+function setArgs() {
     url = argv.url || url;
     userAgent = argv.userAgent || userAgent;
-    port = argv.port || port;
-    Logger.log(`url: ${url}\nuserAgent: ${userAgent}\nport: ${port}`);
+    uiPort = argv.uiPort;
+    logLevel = argv.logLevel;
+    Logger.info(`\nurl: ${url} \nuserAgent: ${userAgent} \nuiPort: ${uiPort} \nLogLevel: ${logLevel}`);
 }
 
 

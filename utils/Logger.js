@@ -1,22 +1,31 @@
 const colors = require('colors');
 
 const LOG = {
-    DEBUG: 0,
-    ERROR: 1,
-    WARN: 2,
-    LOG: 3,
-    NONE: 4
+    ALL: 0,
+    DEBUG: 1,
+    INFO: 2,
+    WARN: 3,
+    ERROR: 4,
+    NONE: 5
 };
 
 let logLevel = LOG.DEBUG;
 
 function setLogLevel(_logLevel) {
-    logLevel = LOG[_logLevel];
+    if (typeof LOG[_logLevel] === 'number') {
+        logLevel = LOG[_logLevel];
+    }
 }
 
-function log(str) {
-    if (logLevel <= LOG.LOG) {
-        console.log(colors.green(getMessage(str)));
+function debug(str) {
+    if (logLevel <= LOG.DEBUG) {
+        console.log(colors.blue(getMessage(str)));
+    }
+}
+
+function info(str) {
+    if (logLevel <= LOG.INFO) {
+        console.log(colors.yellow(getMessage(str)));
     }
 }
 
@@ -32,21 +41,16 @@ function error(str) {
     }
 }
 
-function debug(str) {
-    if (logLevel <= LOG.DEBUG) {
-        console.log(colors.cyan(getMessage(str)));
-    }
-}
 
 function getMessage(msg) {
     return `webInspector: ${msg}`;
 }
 
 module.exports = {
-    log,
+    debug,
+    info,
     warn,
     error,
-    debug,
     setLogLevel,
     LOG
 };

@@ -1,63 +1,36 @@
-const chromeLauncher = require('chrome-launcher');
-const CRI = require('chrome-remote-interface');
 const ChromeAPI = require('./ChromeAPI.js');
 const Logger = require('../utils/Logger.js');
 const Helper = require('../utils/Helper.js');
 const {processData} = require('./DataProcessor.js');
 
+/**
+ @param opts: <object>
+ {
+    url: <string>,
+    userAgent: <string>,
+    chrome: {
+        chromeLauncherOpts: <objext>
+    }
+}
+ **/
 async function run(opts) {
-    const context = await getInspectionContext(opts);
-    const session = new ChromeAPI.Session(context);
+    const session = new ChromeAPI.Session(opts);
     await session.init();
 
     try {
-        await session.navigate(context.url);
+        await session.navigate(opts.url);
         await session.waitDOMContentLoaded();
         await session.getAllDOMEvents();
         await session.mouseMove();
         await Helper.sleep(5);
         await session.getMetrics();
-        return processData(context.data);
+        return processData(session.data);
     } catch (err) {
         Logger.error(err);
-        context.data = err;
+        session.data = err;
     } finally {
-        context.kill();
+        session.kill();
     }
-}
-
-async function getInspectionContext(opts) {
-    const chrome = await chromeLauncher.launch(opts.chromeLauncherOpts || {
-        port: 9222,
-        chromeFlags: ['--headless', '--disable-gpu']
-    });
-
-    const chromeRemoteInterface = await CRI();
-
-    if (!chrome || !chromeRemoteInterface) {
-        throw new Error('chrome instance error');
-    }
-
-    return {
-        url: opts.url,
-        userAgent: opts.userAgent,
-        chrome,
-        chromeRemoteInterface,
-        kill: async function () {
-            try {
-                await chromeRemoteInterface.close();
-                Logger.debug('closed chrome client');
-            } catch (e) {
-                Logger.error(e);
-            }
-            try {
-                await chrome.kill();
-                Logger.debug('closed chrome process');
-            } catch (e) {
-                Logger.error(e);
-            }
-        }
-    };
 }
 
 module.exports = {

@@ -1,7 +1,10 @@
-function Session(context) {
-    this.context = context;
-    this.client = context.chromeRemoteInterface;
-    this.context.data = {
+const chromeLauncher = require('chrome-launcher');
+const CRI = require('chrome-remote-interface');
+const Logger = require('../utils/Logger.js');
+
+function Session(opts) {
+    this.opts = opts;
+    this.data = {
         scripts: [],
         network: {
             requests: [],
@@ -21,14 +24,43 @@ Session.prototype.getAllDOMEvents = getAllDOMEvents;
 Session.prototype.mouseMove = mouseMove;
 
 async function init() {
-    await setClient.call(this);
+    await initChrome.call(this);
+    await initClient.call(this);
     setUserAgent.call(this);
     await setNetworkListener.call(this);
     await setFramesListener.call(this);
     await setScriptsListener.call(this);
 }
 
-async function setClient() {
+async function initChrome() {
+    const chrome = await chromeLauncher.launch(this.opts.chrome.chromeLauncherOpts || {
+        port: 9222,
+        chromeFlags: ['--headless', '--disable-gpu']
+    });
+
+    this.client = await CRI();
+
+    if (!chrome || !this.client) {
+        throw new Error('chrome instance error');
+    }
+
+    this.kill = async function () {
+        try {
+            await this.client.close();
+            Logger.debug('closed chrome client');
+        } catch (e) {
+            Logger.error(e);
+        }
+        try {
+            await chrome.kill();
+            Logger.debug('closed chrome process');
+        } catch (e) {
+            Logger.error(e);
+        }
+    };
+}
+
+async function initClient() {
     const {Debugger, Network, Page, Runtime, DOM, Performance} = this.client;
 
     await Performance.enable();
@@ -54,11 +86,11 @@ async function setClient() {
 }
 
 function setUserAgent() {
-    this.client.Emulation.setUserAgentOverride({userAgent: this.context.userAgent});
+    this.client.Emulation.setUserAgentOverride({userAgent: this.opts.userAgent});
 }
 
 function setNetworkListener() {
-    const network = this.context.data.network;
+    const network = this.data.network;
 
     this.client.Network.requestWillBeSent((networkObj) => {
         network.requests.push({url: networkObj.request.url, ...networkObj});
@@ -70,7 +102,7 @@ function setNetworkListener() {
 }
 
 function setFramesListener() {
-    const frames = this.context.data.frames;
+    const frames = this.data.frames;
     const client = this.client;
 
     client.Page.frameStartedLoading((frame) => {
@@ -119,7 +151,7 @@ function frameEventHandler(frame, frames, state) {
 }
 
 function setScriptsListener() {
-    const scripts = this.context.data.scripts;
+    const scripts = this.data.scripts;
     this.client.Debugger.scriptParsed((scriptObj) => {
         if (scriptObj.url === '__puppeteer_evaluation_script__') {
             return;
@@ -129,7 +161,7 @@ function setScriptsListener() {
 }
 
 function getMetrics() {
-    this.context.data.metrics = this.client.Performance.getMetrics();
+    this.data.metrics = this.client.Performance.getMetrics();
 }
 
 function navigate(url) {
@@ -141,7 +173,7 @@ function waitDOMContentLoaded() {
 }
 
 async function getAllDOMEvents() {
-    const DOMEvents = this.context.data.DOMEvents;
+    const DOMEvents = this.data.DOMEvents;
     const client = this.client;
 
     let evaluationRes = await client.Runtime.evaluate({expression: 'document.querySelectorAll("*");'});
