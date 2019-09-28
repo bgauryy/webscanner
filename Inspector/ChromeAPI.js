@@ -160,8 +160,9 @@ function setScriptsListener() {
     });
 }
 
-function getMetrics() {
-    this.data.metrics = this.client.Performance.getMetrics();
+async function getMetrics() {
+    const metrics = await this.client.Performance.getMetrics();
+    this.data.metrics = metrics
 }
 
 function navigate(url) {
