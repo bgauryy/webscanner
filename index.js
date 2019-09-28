@@ -24,8 +24,8 @@ async function run() {
     const data = await Inspector.run({url, userAgent, chrome: {chromeLauncherOpts: null}});
     const stopTime = Time.stopMeasure(mId).toFixed(2);
 
-    if (data.err) {
-        throw data.err;
+    if (data instanceof Error) {
+        throw data;
     }
 
     if (uiPort) {
