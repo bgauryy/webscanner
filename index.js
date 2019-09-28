@@ -13,7 +13,7 @@ getArgs();
 
 Server.init({port: port, path: path.join(__dirname, 'public')});
 
-run({url, chrome: {chromeLauncherOpts: null, userAgent}});
+run({url, userAgent, chrome: {chromeLauncherOpts: null}});
 
 async function run(opts) {
     const mId = Time.measure();

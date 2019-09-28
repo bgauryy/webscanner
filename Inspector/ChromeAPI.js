@@ -1,52 +1,79 @@
-let client;
+function getSession(context) {
+    this.context = context;
+    this.client = context.chromeRemoteInterface;
+    this.context.data = {
+        scripts: [],
+        network: [],
+        DOMEvents: [],
+        frames: {},
+        metrics: null
+    };
 
-async function setClient(_client, disablePX) {
-    client = _client;
+    return {
+        init: init.bind(this),
+        navigate: navigate.bind(this),
+        getMetrics: getMetrics.bind(this),
+        waitDOMContentLoaded: waitDOMContentLoaded.bind(this),
+        getAllDOMEvents: getAllDOMEvents.bind(this),
+        mouseMove: mouseMove.bind(this)
+    };
+}
 
-    const {Debugger, Network, Page, Runtime, DOM, Performance} = client;
+async function init() {
+    await setClient.call(this);
+    setUserAgent.call(this);
+    await setNetworkListener.call(this);
+    await setFramesListener.call(this);
+    await setScriptsListener.call(this);
+}
 
-    //Enable browser permissions
+async function setClient() {
+    const {Debugger, Network, Page, Runtime, DOM, Performance} = this.client;
+
     await Performance.enable();
     await Page.enable();
     await DOM.enable();
     await Debugger.enable();
+
+    //TODO  - add by configuration
     await Debugger.setAsyncCallStackDepth({maxDepth: 1000});
     await Runtime.enable();
+
+    //TODO  - add by configuration
     await Runtime.setMaxCallStackSizeToCapture({size: 1000});
+
     await Network.enable();
 
-    //TODO  - remove
-    if (disablePX) {
-        await Network.setBlockedURLs({urls: ['*perimeterx.net*', '*/init.js']});
-    }
+    //TODO  - add by configuration
+    //await Network.setBlockedURLs({urls: ['*perimeterx.net*', '*/init.js']});
 
     //Clear storage
     await Network.clearBrowserCache();
     await Network.clearBrowserCookies();
 }
 
-function getMetrics() {
-    return client.Performance.getMetrics();
+function setUserAgent() {
+    this.client.Emulation.setUserAgentOverride({userAgent: this.context.userAgent});
 }
 
-function navigate(url) {
-    return client.Page.navigate({url});
-}
+function setNetworkListener() {
+    const network = this.context.data.network;
 
-function waitDOMContentLoaded() {
-    return client.Page.domContentEventFired();
-}
+    network.responses = {};
 
-function scriptParsedHandler(scripts) {
-    client.Debugger.scriptParsed((scriptObj) => {
-        if (scriptObj.url === '__puppeteer_evaluation_script__') {
-            return;
-        }
-        scripts.push(scriptObj);
+    this.client.Network.requestWillBeSent((networkObj) => {
+        network.push({url: networkObj.request.url, ...networkObj});
+    });
+
+    this.client.Network.responseReceived((responseObj) => {
+        network.responses[responseObj.requestId] = responseObj;
     });
 }
 
-function registerFrameEvents(frames) {
+function setFramesListener() {
+    const frames = this.context.data.frames;
+    const client = this.client;
+
     client.Page.frameStartedLoading((frame) => {
         frameEventHandler(frame, frames, 'loading');
     });
@@ -82,8 +109,6 @@ function registerFrameEvents(frames) {
     } catch (e) {
         //ignore
     }
-
-
 }
 
 function frameEventHandler(frame, frames, state) {
@@ -94,23 +119,32 @@ function frameEventHandler(frame, frames, state) {
     frames[frameId].state.push(state);
 }
 
-function setOnNetworkRequestObj(network) {
-    network.responses = {};
-
-    client.Network.requestWillBeSent((networkObj) => {
-        network.push({url: networkObj.request.url, ...networkObj});
-    });
-
-    client.Network.responseReceived((responseObj) => {
-        network.responses[responseObj.requestId] = responseObj;
+function setScriptsListener() {
+    const scripts = this.context.data.scripts;
+    this.client.Debugger.scriptParsed((scriptObj) => {
+        if (scriptObj.url === '__puppeteer_evaluation_script__') {
+            return;
+        }
+        scripts.push(scriptObj);
     });
 }
 
-function setUserAgent(userAgent) {
-    return client.Emulation.setUserAgentOverride({userAgent});
+function getMetrics() {
+    this.context.data.metrics = this.client.Performance.getMetrics();
 }
 
-async function getAllDOMEvents(DOMEvents) {
+function navigate(url) {
+    return this.client.Page.navigate({url});
+}
+
+function waitDOMContentLoaded() {
+    return this.client.Page.domContentEventFired();
+}
+
+async function getAllDOMEvents() {
+    const DOMEvents = this.context.data.DOMEvents;
+    const client = this.client;
+
     let evaluationRes = await client.Runtime.evaluate({expression: 'document.querySelectorAll("*");'});
     const {result} = await client.Runtime.getProperties({objectId: evaluationRes.result.objectId});
     const elementsObjects = result.map(e => e.value);
@@ -149,8 +183,8 @@ async function getAllDOMEvents(DOMEvents) {
     }
 }
 
-function movemouse() {
-    return client.Input.dispatchMouseEvent({
+function mouseMove() {
+    return this.client.Input.dispatchMouseEvent({
         type: 'mouseMoved',
         x: 100,
         y: 100
@@ -158,14 +192,10 @@ function movemouse() {
 }
 
 module.exports = {
+    getSession,
     navigate,
-    setUserAgent,
     waitDOMContentLoaded,
-    setClient,
-    scriptParsedHandler,
-    setOnNetworkRequestObj,
     getAllDOMEvents,
     getMetrics,
-    registerFrameEvents,
-    movemouse
+    mouseMove
 };
