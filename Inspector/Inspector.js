@@ -7,7 +7,7 @@ const {processData} = require('./DataProcessor.js');
 
 async function run(opts) {
     const context = await getInspectionContext(opts);
-    const session = ChromeAPI.getSession(context);
+    const session = new ChromeAPI.Session(context);
     await session.init();
 
     try {
@@ -24,7 +24,6 @@ async function run(opts) {
     } finally {
         context.kill();
     }
-
 }
 
 async function getInspectionContext(opts) {

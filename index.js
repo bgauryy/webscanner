@@ -7,7 +7,7 @@ const Server = require('./server.js');
 
 let url = 'https://www.example.com';
 let userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36';
-let port = 3333;
+let port = 3000;
 
 getArgs();
 

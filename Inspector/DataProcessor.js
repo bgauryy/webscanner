@@ -23,8 +23,10 @@ function processScripts(data) {
 }
 
 function processNetwork(data) {
+    const requests = data.network.requests;
     const responses = data.network.responses;
-    return data.network.map(request => {
+
+    return requests.map(request => {
         try {
             request.frame = data.frames[request.frameId].url;
         } catch (e) {
@@ -36,7 +38,6 @@ function processNetwork(data) {
         } else {
             //TODO - investigate
         }
-        request.requestId;
         return request;
     });
 }

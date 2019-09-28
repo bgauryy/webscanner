@@ -1,23 +1,24 @@
-function getSession(context) {
+function Session(context) {
     this.context = context;
     this.client = context.chromeRemoteInterface;
     this.context.data = {
         scripts: [],
-        network: [],
+        network: {
+            requests: [],
+            responses: {}
+        },
         DOMEvents: [],
         frames: {},
         metrics: null
     };
-
-    return {
-        init: init.bind(this),
-        navigate: navigate.bind(this),
-        getMetrics: getMetrics.bind(this),
-        waitDOMContentLoaded: waitDOMContentLoaded.bind(this),
-        getAllDOMEvents: getAllDOMEvents.bind(this),
-        mouseMove: mouseMove.bind(this)
-    };
 }
+
+Session.prototype.init = init;
+Session.prototype.navigate = navigate;
+Session.prototype.getMetrics = getMetrics;
+Session.prototype.waitDOMContentLoaded = waitDOMContentLoaded;
+Session.prototype.getAllDOMEvents = getAllDOMEvents;
+Session.prototype.mouseMove = mouseMove;
 
 async function init() {
     await setClient.call(this);
@@ -59,10 +60,8 @@ function setUserAgent() {
 function setNetworkListener() {
     const network = this.context.data.network;
 
-    network.responses = {};
-
     this.client.Network.requestWillBeSent((networkObj) => {
-        network.push({url: networkObj.request.url, ...networkObj});
+        network.requests.push({url: networkObj.request.url, ...networkObj});
     });
 
     this.client.Network.responseReceived((responseObj) => {
@@ -192,10 +191,5 @@ function mouseMove() {
 }
 
 module.exports = {
-    getSession,
-    navigate,
-    waitDOMContentLoaded,
-    getAllDOMEvents,
-    getMetrics,
-    mouseMove
+    Session
 };
