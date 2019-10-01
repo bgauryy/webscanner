@@ -1,6 +1,7 @@
 import React from "react";
 import ReactTable from "react-table";
 import "react-table/react-table.css";
+import ReactJson from 'react-json-view'
 
 export class ScriptsTable extends React.Component {
     constructor(props) {
@@ -50,17 +51,21 @@ export class ScriptsTable extends React.Component {
                             }
                         },
                         {
-                            Header: "URL",
-                            accessor: "url",
-                            filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.url);
-                            }
-                        },
-                        {
                             Header: "frame",
                             accessor: "frame",
                             filterMethod: (filter, row) => {
                                 return new RegExp(filter.value).test(row.frame);
+                            }
+                        },
+                        {
+                            Header: "Events",
+                            accessor: "events",
+                            filterMethod: (filter, row) => {
+                                return new RegExp(filter.value).test(row.events);
+                            },
+                            Cell: obj => {
+                                const data = obj.row.events;
+                                return <ReactJson collapsed={true} src={data}/>
                             }
                         },
                         {

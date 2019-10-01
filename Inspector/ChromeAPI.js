@@ -10,7 +10,7 @@ function Session(opts) {
             requests: [],
             responses: {}
         },
-        DOMEvents: [],
+        events: [],
         frames: {},
         style: {},
         metrics: null,
@@ -194,7 +194,7 @@ function waitDOMContentLoaded() {
 }
 
 async function getAllDOMEvents() {
-    const DOMEvents = this.data.DOMEvents;
+    const DOMEvents = this.data.events;
     const client = this.client;
 
     let evaluationRes = await client.Runtime.evaluate({expression: 'document.querySelectorAll("*");'});

@@ -10,7 +10,7 @@ async function run() {
     window.data = await (await fetch('./data.json')).json();
 
     const scripts = data.scripts.map(s => {
-        let {scriptId, url, frameId, source, length} = s;
+        let {scriptId, url, frameId, source, length, events} = s;
         const host = (() => {
             try {
                 return new URL(url).host
@@ -24,14 +24,16 @@ async function run() {
         if (url === frame) {
             url = 'inline';
         }
-        return {scriptId, url, frame: frame, source, length, host};
+
+
+        return {scriptId, url, frame: frame, source, length, host, events};
     });
 
 
     const resources = data.network.map(resource => {
         const request = resource.request;
-        const response = resource.response || resource.redirectResponse;
-        const security = response.securityDetails || {};
+        const response = resource.response || resource.redirectResponse || {};
+        const security = response && response.securityDetails || {};
         const initiatorStack = resource.initiator;
         const initiator = getInitiator(resource.initiator);
         return {

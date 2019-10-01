@@ -39,8 +39,7 @@ function processScripts(data) {
     for (let i = 0; i < data.events.length; i++) {
         const eventObj = data.events[i];
         eventsMap[eventObj.scriptId] = eventsMap[eventObj.scriptId] || [];
-        delete  event.scriptId;
-        eventsMap[eventObj.scriptId].push();
+        eventsMap[eventObj.scriptId].push(eventObj);
     }
 
     data.scripts = data.scripts.map(scriptObj => {
