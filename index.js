@@ -16,7 +16,7 @@ async function run() {
     Logger.setLogLevel(logLevel);
 
     if (uiPort) {
-        Server.init({port: uiPort, path: path.join(__dirname, 'public')});
+        Server.init({port: uiPort, path: path.join(__dirname, 'ui', 'dist')});
     }
 
     const data = await Inspector.run({url, userAgent, chrome: {chromeLauncherOpts: null}});

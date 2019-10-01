@@ -1,4 +1,6 @@
 public/data.json
 pxWebInspector.iml
 node_modules
+ui/node_modules
+ui/dist
 .idea

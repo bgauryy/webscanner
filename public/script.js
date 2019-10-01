@@ -143,8 +143,7 @@ async function getGraphData() {
         nodes: [],
         links: []
     };
-    const response = await fetch('data.json');
-    const json = await response.json();
+    const json = await (await fetch('data.json')).json();
 
     //Add scritps to frames
     for (let i = 0; i < json.scripts.length; i++) {
