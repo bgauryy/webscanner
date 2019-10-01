@@ -26,7 +26,7 @@ export class ResourcesTable extends React.Component {
                             Header: "Host",
                             accessor: "host",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.host);
+                                return new RegExp(filter.value).test(row._original.host);
                             }
                         },
                         {
