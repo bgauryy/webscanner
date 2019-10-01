@@ -12,16 +12,18 @@ function Session(opts) {
         },
         DOMEvents: [],
         frames: {},
-        metrics: null
+        style: {},
+        metrics: null,
+        coverage: null
     };
 }
 
 Session.prototype.init = init;
 Session.prototype.navigate = navigate;
-Session.prototype.getMetrics = getMetrics;
 Session.prototype.waitDOMContentLoaded = waitDOMContentLoaded;
 Session.prototype.getAllDOMEvents = getAllDOMEvents;
 Session.prototype.mouseMove = mouseMove;
+Session.prototype.stop = stop;
 
 async function init() {
     await initChrome.call(this);
@@ -30,6 +32,20 @@ async function init() {
     await setNetworkListener.call(this);
     await setFramesListener.call(this);
     await setScriptsListener.call(this);
+    await setStyleListener.call(this);
+}
+
+async function stop() {
+    this.data.metrics = await this.client.Performance.getMetrics();
+    this.data.coverage = await this.client.Profiler.getBestEffortCoverage();
+
+    for (let i = 0; i < this.data.scripts.length; i++) {
+        const script = this.data.scripts[i];
+        const source = await this.client.Debugger.getScriptSource({scriptId: script.scriptId});
+        if (source && source.scriptSource) {
+            this.data.scripts[i].source = source.scriptSource;
+        }
+    }
 }
 
 async function initChrome() {
@@ -61,12 +77,13 @@ async function initChrome() {
 }
 
 async function initClient() {
-    const {Debugger, Network, Page, Runtime, DOM, Performance} = this.client;
+    const {CSS, Debugger, Network, Page, Runtime, DOM, Performance} = this.client;
 
     await Performance.enable();
     await Page.enable();
     await DOM.enable();
     await Debugger.enable();
+    await CSS.enable();
 
     //TODO  - add by configuration
     await Debugger.setAsyncCallStackDepth({maxDepth: 1000});
@@ -77,16 +94,24 @@ async function initClient() {
 
     await Network.enable();
 
-    //TODO  - add by configuration
-    //await Network.setBlockedURLs({urls: ['*perimeterx.net*', '*/init.js']});
+    if (Array.isArray(this.opts.blockedURLs)) {
+        await Network.setBlockedURLs({urls: this.opts.blockedURLs});
+    }
 
-    //Clear storage
     await Network.clearBrowserCache();
     await Network.clearBrowserCookies();
 }
 
 function setUserAgent() {
     this.client.Emulation.setUserAgentOverride({userAgent: this.opts.userAgent});
+}
+
+function setStyleListener() {
+    this.client.CSS.styleSheetAdded(async function ({header}) {
+        const styleObj = JSON.parse(JSON.stringify(header));
+        styleObj.source = await this.client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
+        this.data.style[header.styleSheetId] = styleObj;
+    }.bind(this));
 }
 
 function setNetworkListener() {
@@ -158,11 +183,6 @@ function setScriptsListener() {
         }
         scripts.push(scriptObj);
     });
-}
-
-async function getMetrics() {
-    const metrics = await this.client.Performance.getMetrics();
-    this.data.metrics = metrics;
 }
 
 function navigate(url) {

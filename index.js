@@ -2,7 +2,6 @@ const path = require('path');
 const argv = require('optimist').argv;
 const Inspector = require('./Inspector/Inspector');
 const Logger = require('./utils/Logger');
-const Time = require('./utils/Time');
 const Server = require('./server.js');
 
 let url = 'https://www.example.com';
@@ -20,9 +19,7 @@ async function run() {
         Server.init({port: uiPort, path: path.join(__dirname, 'public')});
     }
 
-    const mId = Time.measure();
     const data = await Inspector.run({url, userAgent, chrome: {chromeLauncherOpts: null}});
-    const stopTime = Time.stopMeasure(mId).toFixed(2);
 
     if (data instanceof Error) {
         throw data;
@@ -30,7 +27,6 @@ async function run() {
 
     if (uiPort) {
         const url = Server.publish(JSON.stringify(data));
-        Logger.info(`Time: ${stopTime}`);
         Logger.info(`Results: ${url}`);
     }
 

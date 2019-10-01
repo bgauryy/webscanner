@@ -8,6 +8,7 @@ const {processData} = require('./DataProcessor.js');
  {
     url: <string>,
     userAgent: <string>,
+    blockedURLs: <Array> ['*example.net*']
     chrome: {
         chromeLauncherOpts: <objext>
     }
@@ -23,7 +24,7 @@ async function run(opts) {
         await session.getAllDOMEvents();
         await session.mouseMove();
         await Helper.sleep(5);
-        await session.getMetrics();
+        await session.stop();
         return processData(session.data);
     } catch (err) {
         Logger.error(err);

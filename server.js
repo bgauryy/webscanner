@@ -12,6 +12,11 @@ let publicDir;
 function init(opts) {
     port = opts.port;
     publicDir = opts.path;
+    try {
+        fs.unlinkSync(path.join(publicDir, DATA_FILE));
+    } catch (e) {
+        //ignore
+    }
 }
 
 function publish(data) {

@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "inspect": "node index.js",
-    "lint": "eslint index.js Inspector public utils --fix",
+    "lint": "eslint index.js Inspector utils --fix",
     "test": "yarn jest"
   },
   "husky": {
