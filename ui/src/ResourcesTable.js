@@ -21,8 +21,33 @@ export class ResourcesTable extends React.Component {
 
                     columns={[
                         {
+                            width: 120,
+                            id: 'Time',
+                            Header: "Time",
+                            accessor: "timestamp",
+                            filterMethod: (filter, row) => {
+                                return new RegExp(filter.value).test(row.timestamp);
+                            }
+                        },
+                        {
+                            width: 70,
+                            Header: "Method",
+                            accessor: "req_method",
+                            filterMethod: (filter, row) => {
+                                return new RegExp(filter.value).test(row.req_method);
+                            }
+                        },
+                        {
+                            width: 60,
+                            Header: "Status",
+                            accessor: "res_status",
+                            filterMethod: (filter, row) => {
+                                return new RegExp(filter.value).test(row.res_status);
+                            }
+                        },
+                        {
                             id: 'Host',
-                            width: 220,
+                            width: 200,
                             Header: "Host",
                             accessor: "host",
                             filterMethod: (filter, row) => {
@@ -30,14 +55,44 @@ export class ResourcesTable extends React.Component {
                             }
                         },
                         {
-                            Header: "initiator",
+                            width: 300,
+                            Header: "Path",
+                            accessor: "pathname",
+                            filterMethod: (filter, row) => {
+                                return new RegExp(filter.value).test(row._original.pathname);
+                            }
+                        },
+                        {
+                            width: 215,
+                            Header: "QueryParams",
+                            accessor: "queryParams",
+                            resized: true,
+                            Cell: obj => {
+                                const data = obj.row.queryParams;
+                                return <ReactJson collapsed={true} src={data}/>
+                            }
+                        },
+                        {
+                            width: 215,
+                            Header: "HashParams",
+                            accessor: "hashParams",
+                            resized: true,
+                            Cell: obj => {
+                                const data = obj.row.hashParams;
+                                return <ReactJson collapsed={true} src={data}/>
+                            }
+                        },
+                        {
+                            width: 90,
+                            Header: "Initiator",
                             accessor: "initiator",
                             filterMethod: (filter, row) => {
                                 return new RegExp(filter.value).test(row.initiator);
                             }
                         },
                         {
-                            Header: "initiatorStack",
+                            width: 215,
+                            Header: "InitiatorStack",
                             accessor: "initiatorStack",
                             resized: true,
                             Cell: obj => {
@@ -46,95 +101,153 @@ export class ResourcesTable extends React.Component {
                             }
                         },
                         {
-                            Header: "URL",
-                            accessor: "url",
+                            width: 80,
+                            Header: "FrameId",
+                            accessor: "frameId",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.url);
+                                return new RegExp(filter.value).test(row._original.frameId);
                             }
                         },
                         {
-                            Header: "frame",
-                            accessor: "frame",
+                            width: 200,
+                            Header: "FrameURL",
+                            accessor: "frameURL",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.frame);
+                                return new RegExp(filter.value).test(row._original.frameURL);
                             }
                         },
                         {
-                            id: 'timestamp',
-                            Header: "timestamp",
-                            accessor: "timestamp",
+                            Header: "req_type",
+                            accessor: "req_type",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.timestamp);
+                                return new RegExp(filter.value).test(row.req_type);
                             }
                         },
                         {
-                            Header: "type",
-                            accessor: "type",
+                            width: 120,
+                            Header: "req_url_length",
+                            accessor: "req_url_length",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.type);
+                                return new RegExp(filter.value).test(row.req_url_length);
                             }
                         },
                         {
-                            Header: "method",
-                            accessor: "method",
+                            width: 120,
+                            Header: "req_data",
+                            accessor: "req_post_data",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.method);
+                                return new RegExp(filter.value).test(row.req_post_data);
                             }
                         },
+                        {
+                            width: 120,
+                            Header: "req_data_length",
+                            accessor: "req_post_data_length",
+                            filterMethod: (filter, row) => {
+                                return new RegExp(filter.value).test(row.req_post_data_length);
+                            }
+                        },
+                        {
+                            width: 215,
+                            Header: "req_headers",
+                            accessor: "req_headers",
+                            resized: true,
+                            Cell: obj => {
+                                const data = obj.row.req_headers;
+                                return <ReactJson collapsed={true} src={data}/>
+                            }, filterMethod: (filter, row) => {
+
+                            for (const prop in row.req_headers) {
+                                if (new RegExp(filter.value).test(prop)) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        }
+                        },
+                        //Response
                         {
                             Header: "res_length",
-                            accessor: "response_length",
+                            accessor: "res_length",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.response_length);
+                                return new RegExp(filter.value).test(row.res_length);
                             }
                         },
                         {
-                            Header: "mimeType",
-                            accessor: "mimeType",
+                            width: 120,
+                            Header: "res_mimeType",
+                            accessor: "res_mimeType",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.mimeType);
+                                return new RegExp(filter.value).test(row._original.res_mimeType);
                             }
                         },
                         {
-                            Header: "ip",
-                            accessor: "ip",
+                            width: 115,
+                            Header: "res_ip",
+                            accessor: "res_ip",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.ip);
+                                return new RegExp(filter.value).test(row._original.res_ip);
                             }
                         },
                         {
-                            Header: "status",
-                            accessor: "status",
+                            width: 70,
+                            Header: "res_port",
+                            accessor: "res_port",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.status);
+                                return new RegExp(filter.value).test(row._original.res_port);
                             }
                         },
                         {
-                            Header: "cipher",
-                            accessor: "cipher",
+                            width: 215,
+                            Header: "res_headers",
+                            accessor: "res_headers",
+                            resized: true,
+                            Cell: obj => {
+                                const data = obj.row.res_headers;
+                                return <ReactJson collapsed={true} src={data}/>
+                            }, filterMethod: (filter, row) => {
+
+                            for (const prop in row.res_headers) {
+                                if (new RegExp(filter.value).test(prop)) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        }
+                        },
+                        {
+                            width: 130,
+                            Header: "cert_cipher",
+                            accessor: "cert_cipher",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.cipher);
+                                return new RegExp(filter.value).test(row.cert_cipher);
                             }
                         },
                         {
-                            Header: "issuer",
-                            accessor: "issuer",
+                            width: 185,
+                            Header: "cert_issuer",
+                            accessor: "cert_issuer",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.issuer);
+                                return new RegExp(filter.value).test(row.cert_issuer);
                             }
                         },
                         {
-                            Header: "sanList",
-                            accessor: "sanList",
+                            width: 300,
+                            Header: "cert_sanList",
+                            accessor: "cert_sanList",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.sanList);
+                                return new RegExp(filter.value).test(row.cert_sanList);
+                            },
+                            Cell: obj => {
+                                const data = obj.row.cert_sanList;
+                                return <ReactJson collapsed={true} src={data}/>
                             }
                         }
                     ]}
-                    defaultPageSize={50}
+                    defaultPageSize={20}
                     className="-striped -highlight"
                     sorted={[{
-                        id: 'timestamp',
+                        id: 'Time',
                         desc: false
                     }, {
                         id: 'Host',

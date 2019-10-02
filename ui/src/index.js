@@ -11,22 +11,25 @@ async function run() {
 
     const scripts = data.scripts.map(s => {
         let {scriptId, url, frameId, source, length, events} = s;
-        const host = (() => {
+        const res = {scriptId, source, events, frameId};
+
+        res.size = Math.round(length / 1000);
+
+
+        res.frameURL = data.frames[frameId].url || 'about:blank';
+        if (url === data.frames[frameId].url) {
+            res.host = 'inline';
+        } else {
             try {
-                return new URL(url).host
+                const urlObj = new URL(url);
+                res.host = urlObj.host;
+                res.pathname = urlObj.pathname;
             } catch (e) {
-                return '';
+                //ignore
             }
-
-        })();
-
-        const frame = data.frames[frameId].url;
-        if (url === frame) {
-            url = 'inline';
         }
 
-
-        return {scriptId, url, frame: frame, source, length, host, events};
+        return res;
     });
 
 
@@ -36,30 +39,41 @@ async function run() {
         const security = response && response.securityDetails || {};
         const initiatorStack = resource.initiator;
         const initiator = getInitiator(resource.initiator);
-        return {
-            url: resource.url,
-            host: (() => {
-                try {
-                    return new URL(resource.url).host
-                } catch (e) {
-                    return '';
-                }
 
-            })(),
-            frame: resource.frame,
-            timestamp: resource.timestamp,
-            type: resource.type,
-            method: request.method,
-            response_length: response.encodedDataLength,
-            mimeType: response.mimeType,
-            ip: response.remoteIPAddress,
-            status: response.status,
-            cipher: security.cipher,
-            issuer: security.issuer,
-            sanList: security.sanList,
-            initiator,
-            initiatorStack
+        const obj = {};
+
+        try {
+            const urlObj = new URL(resource.url);
+            obj.host = urlObj.host;
+            obj.pathname = urlObj.pathname;
+            obj.queryParams = Array.from(urlObj.searchParams);
+            obj.hashParams = Array.from(urlObj.hash);
+        } catch (e) {
+            //ignore
         }
+
+        obj.frameId = resource.frameId;
+        obj.frameURL = resource.frame;
+        obj.timestamp = resource.timestamp;
+        obj.initiator = initiator;
+        obj.initiatorStack = initiatorStack;
+        obj.req_url_length = request.url.length;
+        obj.req_method = request.method;
+        obj.req_type = resource.type;
+        obj.req_headers = request.headers;
+        obj.req_post_data = request.postData || '-';
+        obj.req_post_data_length = request.postData && request.postData.length || -1;
+        obj.res_status = response.status;
+        obj.res_length = response.encodedDataLength;
+        obj.res_mimeType = response.mimeType;
+        obj.res_ip = response.remoteIPAddress;
+        obj.res_port = response.remotePort;
+        obj.res_headers = response.headers;
+        obj.cert_cipher = security.cipher;
+        obj.cert_issuer = security.issuer;
+        obj.cert_sanList = security.sanList;
+
+        return obj;
     });
 
     render(<ScriptsTable resizable={true} data={scripts}/>, document.getElementById("scripts"));

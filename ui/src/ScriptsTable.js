@@ -20,7 +20,7 @@ export class ScriptsTable extends React.Component {
                         String(row[filter.id]) === filter.value}
                     columns={[
                         {
-                            width: 100,
+                            width: 65,
                             Header: "ScriptId",
                             accessor: "scriptId",
                             filterMethod: (filter, row) => {
@@ -37,27 +37,37 @@ export class ScriptsTable extends React.Component {
                             }
                         },
                         {
-                            id: "length",
-                            width: 100,
-                            Header: "length",
-                            accessor: "length",
+                            Header: "PathName",
+                            accessor: "pathname",
+                            filterMethod: (filter, row) => {
+                                return new RegExp(filter.value).test(row._original.pathname);
+                            }
+                        },
+                        {
+                            id: "Size",
+                            width: 75,
+                            Header: "Size (KB)",
+                            accessor: "size",
                             filterable: false
                         },
                         {
-                            Header: "URL",
-                            accessor: "url",
+                            width: 80,
+                            Header: "FrameId",
+                            accessor: "frameId",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.url);
+                                return new RegExp(filter.value).test(row._original.frameId);
                             }
                         },
                         {
-                            Header: "frame",
-                            accessor: "frame",
+                            width: 220,
+                            Header: "FrameURL",
+                            accessor: "frameURL",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.frame);
+                                return new RegExp(filter.value).test(row._original.frameURL);
                             }
                         },
                         {
+                            width: 215,
                             Header: "Events",
                             accessor: "events",
                             filterMethod: (filter, row) => {
@@ -76,13 +86,13 @@ export class ScriptsTable extends React.Component {
                             }
                         }
                     ]}
-                    defaultPageSize={50}
+                    defaultPageSize={20}
                     className="-striped -highlight"
                     sorted={[{
                         id: 'Host',
                         desc: true
                     }, {
-                        id: 'length',
+                        id: 'size',
                         desc: true
                     }]}
                 />
