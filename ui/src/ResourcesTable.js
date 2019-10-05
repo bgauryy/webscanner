@@ -174,7 +174,7 @@ export class ResourcesTable extends React.Component {
                             }
                         },
                         {
-                            width: 120,
+                            width: 180,
                             Header: "res_mimeType",
                             accessor: "res_mimeType",
                             filterMethod: (filter, row) => {
