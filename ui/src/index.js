@@ -9,44 +9,37 @@ run();
 async function run() {
     window.data = await (await fetch('./data.json')).json();
 
-    const scripts = data.scripts.map(s => {
-        let {scriptId, url, frameId, source, length, events} = s;
-        const res = {scriptId, source, events, frameId};
-
-        res.size = Math.round(length / 1000);
-
-
-        res.frameURL = data.frames[frameId].url || 'about:blank';
-        if (url === data.frames[frameId].url) {
-            res.host = 'inline';
-        } else {
-            try {
-                const urlObj = new URL(url);
-                res.host = urlObj.host;
-                res.pathname = urlObj.pathname;
-            } catch (e) {
-                //ignore
-            }
-        }
-
-        return res;
+    const scripts = data.scripts.map(script => {
+        let {scriptId, parentScriptId, host, pathname, length, isModule, frameId, frameURL, events, stackTrace, source} = script;
+        return {
+            scriptId,
+            parentScriptId,
+            host,
+            pathname,
+            length,
+            isModule,
+            frameId,
+            frameURL,
+            events,
+            stackTrace,
+            source
+        };
     });
 
 
     const resources = data.network.map(resource => {
+        const obj = {};
         const request = resource.request;
         const response = resource.response || resource.redirectResponse || {};
         const security = response && response.securityDetails || {};
         const initiatorStack = resource.initiator;
         const initiator = getInitiator(resource.initiator);
 
-        const obj = {};
-
         try {
             const urlObj = new URL(resource.url);
             obj.host = urlObj.host;
             obj.pathname = urlObj.pathname;
-            obj.queryParams = Array.from(urlObj.searchParams);
+            obj.queryParams = urlObj.searchParams;
             obj.hashParams = Array.from(urlObj.hash);
         } catch (e) {
             //ignore
@@ -62,11 +55,12 @@ async function run() {
         obj.req_type = resource.type;
         obj.req_headers = request.headers;
         obj.req_post_data = request.postData || '-';
-        obj.req_post_data_length = request.postData && request.postData.length || -1;
+        obj.req_post_data_length = request.postData && request.postData.length || '-';
         obj.res_status = response.status;
         obj.res_length = response.encodedDataLength;
         obj.res_mimeType = response.mimeType;
         obj.res_ip = response.remoteIPAddress;
+        obj.res_ip_country = response.ipCountry;
         obj.res_port = response.remotePort;
         obj.res_headers = response.headers;
         obj.cert_cipher = security.cipher;
@@ -76,8 +70,8 @@ async function run() {
         return obj;
     });
 
-    render(<ScriptsTable resizable={true} data={scripts}/>, document.getElementById("scripts"));
     render(<ResourcesTable resizable={true} data={resources}/>, document.getElementById("resources"));
+    render(<ScriptsTable resizable={true} data={scripts}/>, document.getElementById("scripts"));
 }
 
 function getInitiator(initiator) {

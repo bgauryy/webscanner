@@ -1,3 +1,5 @@
+const geoip = require('geoip-lite');
+
 function processData(data) {
     if (data.err) {
         return {error: data.err};
@@ -42,42 +44,37 @@ function processScripts(data) {
         eventsMap[eventObj.scriptId].push(eventObj);
     }
 
-    data.scripts = data.scripts.map(scriptObj => {
+    const scripts = data.scripts.map(scriptObj => {
         if (eventsMap[scriptObj.scriptId]) {
             scriptObj.events = eventsMap[scriptObj.scriptId];
         }
+
         scriptObj.frameId = scriptObj.executionContextAuxData.frameId;
         scriptObj.contextId = scriptObj.executionContextId;
         scriptObj.coverage = coverageMap[scriptObj.scriptId];
-        return scriptObj;
-    });
+        scriptObj.frameURL = data.frames[scriptObj.frameId].url || 'about:blank';
+        scriptObj.isModule = Boolean(scriptObj.isModule);
+        scriptObj.length = Math.round(scriptObj.length / 1000) || 0;
 
-    //Handle dynamic scripts
-    const scriptsChildrenMap = {};
-    const mainScripts = data.scripts.filter(s => !s.stackTrace && !!s.url);
-    const innerScripts = data.scripts.filter(s => !!s.stackTrace);
-
-    for (let i = 0; i < innerScripts.length; i++) {
-        const scriptObj = innerScripts[i];
-        scriptObj.initiator = scriptObj.stackTrace.callFrames[0];
-        scriptsChildrenMap[scriptObj.initiator.scriptId] = scriptsChildrenMap[scriptObj.initiator.scriptId] || [];
-        scriptsChildrenMap[scriptObj.initiator.scriptId].push(scriptObj);
-    }
-
-
-    return mainScripts.map(script => {
-        const scriptObj = {...script};
-
-        //Add dynamic scripts
-        const scripts = scriptsChildrenMap[scriptObj.scriptId];
-        if (scripts) {
-            scriptObj.scripts = scripts;
+        if (scriptObj.url === data.frames[scriptObj.frameId].url) {
+            scriptObj.host = 'inline';
+        } else {
+            try {
+                const urlObj = new URL(scriptObj.url);
+                scriptObj.host = urlObj.host;
+                scriptObj.pathname = urlObj.pathname;
+            } catch (e) {
+                //ignore
+            }
         }
 
-        delete scriptObj.executionContextAuxData;
-
+        if (scriptObj.stackTrace) {
+            const initiator = scriptObj.stackTrace.callFrames[0];
+            scriptObj.parentScriptId = (initiator && initiator.scriptId) || '';
+        }
         return scriptObj;
     });
+    return scripts;
 }
 
 function processNetwork(data) {
@@ -85,17 +82,22 @@ function processNetwork(data) {
     const responses = data.network.responses;
 
     return requests.map(request => {
-        try {
-            request.frame = data.frames[request.frameId].url;
-        } catch (e) {
-            //TODO - investigate
+        request.frame = data.frames[request.frameId].url;
+
+        if (request.postData) {
+            request.postData.length = Math.round(request.postData.length / 1000) || 0;
         }
+
+
+        //Add response
         if (responses[request.requestId] && responses[request.requestId].response) {
-            request.response = responses[request.requestId].response;
-            delete responses[request.requestId];
-        } else {
-            //TODO - investigate
+            const response = responses[request.requestId].response;
+            const ip = response.remoteIPAddress;
+
+            response.ipCountry = geoip.lookup(ip).country;
+            request.response = response;
         }
+
         return request;
     });
 }

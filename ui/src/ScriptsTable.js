@@ -24,7 +24,15 @@ export class ScriptsTable extends React.Component {
                             Header: "ScriptId",
                             accessor: "scriptId",
                             filterMethod: (filter, row) => {
-                                return new RegExp(filter.value).test(row.scriptId);
+                                return new RegExp(filter.value).test(row.ScriptId);
+                            }
+                        },
+                        {
+                            width: 130,
+                            Header: "ParentScriptId",
+                            accessor: "parentScriptId",
+                            filterMethod: (filter, row) => {
+                                return new RegExp(filter.value).test(row.parentScriptId)
                             }
                         },
                         {
@@ -37,18 +45,27 @@ export class ScriptsTable extends React.Component {
                             }
                         },
                         {
-                            Header: "PathName",
+                            width: 420,
+                            Header: "Path",
                             accessor: "pathname",
                             filterMethod: (filter, row) => {
                                 return new RegExp(filter.value).test(row._original.pathname);
                             }
                         },
                         {
-                            id: "Size",
+                            id: "Length",
                             width: 75,
-                            Header: "Size (KB)",
-                            accessor: "size",
+                            Header: "Length",
+                            accessor: "length",
                             filterable: false
+                        },
+                        {
+                            width: 90,
+                            Header: "Module",
+                            accessor: "isModule",
+                            filterMethod: (filter, row) => {
+                                return new RegExp(filter.value).test(row.isModule);
+                            }
                         },
                         {
                             width: 80,
@@ -73,9 +90,19 @@ export class ScriptsTable extends React.Component {
                             filterMethod: (filter, row) => {
                                 return new RegExp(filter.value).test(row.events);
                             },
+                            Cell: props => {
+                                const data = props.row.events;
+                                return data ? <ReactJson collapsed={true} src={data}/> : <p>-</p>;
+                            }
+                        },
+                        {
+                            width: 215,
+                            Header: "stackTrace",
+                            accessor: "stackTrace",
+                            resized: true,
                             Cell: obj => {
-                                const data = obj.row.events;
-                                return <ReactJson collapsed={true} src={data}/>
+                                const data = obj.row.stackTrace;
+                                return data ? <ReactJson collapsed={true} src={data}/> : <p>-</p>;
                             }
                         },
                         {
@@ -92,7 +119,7 @@ export class ScriptsTable extends React.Component {
                         id: 'Host',
                         desc: true
                     }, {
-                        id: 'size',
+                        id: 'length',
                         desc: true
                     }]}
                 />

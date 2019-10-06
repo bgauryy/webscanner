@@ -69,7 +69,7 @@ export class ResourcesTable extends React.Component {
                             resized: true,
                             Cell: obj => {
                                 const data = obj.row.queryParams;
-                                return <ReactJson collapsed={true} src={data}/>
+                                return data && Object.keys(data).length > 0 ? <ReactJson collapsed={true} src={data}/> : <p>-</p>;
                             }
                         },
                         {
@@ -79,7 +79,7 @@ export class ResourcesTable extends React.Component {
                             resized: true,
                             Cell: obj => {
                                 const data = obj.row.hashParams;
-                                return <ReactJson collapsed={true} src={data}/>
+                                return data && Object.keys(data).length > 0 ? <ReactJson collapsed={true} src={data}/> : <p>-</p>;
                             }
                         },
                         {
@@ -97,7 +97,7 @@ export class ResourcesTable extends React.Component {
                             resized: true,
                             Cell: obj => {
                                 const data = obj.row.initiatorStack;
-                                return <ReactJson collapsed={true} src={data}/>
+                                return data ? <ReactJson collapsed={true} src={data}/> : <p>-</p>;
                             }
                         },
                         {
@@ -187,6 +187,15 @@ export class ResourcesTable extends React.Component {
                             accessor: "res_ip",
                             filterMethod: (filter, row) => {
                                 return new RegExp(filter.value).test(row._original.res_ip);
+                            }
+                        },
+
+                        {
+                            width: 115,
+                            Header: "Country",
+                            accessor: "res_ip_country",
+                            filterMethod: (filter, row) => {
+                                return new RegExp(filter.value).test(row._original.res_ip_country);
                             }
                         },
                         {
