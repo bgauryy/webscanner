@@ -18,7 +18,7 @@ async function run(opts) {
     const metadata = {...opts, timestamp: +new Date()};
     const session = new ChromeAPI.Session(opts);
 
-    await session.init();
+    await session.start();
     try {
         await session.navigate(opts.url);
         await session.waitDOMContentLoaded();

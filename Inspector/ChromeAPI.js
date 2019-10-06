@@ -18,14 +18,14 @@ function Session(opts) {
     };
 }
 
-Session.prototype.init = init;
+Session.prototype.start = start;
 Session.prototype.navigate = navigate;
 Session.prototype.waitDOMContentLoaded = waitDOMContentLoaded;
 Session.prototype.getAllDOMEvents = getAllDOMEvents;
 Session.prototype.mouseMove = mouseMove;
 Session.prototype.stop = stop;
 
-async function init() {
+async function start() {
     await initChrome.call(this);
     await initClient.call(this);
     setUserAgent.call(this);
