@@ -15,9 +15,13 @@ const {processData} = require('./DataProcessor.js');
 }
  **/
 async function run(opts) {
+    const metadata = {
+        url: opts.url,
+        timestamp: +new Date()
+    };
     const session = new ChromeAPI.Session(opts);
-    await session.init();
 
+    await session.init();
     try {
         await session.navigate(opts.url);
         await session.waitDOMContentLoaded();
@@ -25,7 +29,10 @@ async function run(opts) {
         await session.mouseMove();
         await Helper.sleep(5);
         await session.stop();
-        return processData(session.data);
+        const data = processData(session.data, opts);
+        data.metadata = metadata;
+
+        return data;
     } catch (err) {
         Logger.error(err);
         return err;
