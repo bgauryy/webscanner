@@ -94,7 +94,10 @@ function processNetwork(data) {
             const response = responses[request.requestId].response;
             const ip = response.remoteIPAddress;
 
-            response.ipCountry = geoip.lookup(ip).country;
+            if (ip) {
+                response.ipCountry = geoip.lookup(ip).country;
+            }
+
             request.response = response;
         }
 

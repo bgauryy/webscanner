@@ -9,69 +9,56 @@ run();
 async function run() {
     window.data = await (await fetch('./data.json')).json();
 
-    const scripts = data.scripts.map(script => {
-        let {scriptId, parentScriptId, host, pathname, length, isModule, frameId, frameURL, events, stackTrace, source} = script;
-        return {
-            scriptId,
-            parentScriptId,
-            host,
-            pathname,
-            length,
-            isModule,
-            frameId,
-            frameURL,
-            events,
-            stackTrace,
-            source
-        };
-    });
+    const resources = getResourcesData(data);
+    render(<ResourcesTable resizable={true} data={resources}/>, document.getElementById("resources"));
 
+    const scripts = data.scripts;
+    render(<ScriptsTable resizable={true} data={scripts}/>, document.getElementById("scripts"));
+}
 
-    const resources = data.network.map(resource => {
-        const obj = {};
-        const request = resource.request;
-        const response = resource.response || resource.redirectResponse || {};
+function getResourcesData(data) {
+    return data.network.map(_resource => {
+        const resource = {};
+        const request = _resource.request;
+        const response = _resource.response || _resource.redirectResponse || {};
         const security = response && response.securityDetails || {};
-        const initiatorStack = resource.initiator;
-        const initiator = getInitiator(resource.initiator);
+        const initiatorStack = _resource.initiator;
+        const initiator = getInitiator(_resource.initiator);
 
         try {
-            const urlObj = new URL(resource.url);
-            obj.host = urlObj.host;
-            obj.pathname = urlObj.pathname;
-            obj.queryParams = urlObj.searchParams;
-            obj.hashParams = Array.from(urlObj.hash);
+            const urlObj = new URL(_resource.url);
+            resource.host = urlObj.host;
+            resource.pathname = urlObj.pathname;
+            resource.queryParams = urlObj.searchParams;
+            resource.hashParams = Array.from(urlObj.hash);
         } catch (e) {
             //ignore
         }
 
-        obj.frameId = resource.frameId;
-        obj.frameURL = resource.frame;
-        obj.timestamp = resource.timestamp;
-        obj.initiator = initiator;
-        obj.initiatorStack = initiatorStack;
-        obj.req_url_length = request.url.length;
-        obj.req_method = request.method;
-        obj.req_type = resource.type;
-        obj.req_headers = request.headers;
-        obj.req_post_data = request.postData || '-';
-        obj.req_post_data_length = request.postData && request.postData.length || '-';
-        obj.res_status = response.status;
-        obj.res_length = response.encodedDataLength;
-        obj.res_mimeType = response.mimeType;
-        obj.res_ip = response.remoteIPAddress;
-        obj.res_ip_country = response.ipCountry;
-        obj.res_port = response.remotePort;
-        obj.res_headers = response.headers;
-        obj.cert_cipher = security.cipher;
-        obj.cert_issuer = security.issuer;
-        obj.cert_sanList = security.sanList;
+        resource.frameId = _resource.frameId;
+        resource.frameURL = _resource.frame;
+        resource.timestamp = _resource.timestamp;
+        resource.initiator = initiator;
+        resource.initiatorStack = initiatorStack;
+        resource.req_url_length = request.url.length;
+        resource.req_method = request.method;
+        resource.req_type = _resource.type;
+        resource.req_headers = request.headers;
+        resource.req_post_data = request.postData || '-';
+        resource.req_post_data_length = request.postData && request.postData.length || '-';
+        resource.res_status = response.status;
+        resource.res_length = response.encodedDataLength;
+        resource.res_mimeType = response.mimeType;
+        resource.res_ip = response.remoteIPAddress;
+        resource.res_ip_country = response.ipCountry;
+        resource.res_port = response.remotePort;
+        resource.res_headers = response.headers;
+        resource.cert_cipher = security.cipher;
+        resource.cert_issuer = security.issuer;
+        resource.cert_sanList = security.sanList;
 
-        return obj;
+        return resource;
     });
-
-    render(<ResourcesTable resizable={true} data={resources}/>, document.getElementById("resources"));
-    render(<ScriptsTable resizable={true} data={scripts}/>, document.getElementById("scripts"));
 }
 
 function getInitiator(initiator) {
