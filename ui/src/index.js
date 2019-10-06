@@ -51,6 +51,7 @@ function getResourcesData(data) {
         resource.res_mimeType = response.mimeType;
         resource.res_ip = response.remoteIPAddress;
         resource.res_ip_country = response.ipCountry;
+        resource.res_ip_timezone = response.timezone;
         resource.res_port = response.remotePort;
         resource.res_headers = response.headers;
         resource.cert_cipher = security.cipher;

@@ -69,7 +69,8 @@ export class ResourcesTable extends React.Component {
                             resized: true,
                             Cell: obj => {
                                 const data = obj.row.queryParams;
-                                return data && Object.keys(data).length > 0 ? <ReactJson collapsed={true} src={data}/> : <p>-</p>;
+                                return data && Object.keys(data).length > 0 ? <ReactJson collapsed={true} src={data}/> :
+                                    <p>-</p>;
                             }
                         },
                         {
@@ -79,7 +80,8 @@ export class ResourcesTable extends React.Component {
                             resized: true,
                             Cell: obj => {
                                 const data = obj.row.hashParams;
-                                return data && Object.keys(data).length > 0 ? <ReactJson collapsed={true} src={data}/> : <p>-</p>;
+                                return data && Object.keys(data).length > 0 ? <ReactJson collapsed={true} src={data}/> :
+                                    <p>-</p>;
                             }
                         },
                         {
@@ -189,13 +191,20 @@ export class ResourcesTable extends React.Component {
                                 return new RegExp(filter.value).test(row._original.res_ip);
                             }
                         },
-
                         {
                             width: 115,
                             Header: "Country",
                             accessor: "res_ip_country",
                             filterMethod: (filter, row) => {
                                 return new RegExp(filter.value).test(row._original.res_ip_country);
+                            }
+                        },
+                        {
+                            width: 200,
+                            Header: "Timezone",
+                            accessor: "res_ip_timezone",
+                            filterMethod: (filter, row) => {
+                                return new RegExp(filter.value).test(row._original.res_ip_timezone);
                             }
                         },
                         {

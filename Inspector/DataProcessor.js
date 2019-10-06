@@ -28,23 +28,24 @@ function processStyle(data) {
 }
 
 function processScripts(data) {
-    //Set coverage
     const coverage = data.coverage.result;
     const coverageMap = {};
+    const eventsMap = {};
+
+    //Set coverage
     for (let i = 0; i < coverage.length; i++) {
         const coverageObj = coverage[i];
         coverageMap[coverageObj.scriptId] = coverageObj.functions;
     }
 
     //Set events
-    const eventsMap = {};
     for (let i = 0; i < data.events.length; i++) {
         const eventObj = data.events[i];
         eventsMap[eventObj.scriptId] = eventsMap[eventObj.scriptId] || [];
         eventsMap[eventObj.scriptId].push(eventObj);
     }
 
-    const scripts = data.scripts.map(scriptObj => {
+    return data.scripts.map(scriptObj => {
         if (eventsMap[scriptObj.scriptId]) {
             scriptObj.events = eventsMap[scriptObj.scriptId];
         }
@@ -74,7 +75,6 @@ function processScripts(data) {
         }
         return scriptObj;
     });
-    return scripts;
 }
 
 function processNetwork(data) {
@@ -88,16 +88,16 @@ function processNetwork(data) {
             request.postData.length = Math.round(request.postData.length / 1000) || 0;
         }
 
-
         //Add response
         if (responses[request.requestId] && responses[request.requestId].response) {
             const response = responses[request.requestId].response;
             const ip = response.remoteIPAddress;
 
             if (ip) {
-                response.ipCountry = geoip.lookup(ip).country;
+                const lookup = geoip.lookup(ip);
+                response.ipCountry = lookup.country;
+                response.timezone = lookup.timezone;
             }
-
             request.response = response;
         }
 
@@ -112,6 +112,7 @@ function processFrames(data) {
 function processMetrics(data) {
     const metrics = {};
     const arr = data.metrics.metrics;
+
     for (let i = 0; i < arr.length; i++) {
         const metric = arr[i];
         metrics[metric.name] = metrics[metric.value];
