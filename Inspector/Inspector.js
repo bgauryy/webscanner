@@ -15,10 +15,7 @@ const {processData} = require('./DataProcessor.js');
 }
  **/
 async function run(opts) {
-    const metadata = {
-        url: opts.url,
-        timestamp: +new Date()
-    };
+    const metadata = {...opts, timestamp: +new Date()};
     const session = new ChromeAPI.Session(opts);
 
     await session.init();
