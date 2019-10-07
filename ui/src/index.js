@@ -82,6 +82,11 @@ function getInitiator(initiator) {
 
     function getInitiatorFromStack(frame, frames) {
         frames = frames || [];
+
+        //TODO - fix!
+        if (!frame) {
+            return '';
+        }
         frames.unshift(frame.callFrames);
 
         if (!frame.parent) {

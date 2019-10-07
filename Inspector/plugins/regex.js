@@ -1,13 +1,17 @@
 const key = '.__regex';
-const obj = {
-    map: {},
-    exec: RegExp.prototype.exec
-};
 
-Object.defineProperty(window, key, {
-    enumerable: false,
-    get: () => obj
-});
+(function () {
+    const obj = {
+        map: {},
+        exec: RegExp.prototype.exec
+    };
+
+    Object.defineProperty(window, key, {
+        enumerable: false,
+        get: () => obj
+    });
+})();
+
 
 //eslint-disable-next-line no-extend-native
 RegExp.prototype.exec = function (val) {
