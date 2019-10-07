@@ -736,10 +736,10 @@ vary@~1.1.2:
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
   integrity sha1-IpnwLG3tMNSllhsLn3RSShj2NPw=
 
-webscanner@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/webscanner/-/webscanner-1.0.1.tgz#9ce860dfc2a2fd591b704d5e10f2120410da5767"
-  integrity sha512-e2HVSsAaew7Jyvv7/g3vmQl1FTBTgDAvDytQBTBkjEAc2xMupl4TXhfqV1cPDH+hycP35vbC/5x8448GAVs0nA==
+webscanner@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/webscanner/-/webscanner-1.0.2.tgz#1dcbdffc2243a8cbb8540a66ac91ece27f14f30f"
+  integrity sha512-qebJ/kkszNYC7J5hyh39SkjtIyhK2aavvWCf0IufD3K3ct/WPxSZu0MjG0lsL8EVqiY9xu6IGW74VRIG4JAJ4w==
   dependencies:
     chrome-launcher "^0.10.5"
     chrome-remote-interface "^0.27.1"

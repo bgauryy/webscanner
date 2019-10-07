@@ -1,17 +1,13 @@
 const puppeteer = require('puppeteer');
-const scanner = require('webscanner');
+const Scanner = require('webscanner');
 
 (async () => {
-    const browser = await puppeteer.launch({
-        headless: true
-    });
+    const browser = await puppeteer.launch();
     const page = await browser.newPage();
-    const scannerObj = await scanner.setPage(page);
 
+    await Scanner.setPage(page);
     await page.goto('https://example.com');
     await page.content();
-    const data = await scannerObj.getData();
+    const data = await page.getData();
     await browser.close();
-
-    console.log(data);
 })();
