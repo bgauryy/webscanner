@@ -1,6 +1,19 @@
 {
   "name": "webscanner",
-  "version": "1.0.1",
+  "version": "1.0.2",
+  "description": "Network resources and web scanner",
+  "repository": "https://github.com/bgauryy/webscanner",
+  "author": {
+    "name": "Guy Bary",
+    "email": "bgauryy@gmail.com"
+  },
+  "keywords": [
+    "scanner",
+    "web",
+    "puppeteer",
+    "devtools",
+    "chrome"
+  ],
   "main": "index.js",
   "scripts": {
     "inspect": "node index.js",
