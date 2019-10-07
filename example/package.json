@@ -1,0 +1,9 @@
+{
+  "name": "example",
+  "version": "1.0.0",
+  "main": "example.js",
+  "dependencies": {
+    "webscanner": "^1.0.1"
+  },
+  "license": "MIT"
+}
