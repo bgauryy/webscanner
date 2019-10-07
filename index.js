@@ -4,15 +4,11 @@ const Inspector = require('./Inspector/Inspector');
 const Logger = require('./utils/Logger');
 const Server = require('./server.js');
 
-let url = 'https://www.example.com';
-let userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36';
-let uiPort = null;
-let logLevel = null;
+let url, userAgent, uiPort, logLevel;
 
-run();
+async function run(_url, _userAgent, _uiPort, _LogLevel) {
+    setArgs(_url, _userAgent, _uiPort, _LogLevel);
 
-async function run() {
-    setArgs();
     Logger.setLogLevel(logLevel);
 
     if (uiPort) {
@@ -35,13 +31,17 @@ async function run() {
     return data;
 }
 
-function setArgs() {
-    url = argv.url || url;
-    userAgent = argv.userAgent || userAgent;
-    uiPort = argv.uiPort;
-    logLevel = argv.logLevel;
+function setArgs(opts = {}) {
+    url = opts.url || argv.url || 'https://www.example.com';
+    userAgent = opts.userAgent || argv.userAgent || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36';
+    uiPort = opts.uiPort || argv.uiPort || 1987;
+    logLevel = opts.logLevel || argv.logLevel || Logger.LOG.ALL;
     Logger.info(`\nurl: ${url} \nuserAgent: ${userAgent} \nuiPort: ${uiPort} \nLogLevel: ${logLevel}`);
 }
+
+module.exports = {
+    run
+};
 
 
 
