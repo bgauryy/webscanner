@@ -1,18 +1,19 @@
 const geoip = require('geoip-lite');
 
-function processData(data) {
+function processData(session) {
+    const responseData = {};
+    const data = session.data;
+
     if (data.err) {
         return {error: data.err};
     }
-
-    const responseData = {};
     responseData.scripts = processScripts(data);
     responseData.network = processNetwork(data);
     responseData.frames = processFrames(data);
     responseData.metrics = processMetrics(data);
     responseData.style = processStyle(data);
 
-    return JSON.parse(JSON.stringify(responseData));
+    return responseData;
 }
 
 function processStyle(data) {
@@ -28,7 +29,7 @@ function processStyle(data) {
 }
 
 function processScripts(data) {
-    const coverage = data.coverage.result;
+    const coverage = data.coverage && data.coverage.result || [];
     const coverageMap = {};
     const eventsMap = {};
 
@@ -111,11 +112,11 @@ function processFrames(data) {
 
 function processMetrics(data) {
     const metrics = {};
-    const arr = data.metrics.metrics;
+    const metricsArr = data.metrics && data.metrics.metrics || [];
 
-    for (let i = 0; i < arr.length; i++) {
-        const metric = arr[i];
-        metrics[metric.name] = metrics[metric.value];
+    for (let i = 0; i < metricsArr.length; i++) {
+        const metric = metricsArr[i];
+        metrics[metric.name] = metric.value;
     }
     return metrics;
 }

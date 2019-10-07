@@ -1,7 +1,6 @@
 const ChromeAPI = require('./ChromeAPI.js');
 const Logger = require('../utils/Logger.js');
 const Helper = require('../utils/Helper.js');
-const {processData} = require('./DataProcessor.js');
 
 /**
  @param opts: <object>
@@ -19,14 +18,13 @@ async function run(opts) {
     const session = new ChromeAPI.Session(opts);
 
     await session.start();
+
     try {
         await session.navigate(opts.url);
         await session.waitDOMContentLoaded();
         await session.getAllDOMEvents();
-        await session.mouseMove();
         await Helper.sleep(5);
-        await session.stop();
-        const data = processData(session.data, opts);
+        const data = await session.getData();
         data.metadata = metadata;
 
         return data;
@@ -38,6 +36,19 @@ async function run(opts) {
     }
 }
 
+//TODO - add  browser.close
+async function puppeteer(page) {
+    const session = new ChromeAPI.Session({puppeteer: {page}});
+    await session.start();
+
+    return {
+        getData: async function () {
+            return await session.getData();
+        }
+    };
+}
+
 module.exports = {
-    run
+    run,
+    puppeteer
 };
