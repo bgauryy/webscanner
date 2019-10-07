@@ -10,9 +10,8 @@ const scanner = require('webscanner');
 
     await page.goto('https://example.com');
     await page.content();
-    await page.screenshot({path: 'screenshot.png'});
-
-    console.log(scannerObj.data);
-
+    const data = await scannerObj.getData();
     await browser.close();
+
+    console.log(data);
 })();

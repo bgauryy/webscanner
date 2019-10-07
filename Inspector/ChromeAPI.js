@@ -1,6 +1,8 @@
 const chromeLauncher = require('chrome-launcher');
 const CRI = require('chrome-remote-interface');
 const Logger = require('../utils/Logger.js');
+const {processData} = require('./DataProcessor.js');
+const url = require('url');
 
 function Session(opts) {
     this.opts = opts;
@@ -19,23 +21,25 @@ function Session(opts) {
 }
 
 Session.prototype.start = start;
+Session.prototype.getData = getData;
 Session.prototype.navigate = navigate;
 Session.prototype.waitDOMContentLoaded = waitDOMContentLoaded;
 Session.prototype.getAllDOMEvents = getAllDOMEvents;
-Session.prototype.mouseMove = mouseMove;
-Session.prototype.stop = stop;
 
 async function start() {
-    await initChrome.call(this);
-    await initClient.call(this);
-    setUserAgent.call(this);
-    await setNetworkListener.call(this);
-    await setFramesListener.call(this);
-    await setScriptsListener.call(this);
-    await setStyleListener.call(this);
+    await _createSocket.call(this);
+    await _initChromeClient.call(this);
+    await _setNetworkListener.call(this);
+    await _setFramesListener.call(this);
+    await _setScriptsListener.call(this);
+    await _setStyleListener.call(this);
+
+    _setUserAgent.call(this);
+
+    return this;
 }
 
-async function stop() {
+async function getData() {
     this.data.metrics = await this.client.Performance.getMetrics();
     this.data.coverage = await this.client.Profiler.getBestEffortCoverage();
 
@@ -46,21 +50,35 @@ async function stop() {
             this.data.scripts[i].source = source.scriptSource;
         }
     }
+
+    return await processData(this);
 }
 
-async function initChrome() {
-    const chrome = await chromeLauncher.launch(this.opts.chrome.chromeLauncherOpts || {
-        port: 9222,
-        chromeFlags: ['--headless', '--disable-gpu']
-    });
+async function _createSocket() {
+    let chrome;
 
-    this.client = await CRI();
+    if (this.opts.puppeteer) {
+        const page = this.opts.puppeteer.page;
+        const connection = page._client._connection._url;
+        const urlObj = url.parse(connection, true);
+        this.client = await CRI({host: urlObj.hostname, port: urlObj.port});
+    } else {
+        chrome = await chromeLauncher.launch(this.opts.chrome.chromeLauncherOpts || {
+            port: 9222,
+            chromeFlags: ['--headless', '--disable-gpu']
+        });
+        this.client = await CRI();
+    }
 
-    if (!chrome || !this.client) {
-        throw new Error('chrome instance error');
+    if (!this.client) {
+        throw new Error('Process client is missing');
     }
 
     this.kill = async function () {
+        if (this.opts.puppeteer) {
+            Logger.debug('puppeteer session. Ignore teardown');
+            return;
+        }
         try {
             await this.client.close();
             Logger.debug('closed chrome client');
@@ -76,7 +94,7 @@ async function initChrome() {
     };
 }
 
-async function initClient() {
+async function _initChromeClient() {
     const {CSS, Debugger, Network, Page, Runtime, DOM, Performance} = this.client;
 
     await Performance.enable();
@@ -102,11 +120,13 @@ async function initClient() {
     await Network.clearBrowserCookies();
 }
 
-function setUserAgent() {
-    this.client.Emulation.setUserAgentOverride({userAgent: this.opts.userAgent});
+function _setUserAgent() {
+    if (this.opts.userAgent) {
+        this.client.Emulation.setUserAgentOverride({userAgent: this.opts.userAgent});
+    }
 }
 
-function setStyleListener() {
+function _setStyleListener() {
     this.client.CSS.styleSheetAdded(async function ({header}) {
         const styleObj = JSON.parse(JSON.stringify(header));
         styleObj.source = await this.client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
@@ -114,7 +134,7 @@ function setStyleListener() {
     }.bind(this));
 }
 
-function setNetworkListener() {
+function _setNetworkListener() {
     const network = this.data.network;
 
     this.client.Network.requestWillBeSent((networkObj) => {
@@ -126,7 +146,7 @@ function setNetworkListener() {
     });
 }
 
-function setFramesListener() {
+function _setFramesListener() {
     const frames = this.data.frames;
     const client = this.client;
 
@@ -175,7 +195,7 @@ function frameEventHandler(frame, frames, state) {
     frames[frameId].state.push(state);
 }
 
-function setScriptsListener() {
+function _setScriptsListener() {
     const scripts = this.data.scripts;
     this.client.Debugger.scriptParsed((scriptObj) => {
         if (scriptObj.url === '__puppeteer_evaluation_script__') {
@@ -233,14 +253,6 @@ async function getAllDOMEvents() {
             DOMEvents.push({...windowEvents.listeners[i], ...object});
         }
     }
-}
-
-function mouseMove() {
-    return this.client.Input.dispatchMouseEvent({
-        type: 'mouseMoved',
-        x: 100,
-        y: 100
-    });
 }
 
 module.exports = {
