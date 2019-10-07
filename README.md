@@ -1,46 +1,76 @@
-# Web Inspector
+# Web Scanner
 
-- events: events registration on the main page (per initiator) 
-- frames in document (iframes)
-- network: network requests per frame, per initiator
+
+![](./assets/img.jpg)
+
+                                 ___
+                         /======/
+                ____    //      \___       ,/
+                 | \\  //           :,   ./
+         |_______|__|_//            ;:; /
+        _L_____________\o           ;;;/
+
+
+
+
+
+Simple API for automated scanning of web applications
+
+ 
+ # API
+ 
+ 
+ # Data
+ 
+ 
     
-### Installing
+# Usage
 
-Install dependencies
+
+## [puppeteer](https://github.com/GoogleChrome/puppeteer) Support
 ````
-yarn install
+const puppeteer = require('puppeteer');
+const Scanner = require('webscanner');
 
-cd ui
-yarn install
-yarn start
+(async () => {
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    
+    await Scanner.setPage(page);
+    await page.goto('https://example.com');
+    await page.content();
+    const data = await page.getData();
+    await browser.close();
+})();
 ````
 
-## Running
-Run simple inspection
-
-````
-yarn inspect --url=https://www.example.com --uiPort=3333 --logLevel=1
-
-````
-
-- See results at http://localhost:3333
-
-## Future features
-- set default cookie on domain
-- crawl
-- fuzz
-- add elements
-- UI API
-- Improved CLI
-- Better protocol
-- Execute Chrome on any host/port and enable execution on local chrome 
-- Enable go behind proxy
-- UI control (dispatch registered events)
-- Screenshots  
+### Ongoing features    
+- Workers
+- Service Workers
+- Client plugins
+    - API
+    - Add scripts
+    - Object API / Proxy / Reflect
+    - client cookies
+    - disabled network
+    - Errors 
+- Enhance API
+    - Stealth mode
+    - Self execution    
+    - CLI
+    - data compression
+- Style data
+- Frame data
+- Scripts
+    - Performance metrics
+    - Coverage metrics
+- Network
+    - Network
+    - more data
+- Add raw data
+- Release notes
+- Tests
 - Network blocks (explicit, wildcard)
-- Run as service
-- add fake JS fingerpint
-- Add hook for Regex check (for location.href)
-- Add full stack for events
-- Dockerize solution
-- Disable define properties
+- Find patterns in scripts (?)
+
+

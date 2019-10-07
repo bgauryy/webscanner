@@ -36,15 +36,11 @@ async function run(opts) {
     }
 }
 
-//TODO - add  browser.close
 async function puppeteer(page) {
     const session = new ChromeAPI.Session({puppeteer: {page}});
     await session.start();
-
-    return {
-        getData: async function () {
-            return await session.getData();
-        }
+    page.getData = async function () {
+        return await session.getData();
     };
 }
 
