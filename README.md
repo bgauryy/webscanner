@@ -1,11 +1,5 @@
-# Web Inspector (This is still under Development!!!)
+# Web Inspector
 
-Simple tool that enables inspect websites behavior remotely using chrome dev tools API
-https://chromedevtools.github.io/devtools-protocol
-
-Inspection results:
-
-- scripts: scripts in the page (per frame)
 - events: events registration on the main page (per initiator) 
 - frames in document (iframes)
 - network: network requests per frame, per initiator
@@ -15,39 +9,21 @@ Inspection results:
 Install dependencies
 ````
 yarn install
+
+cd ui
+yarn install
+yarn start
 ````
 
 ## Running
 Run simple inspection
 
 ````
-yarn inspect -u https://perimeterx.com
+yarn inspect --url=https://www.example.com --uiPort=3333 --logLevel=1
 
 ````
 
 - See results at http://localhost:3333
-
-Run advanced inspection
-
-````  
-yarn inspect -u [URL] -ua [USER-AGENT] -rp [RESULTS_PORT] -x [true/false]
-
-````
-
-- URL (u): Test URL (default 'https://www.example.com')
-- Disable PX scripts (x)  default false
-- User Agent (ua): User agent for the test (default 'pxWebInspector')
-- Results Port (rp): Port for results view (default 3333)
-
-
-## Usage 
-
-![](../../../IdeaProjects/pxWebInspector/assets/installPX.gif)
-
-## View Results
-
-![](../../../IdeaProjects/pxWebInspector/assets/localhost.gif)
-
 
 ## Future features
 - set default cookie on domain
