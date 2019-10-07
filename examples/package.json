@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "example.js",
   "dependencies": {
-    "webscanner": "^1.0.1"
+    "webscanner": "^1.0.1",
+    "puppeteer": "^1.20.0"
   },
   "license": "MIT"
 }
