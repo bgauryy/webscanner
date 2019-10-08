@@ -1,7 +1,7 @@
+
 # Web Scanner
 
-
-![](./assets/img.jpg)
+!!Under Construction!!
 
                                  ___
                          /======/
@@ -9,26 +9,51 @@
                  | \\  //           :,   ./
          |_______|__|_//            ;:; /
         _L_____________\o           ;;;/
+        
+Advanced tool for web applications scanning
 
+### Use cases:
+- Gather resources information (all resources from all frames...)
+- Network information (headers, length, response, security, ip analysis...)
+- Performance metrics (timing, rendering, heap size...)
+- Scripts information
+- Style sheets information
+- Get advanced details using client plugins
+- Enrich automation data
 
+### API
 
+#### `Scanner.run(opts <object>)`
+- url \<string\>
+- userAgent
+- logLevel
+    -  0: all (default)
+    - 1: debug
+    - 2: info
+    - 3: warn
+    - 4: error
+    - 5: none
+- [chrome](https://github.com/GoogleChrome/chrome-launcher)
+	 -   port
+	 -   chromeFlags
+	 -   handleSIGINT
+     -  chromePath
+     -  userDataDir
+     -  startingUrl
+     -  logLeve
+     -   ignoreDefaultFlags
+	 -   connectionPollInterval
+     -   envVars
+     -   maxConnectionRetries
 
+#### `Scanner.puppeteer`
 
-Simple API for automated scanning of web applications
+- setPage ([page](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#class-page)) 
 
- 
- # API
- 
- 
- # Data
- 
- 
-    
-# Usage
+Sets puppeteer page for scanning
 
-
-## [puppeteer](https://github.com/GoogleChrome/puppeteer) Support
-````
+*Example:*
+ ````
 const puppeteer = require('puppeteer');
 const Scanner = require('webscanner');
 
@@ -43,34 +68,5 @@ const Scanner = require('webscanner');
     await browser.close();
 })();
 ````
-
-### Ongoing features    
-- Workers
-- Service Workers
-- Client plugins
-    - API
-    - Add scripts
-    - Object API / Proxy / Reflect
-    - client cookies
-    - disabled network
-    - Errors 
-- Enhance API
-    - Stealth mode
-    - Self execution    
-    - CLI
-    - data compression
-- Style data
-- Frame data
-- Scripts
-    - Performance metrics
-    - Coverage metrics
-- Network
-    - Network
-    - more data
-- Add raw data
-- Release notes
-- Tests
-- Network blocks (explicit, wildcard)
-- Find patterns in scripts (?)
 
 

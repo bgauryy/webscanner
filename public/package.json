@@ -1,7 +1,6 @@
 {
-  "name": "ui",
+  "name": "webscanner-preview",
   "version": "1.0.0",
-  "main": "index.js",
   "scripts": {
     "start": "webpack --mode development",
     "build": "webpack --mode production"

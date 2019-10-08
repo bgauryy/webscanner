@@ -1,6 +1,6 @@
 {
   "name": "webscanner",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Network resources and web scanner",
   "repository": "https://github.com/bgauryy/webscanner",
   "author": {
@@ -14,29 +14,38 @@
     "devtools",
     "chrome"
   ],
-  "main": "index.js",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
   "scripts": {
     "inspect": "node index.js",
-    "lint": "eslint index.js Inspector utils --fix",
-    "test": "yarn jest"
+    "lint": "eslint src",
+    "test": "yarn jest",
+    "build": "rollup -c",
+    "clean": "rimraf dist",
+    "prepublishOnly": "yarn clean && yarn lint && yarn test && yarn build"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn lint && yarn test"
+      "pre-commit": "yarn lint"
     }
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.6.2",
+    "eslint": "^6.5.1",
     "husky": "^3.0.5",
-    "eslint": "^6.4.0",
-    "jest": "^24.9.0"
+    "jest": "^24.9.0",
+    "rollup": "^1.23.1",
+    "rollup-plugin-babel": "^4.3.3",
+    "rimraf": "^3.0.0"
+
   },
   "dependencies": {
     "chrome-launcher": "^0.10.5",
     "chrome-remote-interface": "^0.27.1",
-    "optimist": "^0.6.1",
-    "express": "^4.16.4",
     "colors": "^1.4.0",
-    "geoip-lite": "^1.3.8"
+    "express": "^4.16.4",
+    "geoip-lite": "^1.3.8",
+    "optimist": "^0.6.1"
   },
   "license": "MIT"
 }

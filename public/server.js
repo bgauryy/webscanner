@@ -2,16 +2,16 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const app = express();
-const Logger = require('./utils/Logger');
-
+const Logger = require('../src/utils/Logger');
 const DATA_FILE = 'data.json';
 
 let port;
 let publicDir;
 
-function init(opts) {
-    port = opts.port;
-    publicDir = opts.path;
+function init(_port) {
+    port = _port;
+    publicDir = path.join(__dirname, 'dist');
+
     try {
         fs.unlinkSync(path.join(publicDir, DATA_FILE));
     } catch (e) {
@@ -30,7 +30,6 @@ function publish(data) {
             process.on('uncaughtException', terminate.bind(this, server));
         });
     });
-    return `http://localhost:${port}`;
 }
 
 function terminate(server) {

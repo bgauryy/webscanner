@@ -1,6 +1,6 @@
 const ChromeAPI = require('./ChromeAPI.js');
-const Logger = require('../utils/Logger.js');
-const Helper = require('../utils/Helper.js');
+const Logger = require('./utils/Logger.js');
+const Helper = require('./utils/Helper.js');
 
 /**
  @param opts: <object>

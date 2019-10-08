@@ -1,6 +1,6 @@
 const chromeLauncher = require('chrome-launcher');
 const CRI = require('chrome-remote-interface');
-const Logger = require('../utils/Logger.js');
+const Logger = require('./utils/Logger.js');
 const {processData} = require('./DataProcessor.js');
 const url = require('url');
 
@@ -63,7 +63,7 @@ async function _createSocket() {
         const urlObj = url.parse(connection, true);
         this.client = await CRI({host: urlObj.hostname, port: urlObj.port});
     } else {
-        chrome = await chromeLauncher.launch(this.opts.chrome.chromeLauncherOpts || {
+        chrome = await chromeLauncher.launch(this.opts.chrome || {
             port: 9222,
             chromeFlags: ['--headless', '--disable-gpu']
         });

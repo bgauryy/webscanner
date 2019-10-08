@@ -1,4 +1,4 @@
-const scanner = require('webscanner');
+const scanner = require('../src/index');
 
 (async function () {
     const data = await scanner.run({

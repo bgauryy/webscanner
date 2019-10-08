@@ -1,8 +1,11 @@
-public/data.json
+.idea
+.vscode
 pxWebInspector.iml
 node_modules
-ui/node_modules
-ui/dist
-.idea
+dist
 example/node_modules
 example/yarn.lock
+public/data.json
+public/node_modules
+public/dist
+public/yarn.lock
