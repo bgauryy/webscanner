@@ -6,11 +6,10 @@ const Logger = require('../src/utils/Logger');
 const DATA_FILE = 'data.json';
 
 let port;
-let publicDir;
+let publicDir =  path.join(__dirname,'dist');
 
 function init(_port) {
     port = _port;
-    publicDir = path.join(__dirname, 'dist');
 
     try {
         fs.unlinkSync(path.join(publicDir, DATA_FILE));
