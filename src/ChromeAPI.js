@@ -136,7 +136,14 @@ function _setUserAgent() {
 function _setStyleListener() {
     this.client.CSS.styleSheetAdded(async function ({header}) {
         const styleObj = JSON.parse(JSON.stringify(header));
-        styleObj.source = await this.client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
+
+        try {
+            styleObj.source = await this.client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
+        } catch (e){
+            //TODO - check
+            styleObj.source = '';
+        }
+
         this.data.style[header.styleSheetId] = styleObj;
     }.bind(this));
 }
