@@ -1,6 +1,6 @@
 const argv = require('optimist').argv;
-const Inspector = require('./Inspector');
-const Logger = require('./utils/Logger');
+const Inspector = require('./Inspector.js');
+const Logger = require('./utils/Logger.js');
 const Server = require('../public/server.js');
 
 async function run(opts) {
