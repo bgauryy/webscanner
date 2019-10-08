@@ -4,11 +4,11 @@ export default {
     input: 'src/index.js',
     output: [
         {
-            file: 'dist/index.cjs.js',
+            file: 'src/index.cjs.js',
             format: 'cjs'
         },
         {
-            file: 'dist/index.esm.js',
+            file: 'src/index.esm.js',
             format: 'esm'
         }
     ],

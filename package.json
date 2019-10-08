@@ -1,6 +1,6 @@
 {
   "name": "webscanner",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Network resources and web scanner",
   "repository": "https://github.com/bgauryy/webscanner",
   "author": {
@@ -14,14 +14,14 @@
     "devtools",
     "chrome"
   ],
-  "main": "dist/index.cjs.js",
-  "module": "dist/index.esm.js",
+  "main": "src/index.cjs.js",
+  "module": "src/index.esm.js",
   "scripts": {
     "inspect": "node index.js",
     "lint": "eslint src",
     "test": "yarn jest",
     "build": "rollup -c",
-    "clean": "rimraf dist",
+    "clean": "rimraf src/index.cjs.js src/index.esm.js",
     "prepublishOnly": "yarn clean && yarn lint && yarn test && yarn build"
   },
   "husky": {
