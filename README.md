@@ -30,10 +30,6 @@ Advanced tool for web applications scanning
       	   
    **returns** \<promise>: scanning data Object  
 
-#### `Scanner.show(data <Object>, port <number>)`
-shows results in a local server
-   - data: scanning object  
-  
 
 #### `Scanner.puppeteer.setPage (page <Object>)` 
 

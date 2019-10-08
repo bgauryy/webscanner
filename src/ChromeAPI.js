@@ -45,7 +45,14 @@ async function getData() {
 
     for (let i = 0; i < this.data.scripts.length; i++) {
         const script = this.data.scripts[i];
-        const source = await this.client.Debugger.getScriptSource({scriptId: script.scriptId});
+        let source;
+
+        try {
+            source = await this.client.Debugger.getScriptSource({scriptId: script.scriptId});
+        } catch (e){
+            //TODO - check
+            source = '';
+        }
         if (source && source.scriptSource) {
             this.data.scripts[i].source = source.scriptSource;
         }
