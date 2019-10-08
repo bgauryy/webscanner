@@ -13,18 +13,26 @@ const Helper = require('./utils/Helper.js');
     }
 }
  **/
-async function run(opts) {
-    const metadata = {...opts, timestamp: +new Date()};
+async function scan(opts) {
+    const metadata = {opts: opts, timestamp: +new Date()};
     const session = new ChromeAPI.Session(opts);
 
     await session.start();
 
     try {
         await session.navigate(opts.url);
-        await session.waitDOMContentLoaded();
+
+        if (opts.stopOnContentLoaded) {
+            await session.waitDOMContentLoaded();
+        }
+
+        //TODO: move to client plugin (?)
         await session.getAllDOMEvents();
-        await Helper.sleep(5);
+
+        await Helper.sleep(opts.scanTime);
+
         const data = await session.getData();
+
         data.metadata = metadata;
 
         return data;
@@ -45,6 +53,6 @@ async function puppeteer(page) {
 }
 
 module.exports = {
-    run,
+    scan,
     puppeteer
 };

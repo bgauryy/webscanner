@@ -1,15 +1,15 @@
 const colors = require('colors');
 
 const LOG = {
-    ALL: 0,
-    DEBUG: 1,
-    INFO: 2,
-    WARN: 3,
-    ERROR: 4,
-    NONE: 5
+    all: 0,
+    debug: 1,
+    info: 2,
+    warn: 3,
+    error: 4,
+    none: 5
 };
 
-let logLevel = LOG.DEBUG;
+let logLevel = LOG.info;
 
 function setLogLevel(_logLevel) {
     if (typeof LOG[_logLevel] === 'number') {
@@ -18,25 +18,25 @@ function setLogLevel(_logLevel) {
 }
 
 function debug(str) {
-    if (logLevel <= LOG.DEBUG) {
+    if (logLevel <= LOG.debug) {
         console.log(colors.blue(getMessage(str)));
     }
 }
 
 function info(str) {
-    if (logLevel <= LOG.INFO) {
+    if (logLevel <= LOG.info) {
         console.log(colors.yellow(getMessage(str)));
     }
 }
 
 function warn(str) {
-    if (logLevel <= LOG.WARN) {
+    if (logLevel <= LOG.warn) {
         console.log(colors.yellow(getMessage(str)));
     }
 }
 
 function error(str) {
-    if (logLevel <= LOG.ERROR) {
+    if (logLevel <= LOG.error) {
         console.log(colors.red(getMessage(str)));
     }
 }

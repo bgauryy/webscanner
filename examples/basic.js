@@ -1,10 +1,25 @@
-const scanner = require('webscanner');
+const Scanner = require('../src/index');
 
+Scanner.scan({
+    url: 'http://example.com/',
+    callback: (data) => {
+        Scanner.show(data);
+    },
+    stopOnContentLoaded: true,
+    scanTime: 6,
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
+    chrome: {},
+    logLevel: 'debug'
+});
+
+/*
 (async function () {
-    const data = await scanner.run({
+    const data = await Scanner.scan({
         url: 'http://example.com/',
+        stopOnContentLoaded: true,
+        scanTime: 6,
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
-        uiPort: 3000
+        chrome: {},
+        logLevel: 'debug'
     });
-    console.log(data);
-})();
+})();*/

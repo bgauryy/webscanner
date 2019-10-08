@@ -1,17 +1,6 @@
 
-# Web Scanner
-
-!!Under Construction!!
-
-                                 ___
-                         /======/
-                ____    //      \___       ,/
-                 | \\  //           :,   ./
-         |_______|__|_//            ;:; /
-        _L_____________\o           ;;;/
-        
+# Web Scanner (!!Under Construction!!)
 Advanced tool for web applications scanning
-
 ### Use cases:
 - Gather resources information (all resources from all frames...)
 - Network information (headers, length, response, security, ip analysis...)
@@ -21,38 +10,44 @@ Advanced tool for web applications scanning
 - Get advanced details using client plugins
 - Enrich automation data
 
+---
+
 ### API
 
-#### `Scanner.run(opts <object>)`
-- url \<string\>
-- userAgent
-- logLevel
-    -  0: all (default)
-    - 1: debug
-    - 2: info
-    - 3: warn
-    - 4: error
-    - 5: none
-- [chrome](https://github.com/GoogleChrome/chrome-launcher)
-	 -   port
-	 -   chromeFlags
-	 -   handleSIGINT
-     -  chromePath
-     -  userDataDir
-     -  startingUrl
-     -  logLeve
-     -   ignoreDefaultFlags
-	 -   connectionPollInterval
-     -   envVars
-     -   maxConnectionRetries
+#### `Scanner.scan({opts})`
+   - **url** \<sting> 
+   - **callback [opt]** \<function>
+   callback to be called after the scan is finished. if not exists, a promise will be returned
+   - **userAgent [opt]** \<sting>
+   - **stopOnContentLoaded** \<boolean> *default = true*
+   Restrict load event before stop
+   - **scanTime** \<number> *default = 5* 
+   scanning time in seconds (after load event, is exists)
+   -  **chrome  [opt]** \<object>
+   [chrome](https://github.com/GoogleChrome/chrome-launcher) configuration object
+   - **logLevel  [opt]**  \<boolean> *default = 'all'*
+      'all' | 'debug' | 'info' | 'warn' | 'error' | 'none'
+      	   
+   **returns** \<promise>: scanning data Object  
 
-#### `Scanner.puppeteer`
+#### `Scanner.show(data <Object>, port <number>)`
+shows results in a local server
+   - data: scanning object  
+  
 
-- setPage ([page](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#class-page)) 
+#### `Scanner.puppeteer.setPage (page <Object>)` 
 
 Sets puppeteer page for scanning
 
-*Example:*
+---
+
+### Data
+
+---
+
+### Examples
+
+- #### Puppeteer integration 
  ````
 const puppeteer = require('puppeteer');
 const Scanner = require('webscanner');
@@ -68,5 +63,3 @@ const Scanner = require('webscanner');
     await browser.close();
 })();
 ````
-
-
