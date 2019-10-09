@@ -5,11 +5,10 @@ const Scanner = require('../src/index');
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
-    await Scanner.setPuppeteerPage(page);
-    await page.goto('https://perimeterx.com');
-    await page.content();
+    await Scanner.setPuppeteerPage(page, {compress: false});
+    await page.goto('https://example.com/', {waitUntil: 'domcontentloaded'});
     const data = await page.getData();
     await browser.close();
 
-    console.log(data);
+    console.log('data', data);
 })();

@@ -142,7 +142,7 @@ async function collectAllDOMEvents() {
 async function getData() {
     this.data.metrics = await chromeAPI.getMetrics(this.client);
     this.data.coverage = await chromeAPI.getBestEffortCoverage(this.client);
-    return await processData(this.data);
+    return await processData(this.data, this.opts);
 }
 
 module.exports = {

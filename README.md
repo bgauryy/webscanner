@@ -6,7 +6,7 @@
 
 Advanced tool for web applications scanning
 
-### Use cases:
+## Use cases:
 - Gather resources information (all resources from all frames...)
 - Network information (headers, length, response, security, ip analysis...)
 - Performance metrics (timing, rendering, heap size...)
@@ -15,49 +15,54 @@ Advanced tool for web applications scanning
 - Get advanced details using client plugins
 - Enrich automation data
 
----
+## API
 
-### API
+### `Scanner.scan(opts <object>)`
+   - **opts** \<object> 
+	   - **url** \<string> 
+	   - **callback [opt]** \<function>
+	   callback to be called after the scan is finished
+	   - **userAgent [opt]** \<sting>
+	   - **stopOnContentLoaded** \<boolean> *default = true*
+	   Restrict load event before stop
+	   - **scanTime** \<number> *default = 5* 
+	   scanning time in seconds (after load event, is exists)
+	   -  **chrome  [opt]** \<object>
+	   [chrome](https://github.com/GoogleChrome/chrome-launcher) configuration object
+	   - **logLevel  [opt]**  \<boolean> *default = 'all'*
+	      'all' | 'debug' | 'info' | 'warn' | 'error' | 'none'
+	   - **blockedUrls  [opt]**  \<array>
+	  urls list to block (wildcard are supported)      
+	    - **compress  [opt]**  \<boolean> *default = false
+	Compress scanning data object to `Uint8Array` array
 
-#### `Scanner.scan({opts})`
-   - **url** \<sting> 
-   - **callback [opt]** \<function>
-   callback to be called after the scan is finished. if not exists, a promise will be returned
-   - **userAgent [opt]** \<sting>
-   - **stopOnContentLoaded** \<boolean> *default = true*
-   Restrict load event before stop
-   - **scanTime** \<number> *default = 5* 
-   scanning time in seconds (after load event, is exists)
-   -  **chrome  [opt]** \<object>
-   [chrome](https://github.com/GoogleChrome/chrome-launcher) configuration object
-   - **logLevel  [opt]**  \<boolean> *default = 'all'*
-      'all' | 'debug' | 'info' | 'warn' | 'error' | 'none'
-   - **blockedUrls  [opt]**  \<Array>
-  urls list to block (wildcard are supported)      
-      
-      
-      	   
    **returns** \<promise>: scanning data Object  
 
 
-#### `Scanner.setPuppeteerPage (page <Object>)` 
+### `Scanner.setPuppeteerPage (page <object>, opts <object>)` 
 Register a puppeteer page for a scan
-`Page` object will be enhanced with `page.getData` function, which returns the data object
-- [page](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#class-page)
+- **page**  \<object> 
+	    puppeteer [page](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#class-page) object
+ - **opts** \<object> 
+	- **compress  [opt]**  \<boolean> *default = false
+	Compress scanning data object to `Uint8Array` array
+	 - **logLevel  [opt]**  \<boolean> *default = 'none'*
+	      'all' | 'debug' | 'info' | 'warn' | 'error' | 'none'
+     - **blockedUrls  [opt]**  \<array>
+	  urls list to block (wildcard are supported)      
 
-#### `Scanner.show (data, port)` 
-Preview scanning data (on localhost:port)
-   - **data**  \<Object> 
-   scanning data object
-   - **port**  \<number>  *default = 3333*
+### `Scanner.uncompress (data <Uint8Array>)` 
+Uncompress scanning data object
+   - **data**  \<Uint8Array> 
+Compressed scanning data object
 
----
+   **returns** \<promise>: Uncompressed scanning data object
 
-### Data (TBD)
 
----
+## Data (TBD)
 
-### Examples
+
+## Examples
 
 #### Basic scan
 ```javascript
@@ -70,9 +75,7 @@ Scanner.scan({
     },
     stopOnContentLoaded: true,
     scanTime: 6,
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
-    chrome: {},
-    logLevel: 'all'
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36'
 });
 
 ```
@@ -85,13 +88,27 @@ const Scanner = require('webscanner');
     const data = await Scanner.scan({
         url: 'http://example.com',
         stopOnContentLoaded: true,
-        scanTime: 6,
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
-        chrome: {},
-        logLevel: 'debug'
+        scanTime: 6
     });
-    Scanner.show(data);
+    console.log(data);
 })();
+```
+
+#### Compression 
+```javascript
+const Scanner = require('webscanner');
+
+Scanner.scan({
+    url: 'http://example.com',
+    callback: (data) => {
+        Scanner.uncompress(data)
+            .then(data => {
+                console.log(data);
+            });
+    },
+    compress: true
+});
+
 ```
 
 #### Puppeteer integration 
@@ -103,13 +120,12 @@ const Scanner = require('webscanner');
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
-    await Scanner.setPuppeteerPage(page);
-    await page.goto('https://example.com');
-    await page.content();
+    await Scanner.setPuppeteerPage(page, {compress: false});
+    await page.goto('https://example.com/', {waitUntil: 'domcontentloaded'});
     const data = await page.getData();
     await browser.close();
 
-    Scanner.show(data);
+    console.log('data', data);
 })();
 
 ````

@@ -1,18 +1,27 @@
 const geoip = require('geoip-lite');
+const snappy = require('snappy');
 
-function processData(data) {
-    const responseData = {};
+function processData(data, opts) {
+    return new Promise((resolve => {
+        const responseData = {};
 
-    if (data.err) {
-        return {error: data.err};
-    }
-    responseData.scripts = processScripts(data);
-    responseData.network = processNetwork(data);
-    responseData.frames = processFrames(data);
-    responseData.metrics = processMetrics(data);
-    responseData.style = processStyle(data);
+        if (data.err) {
+            return {error: data.err};
+        }
+        responseData.scripts = processScripts(data);
+        responseData.network = processNetwork(data);
+        responseData.frames = processFrames(data);
+        responseData.metrics = processMetrics(data);
+        responseData.style = processStyle(data);
 
-    return responseData;
+        if (opts.compress) {
+            snappy.compress(JSON.stringify(responseData), function (err, compressed) {
+                resolve(compressed);
+            });
+        } else {
+            resolve(responseData);
+        }
+    }));
 }
 
 function processStyle(data) {

@@ -2,7 +2,6 @@ const {Scanner} = require('./scanner.js');
 const LOG = require('./utils/logger.js');
 
 async function scan(opts) {
-    const metadata = {opts: opts, timestamp: +new Date()};
     const scanner = new Scanner(opts);
     await scanner.start();
 
@@ -14,14 +13,12 @@ async function scan(opts) {
         }
         await scanner.collectAllDOMEvents();
         await sleep(opts.scanTime);
-        const data = await scanner.getData();
-
-        return {...data, metadata};
+        return await scanner.getData();
     } catch (err) {
         LOG.error(err);
         return err;
     } finally {
-        scanner.stop();
+        await scanner.stop();
     }
 }
 
