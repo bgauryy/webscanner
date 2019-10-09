@@ -53,7 +53,7 @@ Advanced tool for web applications scanning
 const Scanner = require('webscanner');
 
 Scanner.scan({
-    url: 'http://ynet.co.il/',
+    url: 'http://example.com',
     callback: (data) => {
         console.log(data);
     },
