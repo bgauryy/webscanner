@@ -1,6 +1,7 @@
 
 
 
+
 # Web Scanner (!!Under Construction!!)
 Advanced tool for web applications scanning
 ### Use cases:
@@ -49,7 +50,7 @@ Advanced tool for web applications scanning
 ### Examples
 
 #### Basic scan
-```
+```javascript
 const Scanner = require('webscanner');
 
 Scanner.scan({
@@ -67,12 +68,12 @@ Scanner.scan({
 ```
 
 #### Async scan
-```
+```javascript
 const Scanner = require('webscanner');
 
 (async function () {
     const data = await Scanner.scan({
-        url: 'http://example.com/',
+        url: 'http://example.com',
         stopOnContentLoaded: true,
         scanTime: 6,
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
@@ -84,7 +85,7 @@ const Scanner = require('webscanner');
 ```
 
 #### Puppeteer integration 
- ````
+ ````javascript
 const puppeteer = require('puppeteer');
 const Scanner = require('webscanner');
 
@@ -93,7 +94,7 @@ const Scanner = require('webscanner');
     const page = await browser.newPage();
 
     await Scanner.setPuppeteerPage(page);
-    await page.goto('https://perimeterx.com');
+    await page.goto('https://example.com');
     await page.content();
     const data = await page.getData();
     await browser.close();
