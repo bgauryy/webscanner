@@ -9,7 +9,7 @@ function Scanner(opts) {
     this.opts = opts;
     this.data = {
         scripts: [],
-        network: {
+        resources: {
             requests: [],
             responses: {}
         },
@@ -39,13 +39,13 @@ async function start() {
     }
 
     await chromeAPI.init(this.client);
-    await setNetworkListener(this.client, this.data.network);
+    await setNetworkListener(this.client, this.data.resources);
     await setFramesListener(this.client, this.data.frames);
     await setScriptsListener(this.client, this.data.scripts);
     await setStyleListener(this.client, this.data.style);
 
     if (this.opts.blockedUrls) {
-        chromeAPI.setBlockedURL(this.client, this.opts.blockedUrls);
+        await chromeAPI.setBlockedURL(this.client, this.opts.blockedUrls);
     }
 
     setUserAgent(this.client, this.opts.userAgent);

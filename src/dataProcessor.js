@@ -9,7 +9,7 @@ function processData(data, opts) {
             return {error: data.err};
         }
         responseData.scripts = processScripts(data);
-        responseData.network = processNetwork(data);
+        responseData.resources = processNetwork(data);
         responseData.frames = processFrames(data);
         responseData.metrics = processMetrics(data);
         responseData.style = processStyle(data);
@@ -87,8 +87,8 @@ function processScripts(data) {
 }
 
 function processNetwork(data) {
-    const requests = data.network.requests;
-    const responses = data.network.responses;
+    const requests = data.resources.requests;
+    const responses = data.resources.responses;
 
     return requests.map(request => {
         request.frame = data.frames[request.frameId].url;
