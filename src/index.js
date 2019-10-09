@@ -1,12 +1,14 @@
-const Inspector = require('./Inspector.js');
-const Logger = require('./utils/Logger.js');
+const session = require('./session.js');
 const Server = require('../public/server.js');
+const LOG = require('./utils/logger.js');
 
 async function scan(_opts) {
+    if (!_opts || !_opts.url) {
+        throw new Error('Configuration Error');
+    }
     const opts = _getOpts(_opts);
-    Logger.setLogLevel(_opts.logLevel);
-    const data = await Inspector.scan(opts);
-
+    LOG.setLogLevel(_opts.logLevel);
+    const data = await session.scan(opts);
     if (opts.callback) {
         opts.callback(data);
     } else {
@@ -16,27 +18,24 @@ async function scan(_opts) {
 
 function show(data, port = 3333) {
     if (!data) {
-        Logger.error('Data object is missing');
+        LOG.error('Data object is missing');
         return;
     }
     Server.show(data, port);
 }
 
-async function setPage(page) {
-    return await Inspector.puppeteer(page);
+async function setPuppeteerPage(page, opts = {}) {
+    return await session.setPuppeteerPage(page, opts);
 }
 
 function _getOpts(opts) {
-    if (!opts || !opts.url) {
-        throw new Error('Configuration Error');
-    }
-
     return {
         url: opts.url,
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
+        userAgent: opts.userAgent || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
         callback: (typeof opts.callback === 'function') ? opts.callback : null,
         stopOnContentLoaded: (typeof opts.stopOnContentLoaded === 'boolean') ? opts.stopOnContentLoaded : true,
-        scanTime: (typeof opts.scanTime === 'number') ? opts.scanTime : 5,
+        scanTime: (typeof opts.scanTime === 'number' && opts.scanTime > 0 && opts.scanTime < 1000) ? opts.scanTime : 10,
+        blockedUrls: (Array.isArray(opts.blockedUrls)) ? opts.blockedUrls : [],
         chrome: {
             ...{
                 port: 9222,
@@ -49,5 +48,5 @@ function _getOpts(opts) {
 module.exports = {
     scan,
     show,
-    setPage
+    setPuppeteerPage
 };

@@ -1,8 +1,7 @@
 const geoip = require('geoip-lite');
 
-function processData(session) {
+function processData(data) {
     const responseData = {};
-    const data = session.data;
 
     if (data.err) {
         return {error: data.err};
@@ -112,7 +111,7 @@ function processFrames(data) {
 
 function processMetrics(data) {
     const metrics = {};
-    const metricsArr = data.metrics && data.metrics.metrics || [];
+    const metricsArr = data.metrics || [];
 
     for (let i = 0; i < metricsArr.length; i++) {
         const metric = metricsArr[i];

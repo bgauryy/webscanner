@@ -1,25 +1,14 @@
 const Scanner = require('../src/index');
 
 Scanner.scan({
-    url: 'http://example.com/',
+    url: 'http://ynet.co.il/',
     callback: (data) => {
-        Scanner.show(data);
+        console.log(data);
     },
     stopOnContentLoaded: true,
     scanTime: 6,
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
     chrome: {},
-    logLevel: 'debug'
+    logLevel: 'all'
 });
 
-/*
-(async function () {
-    const data = await Scanner.scan({
-        url: 'http://example.com/',
-        stopOnContentLoaded: true,
-        scanTime: 6,
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
-        chrome: {},
-        logLevel: 'debug'
-    });
-})();*/
