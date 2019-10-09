@@ -116,7 +116,8 @@ function registerScriptExecution(client, handler) {
 
         if (script.url !== '__puppeteer_evaluation_script__') {
             try {
-                script.source = await client.Debugger.getScriptSource({scriptId: script.scriptId});
+                const source = await client.Debugger.getScriptSource({scriptId: script.scriptId});
+                script.source = source.scriptSource;
             } catch (e) {
                 //ignore
             }

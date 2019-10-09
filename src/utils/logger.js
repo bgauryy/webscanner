@@ -9,7 +9,7 @@ const LOG = {
     none: 5
 };
 
-let logLevel = LOG.info;
+let logLevel = LOG.all;
 
 function setLogLevel(_logLevel) {
     if (typeof LOG[_logLevel] === 'number') {

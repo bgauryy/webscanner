@@ -17,7 +17,7 @@ async function run() {
 }
 
 function getResourcesData(data) {
-    return data.network.map(_resource => {
+    return data.resources.map(_resource => {
         const resource = {};
         const request = _resource.request;
         const response = _resource.response || _resource.redirectResponse || {};

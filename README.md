@@ -2,6 +2,7 @@
 
 
 
+
 # Web Scanner
 
 Advanced tool for web applications scanning
@@ -59,8 +60,129 @@ Compressed scanning data object
    **returns** \<promise>: Uncompressed scanning data object
 
 
-## Data (TBD)
+## Scanning Data  API (!!!WIP!!!)
 
+#### scripts \<array>
+- scriptId
+- hash
+- url
+- host
+- pathname
+- isModule 
+- source 
+- frameURL 
+
+#### resources \<array>
+- requestId
+- url
+- documentURL
+- frame
+- timestamp = 17923.481553
+- initiator
+- response
+	- connectionId
+	- requestHeaders
+	- status
+	- method
+	- headers
+	- mimeType
+	- connectionReused
+	- remoteIPAddress
+	- ipCountry
+	- timezone
+	- remotePort
+	- fromServiceWorker
+	- fromPrefetchCache
+	- fromDiskCache
+	- encodedDataLength
+	- protocol
+	- securityState = "secure"
+	- timing
+		- requestTime
+		- proxyStart
+		- proxyEnd
+		- dnsStart
+		- dnsEnd
+		- connectStart
+		- connectEnd
+		- sslStart
+		- sslEnd
+		- workerStart
+		- workerReady
+		- sendStart
+		- sendEnd
+		- pushStart
+		- pushEnd
+		- receiveHeadersEnd
+	- securityDetails
+		- protocol
+		- keyExchange
+		- keyExchangeGroup
+		- cipher
+		- certificateId
+		- subjectName
+		- sanList \<array>
+		- issuer
+		- validFrom
+		- validTo
+		- signedCertificateTimestampList
+		- certificateTransparencyCompliance
+
+#### styleSheets \<array>
+- styleSheetId
+- frameId
+- sourceURL
+- origin
+- title
+- ownerNode
+- disabled
+- isInline
+- startLine
+- startColumn
+- length
+- source
+#### frames \<map `frameId`>
+- frameId
+- parentFrameId
+- state
+- url
+- securityOrigin
+- mimeType
+- stack
+
+#### metrics \<object>
+- Timestamp
+- AudioHandlers
+- Documents
+- Frames
+- JSEventListeners
+- LayoutObjects
+- MediaKeySessions
+- MediaKeys
+- Nodes
+- Resources
+- ContextLifecycleStateObservers
+- V8PerContextDatas
+- WorkerGlobalScopes
+- UACSSResources
+- RTCPeerConnections
+- ResourceFetchers
+- AdSubframes
+- DetachedScriptStates
+- LayoutCount
+- RecalcStyleCount
+- LayoutDuration
+- RecalcStyleDuration
+- ScriptDuration
+- V8CompileDuration
+- TaskDuration
+- TaskOtherDuration
+- ThreadTime
+- JSHeapUsedSize
+- JSHeapTotalSize
+- FirstMeaningfulPaint
+- DomContentLoaded
+- NavigationStart
 
 ## Examples
 

@@ -12,7 +12,7 @@ function processData(data, opts) {
         responseData.resources = processNetwork(data);
         responseData.frames = processFrames(data);
         responseData.metrics = processMetrics(data);
-        responseData.style = processStyle(data);
+        responseData.styleSheets = processStyle(data);
 
         if (opts.compress) {
             snappy.compress(JSON.stringify(responseData), function (err, compressed) {
