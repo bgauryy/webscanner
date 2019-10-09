@@ -1,9 +1,9 @@
 const Scanner = require('webscanner');
 
 Scanner.scan({
-    url: 'http://ynet.co.il/',
+    url: 'http://example.com',
     callback: (data) => {
-        console.log(data);
+        Scanner.show(data);
     },
     stopOnContentLoaded: true,
     scanTime: 6,

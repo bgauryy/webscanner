@@ -2,8 +2,10 @@
 
 
 
-# Web Scanner (!!Under Construction!!)
+# Web Scanner
+
 Advanced tool for web applications scanning
+
 ### Use cases:
 - Gather resources information (all resources from all frames...)
 - Network information (headers, length, response, security, ip analysis...)
@@ -39,7 +41,15 @@ Advanced tool for web applications scanning
 
 
 #### `Scanner.setPuppeteerPage (page <Object>)` 
+Register a puppeteer page for a scan
+`Page` object will be enhanced with `page.getData` function, which returns the data object
 - [page](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#class-page)
+
+#### `Scanner.show (data, port)` 
+Preview scanning data (on localhost:port)
+   - **data**  \<Object> 
+   scanning data object
+   - **port**  \<number>  *default = 3333*
 
 ---
 
@@ -56,7 +66,7 @@ const Scanner = require('webscanner');
 Scanner.scan({
     url: 'http://example.com',
     callback: (data) => {
-        console.log(data);
+        Scanner.show(data);
     },
     stopOnContentLoaded: true,
     scanTime: 6,
@@ -80,7 +90,7 @@ const Scanner = require('webscanner');
         chrome: {},
         logLevel: 'debug'
     });
-    console.log(data);
+    Scanner.show(data);
 })();
 ```
 
@@ -99,7 +109,7 @@ const Scanner = require('webscanner');
     const data = await page.getData();
     await browser.close();
 
-    console.log(data);
+    Scanner.show(data);
 })();
 
 ````
