@@ -3,7 +3,7 @@ const snappy = require('snappy');
 
 function processData(data, opts) {
     return new Promise((resolve => {
-        const responseData = {};
+        let responseData = {};
 
         if (data.err) {
             return {error: data.err};
@@ -13,6 +13,9 @@ function processData(data, opts) {
         responseData.frames = processFrames(data);
         responseData.metrics = processMetrics(data);
         responseData.styleSheets = processStyle(data);
+
+        //Remove undefined values
+        responseData = JSON.parse(JSON.stringify(responseData));
 
         if (opts.compress) {
             snappy.compress(JSON.stringify(responseData), function (err, compressed) {
@@ -31,6 +34,8 @@ function processStyle(data) {
     for (let i = 0; i < styleKeysMap.length; i++) {
         const style = data.style[styleKeysMap[i]];
         style.source = style.source.text;
+        style.url = style.sourceURL;
+        addURLData(style);
         styles.push(style);
     }
     return styles;
@@ -69,13 +74,7 @@ function processScripts(data) {
         if (scriptObj.url === data.frames[scriptObj.frameId].url) {
             scriptObj.host = 'inline';
         } else {
-            try {
-                const urlObj = new URL(scriptObj.url);
-                scriptObj.host = urlObj.host;
-                scriptObj.pathname = urlObj.pathname;
-            } catch (e) {
-                //ignore
-            }
+            addURLData(scriptObj);
         }
 
         if (scriptObj.stackTrace) {
@@ -90,7 +89,11 @@ function processNetwork(data) {
     const requests = data.resources.requests;
     const responses = data.resources.responses;
 
-    return requests.map(request => {
+    return requests.map(_request => {
+        const request = {..._request};
+
+        addURLData(request);
+
         request.frame = data.frames[request.frameId].url;
 
         if (request.postData) {
@@ -115,7 +118,14 @@ function processNetwork(data) {
 }
 
 function processFrames(data) {
-    return data.frames;
+    const frames = [];
+
+    //eslint-disable-next-line
+    for (const frameId in data.frames) {
+        addURLData(data.frames[frameId]);
+        frames.push(data.frames[frameId]);
+    }
+    return frames;
 }
 
 function processMetrics(data) {
@@ -127,6 +137,23 @@ function processMetrics(data) {
         metrics[metric.name] = metric.value;
     }
     return metrics;
+}
+
+function addURLData(obj) {
+    if (!obj || !obj.url || typeof obj.url !== 'string') {
+        return;
+    }
+
+    try {
+        const urlObj = new URL(obj.url);
+        obj.host = urlObj.host;
+        obj.pathname = urlObj.pathname;
+        obj.port = urlObj.port || undefined;
+        obj.path = urlObj.path || undefined;
+        obj.query = urlObj.query || undefined;
+    } catch (e) {
+        //ignore
+    }
 }
 
 module.exports = {

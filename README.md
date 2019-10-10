@@ -64,10 +64,12 @@ Compressed scanning data object
 
 #### scripts \<array>
 - scriptId
-- hash
 - url
 - host
 - pathname
+- port
+- path
+- query
 - isModule 
 - source 
 - frameURL 
@@ -75,9 +77,14 @@ Compressed scanning data object
 #### resources \<array>
 - requestId
 - url
+- host
+- pathname
+- port
+- path
+- query
 - documentURL
 - frame
-- timestamp = 17923.481553
+- timestamp
 - initiator
 - response
 	- connectionId
@@ -96,7 +103,7 @@ Compressed scanning data object
 	- fromDiskCache
 	- encodedDataLength
 	- protocol
-	- securityState = "secure"
+	- securityState
 	- timing
 		- requestTime
 		- proxyStart
@@ -132,6 +139,14 @@ Compressed scanning data object
 - styleSheetId
 - frameId
 - sourceURL
+
+- url
+- host
+- pathname
+- port
+- path
+
+
 - origin
 - title
 - ownerNode
@@ -146,6 +161,11 @@ Compressed scanning data object
 - parentFrameId
 - state
 - url
+- host
+- pathname
+- port
+- path
+- query
 - securityOrigin
 - mimeType
 - stack
