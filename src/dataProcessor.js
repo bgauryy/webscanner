@@ -1,6 +1,6 @@
 const geoip = require('geoip-lite');
-const snappy = require('snappy');
 
+//eslint-disable-next-line
 function processData(data, opts) {
     return new Promise((resolve => {
         let responseData = {};
@@ -16,14 +16,16 @@ function processData(data, opts) {
 
         //Remove undefined values
         responseData = JSON.parse(JSON.stringify(responseData));
+        resolve(responseData);
 
-        if (opts.compress) {
+/*        if (opts.compress) {
             snappy.compress(JSON.stringify(responseData), function (err, compressed) {
                 resolve(compressed);
             });
         } else {
             resolve(responseData);
-        }
+        }*/
+
     }));
 }
 

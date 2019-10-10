@@ -1,4 +1,3 @@
-const snappy = require('snappy');
 const session = require('./session.js');
 const Server = require('../public/server.js');
 const LOG = require('./utils/logger.js');
@@ -50,7 +49,7 @@ async function setPuppeteerPage(page, opts = {}) {
  * @param data {Uint8Array} compressed scanning object
  * @return {Promise}
  */
-function uncompress(data) {
+/*function uncompress(data) {
     return new Promise((resolve, reject) => {
         snappy.uncompress(data, {asBuffer: false}, function (err, original) {
             if (err) {
@@ -60,7 +59,7 @@ function uncompress(data) {
             }
         });
     });
-}
+}*/
 
 function _getConfiguration(opts) {
     return {
@@ -83,6 +82,5 @@ function _getConfiguration(opts) {
 module.exports = {
     scan,
     show,
-    uncompress,
     setPuppeteerPage
 };

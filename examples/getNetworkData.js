@@ -21,7 +21,9 @@ function getSiteHosts(data) {
 
     for (let i = 0; i < allResources.length; i++) {
         const resource = allResources[i];
-        hosts.add(resource.host);
+        if (resource.host) {
+            hosts.add(resource.host);
+        }
 
         if (resource.response && resource.response) {
             if (resource.response.timezone) {
