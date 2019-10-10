@@ -20,6 +20,9 @@
     "resources",
     "network"
   ],
+  "engines": {
+    "node": ">=10.16.3"
+  },
   "main": "src/index.cjs.js",
   "module": "src/index.esm.js",
   "scripts": {
