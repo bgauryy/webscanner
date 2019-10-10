@@ -1,6 +1,6 @@
 {
   "name": "webscanner",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "Network resources and web scanner",
   "repository": "https://github.com/bgauryy/webscanner",
   "author": {
@@ -12,7 +12,13 @@
     "web",
     "puppeteer",
     "devtools",
-    "chrome"
+    "chrome",
+    "automation",
+    "analysis",
+    "jest",
+    "node",
+    "resources",
+    "network"
   ],
   "main": "src/index.cjs.js",
   "module": "src/index.esm.js",
