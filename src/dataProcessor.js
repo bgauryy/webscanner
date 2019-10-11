@@ -7,9 +7,10 @@ async function processData(data, opts) {
     if (data.err) {
         return {error: data.err};
     }
-    responseData.scripts = processScripts(data);
-    responseData.resources = processNetwork(data);
+
     responseData.frames = processFrames(data);
+    responseData.scripts = processScripts(data);
+    responseData.resources = processResources(data);
     responseData.metrics = processMetrics(data);
     responseData.styleSheets = processStyle(data);
     //Remove undefined values
@@ -54,12 +55,19 @@ function processScripts(data) {
             url: _scriptObj.url,
             isModule: Boolean(_scriptObj.isModule),
             source: _scriptObj.source,
-            frameId: _scriptObj.executionContextAuxData.frameId,
-            frameURL: (_scriptObj.frameId && data.frames[_scriptObj.frameId] && data.frames[_scriptObj.frameId].url) || 'about:blank',
             coverage: coverageMap[_scriptObj.scriptId],
             length: getKBLength(_scriptObj.length),
             events: eventsMap[_scriptObj.scriptId]
         };
+
+
+        scriptObj.frameId = _scriptObj.executionContextAuxData.frameId;
+
+        const frame = data.frames[_scriptObj.frameId];
+        if (frame) {
+            scriptObj.frameURL = frame.url;
+        }
+
 
         if (scriptObj.url === data.frames[scriptObj.frameId].url) {
             scriptObj.host = 'inline';
@@ -76,31 +84,72 @@ function processScripts(data) {
     });
 }
 
-function processNetwork(data) {
+function processResources(data) {
     const requests = data.resources.requests;
     const responses = data.resources.responses;
 
     return requests.map(_request => {
-        const request = {..._request};
+        const request = {
+            url: _request.url,
+            requestId: _request.requestId,
+            documentURL: _request.documentURL,
+            timestamp: _request.timestamp, //TODO - get relative time
+            wallTime: _request.wallTime, //TODO - get relative time
+            initiator: _request.initiator,
+            type: _request.type,
+            frameId: _request.frameId,
+            loaderId: _request.loaderId,
+        };
+
+        if (_request.request) {
+            const req = _request.request;
+            request.method = req.method;
+            request.headers = req.headers;
+            request.mixedContentType = req.mixedContentType;
+            request.initialPriority = req.initialPriority;
+            request.referrerPolicy = req.referrerPolicy;
+        }
+
+        const frame = data.frames[request.frameId];
+        if (frame) {
+            request.frameURL = frame.url;
+        }
 
         addURLData(request);
-
         request.frame = data.frames[request.frameId].url;
+
 
         if (request.postData) {
             request.postData.length = Math.round(request.postData.length / 1000) || 0;
         }
 
-        //Add response
-        if (responses[request.requestId] && responses[request.requestId].response) {
-            const response = responses[request.requestId].response;
-            const ip = response.remoteIPAddress;
+        const _response = responses[request.requestId] && responses[request.requestId].response;
+        if (_response) {
+            const response = {};
+            const ip = _response.remoteIPAddress;
 
             if (ip) {
                 const lookup = geoip.lookup(ip);
-                response.ipCountry = lookup.country;
+                response.ip = ip;
+                response.country = lookup.country;
                 response.timezone = lookup.timezone;
             }
+
+            response.status = _response.status;
+            response.statusText = _response.statusText || undefined;
+            response.headers = _response.headers;
+            response.mimeType = _response.mimeType;
+            response.connectionReused = _response.connectionReused;
+            response.remotePort = _response.remotePort;
+            response.fromDiskCache = _response.fromDiskCache;
+            response.fromServiceWorker = _response.fromServiceWorker;
+            response.fromPrefetchCache = _response.fromPrefetchCache;
+            response.encodedDataLength = _response.encodedDataLength;
+            response.timing = _response.timing; //TODO - process timing
+            response.protocol = _response.protocol;
+            response.securityState = _response.securityState;
+            response.security = _response.securityDetails;
+
             request.response = response;
         }
 
@@ -113,8 +162,29 @@ function processFrames(data) {
 
     //eslint-disable-next-line
     for (const frameId in data.frames) {
-        addURLData(data.frames[frameId]);
-        frames.push(data.frames[frameId]);
+        const frame = data.frames[frameId];
+        if (frame) {
+            if (frame.url) {
+                addURLData(frame);
+            } else {
+                frame.url = 'about:blank';
+            }
+        }
+
+        frames.push({
+            frameId: frame.frameId,
+            parentFrameId: frame.parentFrameId,
+            url: frame.url,
+            host: frame.host,
+            pathname: frame.pathname,
+            port: frame.port,
+            path: frame.path,
+            query: frame.query,
+            stack: frame.stack,
+            loaderId: frame.loaderId,
+            name: frame.name,
+            state: frame.state
+        });
     }
     return frames;
 }

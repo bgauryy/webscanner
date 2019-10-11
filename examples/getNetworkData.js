@@ -1,4 +1,4 @@
-const Scanner = require('../src/index');
+const Scanner = require('webscanner');
 
 Scanner.test({
     url: 'https://perimeterx.com',
@@ -26,12 +26,13 @@ function getSiteHosts(data) {
         }
 
         if (resource.response && resource.response) {
-            if (resource.response.timezone) {
-                countries.add(resource.response.timezone);
+            const response = resource.response;
+            if (response.timezone) {
+                countries.add(response.timezone);
             }
 
-            if (resource.response.remoteIPAddress) {
-                ips.add(resource.response.remoteIPAddress);
+            if (response.ip) {
+                ips.add(response.ip);
             }
         }
     }

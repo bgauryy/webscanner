@@ -74,15 +74,13 @@ dedicated JS client code that will  be integrated into each test for extra data
 - timestamp
 - initiator
 - response
-	- connectionId
-	- requestHeaders
 	- status
 	- method
 	- headers
 	- mimeType
 	- connectionReused
 	- remoteIPAddress
-	- ipCountry
+	- ip
 	- timezone
 	- remotePort
 	- fromServiceWorker
@@ -126,14 +124,11 @@ dedicated JS client code that will  be integrated into each test for extra data
 - styleSheetId
 - frameId
 - sourceURL
-
 - url
 - host
 - pathname
 - port
 - path
-
-
 - origin
 - title
 - ownerNode
@@ -143,6 +138,7 @@ dedicated JS client code that will  be integrated into each test for extra data
 - startColumn
 - length
 - source
+
 #### frames \<array>
 - frameId
 - parentFrameId
