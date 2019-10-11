@@ -7,7 +7,7 @@ const LOG = require('./utils/logger.js');
  * @param opts {object}
  * @return {Promise}
  */
-async function scan(opts) {
+async function test(opts) {
     if (!opts || !opts.url) {
         throw new Error('Configuration Error');
     }
@@ -49,6 +49,7 @@ async function setPuppeteerPage(page, opts = {}) {
  * @param data {Uint8Array} compressed scanning object
  * @return {Promise}
  */
+
 /*function uncompress(data) {
     return new Promise((resolve, reject) => {
         snappy.uncompress(data, {asBuffer: false}, function (err, original) {
@@ -80,7 +81,7 @@ function _getConfiguration(opts) {
 }
 
 module.exports = {
-    scan,
+    test,
     show,
     setPuppeteerPage
 };

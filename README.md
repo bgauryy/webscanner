@@ -1,25 +1,14 @@
 
+# Web Scanner (!!UNDER CONSTRUCTION!!)
 
-
-
-
-
-# Web Scanner
-
-Advanced tool for web applications scanning
-
-## Use cases:
-- Gather resources information (all resources from all frames...)
-- Network information (headers, length, response, security, ip analysis...)
-- Performance metrics (timing, rendering, heap size...)
-- Scripts information
-- Style sheets information
-- Get advanced details using client plugins
-- Enrich automation data
+The perfect tool for web applications automated testing enhancements.
+-  Collect and aggregates resources data out of the box (performance,  network, styles..)
+- Configurable with simple API
+- Integrates with puppeteer
 
 ## API
 
-### `Scanner.scan(opts <object>)`
+### `Scanner.test(opts <object>)`
    - **opts** \<object> 
 	   - **url** \<string> 
 	   - **callback [opt]** \<function>
@@ -53,15 +42,10 @@ Register a puppeteer page for a scan
      - **blockedUrls  [opt]**  \<array>
 	  urls list to block (wildcard are supported)      
 
-### `Scanner.uncompress (data <Uint8Array>)` 
-Uncompress scanning data object
-   - **data**  \<Uint8Array> 
-Compressed scanning data object
+## Client Plugins (!!WIP!!)
+dedicated JS client code that will  be integrated into each test for extra data
 
-   **returns** \<promise>: Uncompressed scanning data object
-
-
-## Scanning Data  API (!!!WIP!!!)
+## Scanning Object  Structure
 
 #### scripts \<array>
 - scriptId
@@ -74,6 +58,8 @@ Compressed scanning data object
 - isModule 
 - source 
 - frameURL 
+- stackTrace
+ -parentScript
 
 #### resources \<array>
 - requestId
@@ -211,7 +197,7 @@ Compressed scanning data object
 ```javascript
 const Scanner = require('webscanner');
 
-Scanner.scan({
+Scanner.test({
     url: 'http://example.com',
     callback: (data) => {
         Scanner.show(data);
@@ -228,30 +214,13 @@ Scanner.scan({
 const Scanner = require('webscanner');
 
 (async function () {
-    const data = await Scanner.scan({
+    const data = await Scanner.test({
         url: 'http://example.com',
         stopOnContentLoaded: true,
         scanTime: 6
     });
     console.log(data);
 })();
-```
-
-#### Compression 
-```javascript
-const Scanner = require('webscanner');
-
-Scanner.scan({
-    url: 'http://example.com',
-    callback: (data) => {
-        Scanner.uncompress(data)
-            .then(data => {
-                console.log(data);
-            });
-    },
-    compress: true
-});
-
 ```
 
 #### Puppeteer integration 
@@ -271,48 +240,4 @@ const Scanner = require('webscanner');
     console.log('data', data);
 })();
 
-````
-
-#### Get website network information
-
-````javascript 
-const Scanner = require('webscanner');
-
-Scanner.scan({
-    url: 'https://example.com',
-    callback: getSiteHosts,
-    stopOnContentLoaded: true,
-    scanTime: 6,
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
-});
-
-function getSiteHosts(data) {
-    const hosts = new Set();
-    const timezone = new Set();
-    const ip = new Set();
-
-    const resources = data.resources;
-    const scripts = data.scripts;
-    const styleSheets = data.styleSheets;
-    const frames = data.frames;
-    const allResources = scripts.concat(styleSheets).concat(resources).concat(frames);
-
-    for (let i = 0; i < allResources.length; i++) {
-        const resource = allResources[i];
-        hosts.add(resource.host);
-
-        if (resource.response && resource.response) {
-            if (resource.response.timezone) {
-                timezone.add(resource.response.timezone);
-            }
-            if (resource.response.remoteIPAddress) {
-                ip.add(resource.response.remoteIPAddress);
-            }
-        }
-    }
-
-    console.log(`Hosts: ${Array.from(hosts)}`);
-    console.log(`Timezones: ${Array.from(timezone)}`);
-    console.log(`IP's: ${Array.from(ip)}`);
-}
 ````

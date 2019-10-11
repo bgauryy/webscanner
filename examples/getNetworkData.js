@@ -1,7 +1,7 @@
-const Scanner = require('webscanner');
+const Scanner = require('../src/index');
 
-Scanner.scan({
-    url: 'https://example.com',
+Scanner.test({
+    url: 'https://perimeterx.com',
     callback: getSiteHosts,
     stopOnContentLoaded: true,
     scanTime: 6,
@@ -10,8 +10,8 @@ Scanner.scan({
 
 function getSiteHosts(data) {
     const hosts = new Set();
-    const timezone = new Set();
-    const ip = new Set();
+    const countries = new Set();
+    const ips = new Set();
 
     const resources = data.resources;
     const scripts = data.scripts;
@@ -27,17 +27,17 @@ function getSiteHosts(data) {
 
         if (resource.response && resource.response) {
             if (resource.response.timezone) {
-                timezone.add(resource.response.timezone);
+                countries.add(resource.response.timezone);
             }
 
             if (resource.response.remoteIPAddress) {
-                ip.add(resource.response.remoteIPAddress);
+                ips.add(resource.response.remoteIPAddress);
             }
         }
     }
 
     console.log(`Hosts: ${Array.from(hosts)}`);
-    console.log(`Timezones: ${Array.from(timezone)}`);
-    console.log(`IP's: ${Array.from(ip)}`);
+    console.log(`Countries: ${Array.from(countries)}`);
+    console.log(`IP: ${Array.from(ips)}`);
 }
 

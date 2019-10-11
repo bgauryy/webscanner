@@ -1,32 +1,19 @@
 const geoip = require('geoip-lite');
 
 //eslint-disable-next-line
-function processData(data, opts) {
-    return new Promise((resolve => {
-        let responseData = {};
+async function processData(data, opts) {
+    const responseData = {};
 
-        if (data.err) {
-            return {error: data.err};
-        }
-        responseData.scripts = processScripts(data);
-        responseData.resources = processNetwork(data);
-        responseData.frames = processFrames(data);
-        responseData.metrics = processMetrics(data);
-        responseData.styleSheets = processStyle(data);
-
-        //Remove undefined values
-        responseData = JSON.parse(JSON.stringify(responseData));
-        resolve(responseData);
-
-/*        if (opts.compress) {
-            snappy.compress(JSON.stringify(responseData), function (err, compressed) {
-                resolve(compressed);
-            });
-        } else {
-            resolve(responseData);
-        }*/
-
-    }));
+    if (data.err) {
+        return {error: data.err};
+    }
+    responseData.scripts = processScripts(data);
+    responseData.resources = processNetwork(data);
+    responseData.frames = processFrames(data);
+    responseData.metrics = processMetrics(data);
+    responseData.styleSheets = processStyle(data);
+    //Remove undefined values
+    return JSON.parse(JSON.stringify(responseData));
 }
 
 function processStyle(data) {
@@ -61,17 +48,18 @@ function processScripts(data) {
         eventsMap[eventObj.scriptId].push(eventObj);
     }
 
-    return data.scripts.map(scriptObj => {
-        if (eventsMap[scriptObj.scriptId]) {
-            scriptObj.events = eventsMap[scriptObj.scriptId];
-        }
-
-        scriptObj.frameId = scriptObj.executionContextAuxData.frameId;
-        scriptObj.contextId = scriptObj.executionContextId;
-        scriptObj.coverage = coverageMap[scriptObj.scriptId];
-        scriptObj.frameURL = data.frames[scriptObj.frameId].url || 'about:blank';
-        scriptObj.isModule = Boolean(scriptObj.isModule);
-        scriptObj.length = Math.round(scriptObj.length / 1000) || 0;
+    return data.scripts.map(_scriptObj => {
+        const scriptObj = {
+            scriptId: _scriptObj.scriptId,
+            url: _scriptObj.url,
+            isModule: Boolean(_scriptObj.isModule),
+            source: _scriptObj.source,
+            frameId: _scriptObj.executionContextAuxData.frameId,
+            frameURL: (_scriptObj.frameId && data.frames[_scriptObj.frameId] && data.frames[_scriptObj.frameId].url) || 'about:blank',
+            coverage: coverageMap[_scriptObj.scriptId],
+            length: getKBLength(_scriptObj.length),
+            events: eventsMap[_scriptObj.scriptId]
+        };
 
         if (scriptObj.url === data.frames[scriptObj.frameId].url) {
             scriptObj.host = 'inline';
@@ -79,9 +67,10 @@ function processScripts(data) {
             addURLData(scriptObj);
         }
 
-        if (scriptObj.stackTrace) {
-            const initiator = scriptObj.stackTrace.callFrames[0];
-            scriptObj.parentScriptId = (initiator && initiator.scriptId) || '';
+        //TODO - check
+        if (_scriptObj.stackTrace) {
+            scriptObj.stackTrace = _scriptObj.stackTrace;
+            scriptObj.parentScript = scriptObj.stackTrace.callFrames && scriptObj.stackTrace.callFrames[0];
         }
         return scriptObj;
     });
@@ -156,6 +145,10 @@ function addURLData(obj) {
     } catch (e) {
         //ignore
     }
+}
+
+function getKBLength(length) {
+    return Math.round(length / 1000) || 0;
 }
 
 module.exports = {

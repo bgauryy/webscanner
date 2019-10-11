@@ -1,6 +1,6 @@
 const Scanner = require('webscanner');
 
-Scanner.scan({
+Scanner.test({
     url: 'http://example.com',
     callback: (data) => {
         console.log('data', data);
