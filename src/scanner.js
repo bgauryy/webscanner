@@ -5,20 +5,22 @@ const LOG = require('./utils/logger.js');
 const {processData} = require('./dataProcessor.js');
 const chromeAPI = require('./chromeAPI.js');
 
-function Scanner(opts) {
-    this.opts = opts;
-    this.data = {
-        scripts: [],
-        resources: {
-            requests: [],
-            responses: {}
-        },
-        events: [],
-        frames: {},
-        style: {},
-        metrics: null,
-        coverage: null
-    };
+class Scanner {
+    constructor(opts) {
+        this.opts = opts;
+        this.data = {
+            scripts: [],
+            resources: {
+                requests: [],
+                responses: {}
+            },
+            events: [],
+            frames: {},
+            style: {},
+            metrics: null,
+            coverage: null
+        };
+    }
 }
 
 Scanner.prototype.start = start;

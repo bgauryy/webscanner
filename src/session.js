@@ -1,25 +1,27 @@
 const {Scanner} = require('./scanner.js');
-const LOG = require('./utils/logger.js');
 
 async function scan(opts) {
-    const scanner = new Scanner(opts);
-    await scanner.start();
+    //eslint-disable-next-line
+    return new Promise(async function (resolve, reject) {
+        const scanner = new Scanner(opts);
+        await scanner.start();
 
-    try {
-        await scanner.navigate(opts.url);
-
-        if (opts.stopOnContentLoaded) {
-            await scanner.waitDOMContentLoaded();
+        try {
+            await scanner.navigate(opts.url);
+            if (opts.stopOnContentLoaded) {
+                await scanner.waitDOMContentLoaded();
+            }
+            await scanner.collectAllDOMEvents();
+            setTimeout(async function () {
+                const data = await scanner.getData();
+                await scanner.stop();
+                resolve(data);
+            }, opts.scanTime * 1000);
+        } catch (err) {
+            await scanner.stop();
+            reject(err);
         }
-        await scanner.collectAllDOMEvents();
-        await sleep(opts.scanTime);
-        return await scanner.getData();
-    } catch (err) {
-        LOG.error(err);
-        return err;
-    } finally {
-        await scanner.stop();
-    }
+    });
 }
 
 async function setPuppeteerPage(page, opts) {
@@ -29,14 +31,6 @@ async function setPuppeteerPage(page, opts) {
     page.getData = async function () {
         return await scanner.getData();
     };
-}
-
-function sleep(timeout) {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve();
-        }, timeout * 1000);
-    });
 }
 
 module.exports = {
