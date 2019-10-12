@@ -30,24 +30,6 @@ async function setPuppeteerPage(page, opts = {}) {
     return await session.setPuppeteerPage(page, _getConfiguration(opts));
 }
 
-/**
- *
- * @param data {Uint8Array} compressed scanning object
- * @return {Promise}
- */
-
-/*function uncompress(data) {
-    return new Promise((resolve, reject) => {
-        snappy.uncompress(data, {asBuffer: false}, function (err, original) {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(original);
-            }
-        });
-    });
-}*/
-
 function _getConfiguration(opts) {
     return {
         url: opts.url,
