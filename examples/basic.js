@@ -1,4 +1,4 @@
-const Scanner = require('webscanner');
+const Scanner = require('../src/index');
 
 Scanner.test({
     url: 'http://example.com',

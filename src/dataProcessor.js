@@ -3,6 +3,8 @@ const geoip = require('geoip-lite');
 //eslint-disable-next-line
 async function processData(data, opts) {
     const responseData = {};
+    data.events = data.events || [];
+    data.frames = data.frames || {};
 
     if (data.err) {
         return {error: data.err};
@@ -18,6 +20,9 @@ async function processData(data, opts) {
 }
 
 function processStyle(data) {
+    if (!data.style) {
+        return;
+    }
     const styles = [];
     const styleKeysMap = Object.keys(data.style);
 
@@ -60,7 +65,6 @@ function processScripts(data) {
             events: eventsMap[_scriptObj.scriptId]
         };
 
-
         scriptObj.frameId = _scriptObj.executionContextAuxData.frameId;
 
         const frame = data.frames[_scriptObj.frameId];
@@ -68,8 +72,7 @@ function processScripts(data) {
             scriptObj.frameURL = frame.url;
         }
 
-
-        if (scriptObj.url === data.frames[scriptObj.frameId].url) {
+        if (frame && frame.url === scriptObj.url) {
             scriptObj.host = 'inline';
         } else {
             addURLData(scriptObj);
@@ -85,6 +88,9 @@ function processScripts(data) {
 }
 
 function processResources(data) {
+    if (!data.resources) {
+        return;
+    }
     const requests = data.resources.requests;
     const responses = data.resources.responses;
 
@@ -131,8 +137,10 @@ function processResources(data) {
             if (ip) {
                 const lookup = geoip.lookup(ip);
                 response.ip = ip;
-                response.country = lookup.country;
-                response.timezone = lookup.timezone;
+                if (lookup) {
+                    response.country = lookup.country;
+                    response.timezone = lookup.timezone;
+                }
             }
 
             response.status = _response.status;
