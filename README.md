@@ -196,7 +196,7 @@ const Scanner = require('webscanner');
 Scanner.test({
     url: 'http://example.com',
     callback: (data) => {
-        Scanner.show(data);
+        console.log(data)
     },
     stopOnContentLoaded: true,
     scanTime: 6,
