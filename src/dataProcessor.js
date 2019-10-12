@@ -2,18 +2,35 @@ const geoip = require('geoip-lite');
 
 //eslint-disable-next-line
 async function processData(data, opts) {
+    if (!data) {
+        return;
+    }
     const responseData = {};
-    data.frames = data.frames || {};
 
     if (data.err) {
         return {error: data.err};
     }
 
-    responseData.frames = processFrames(data);
-    responseData.scripts = processScripts(data);
-    responseData.resources = processResources(data);
-    responseData.metrics = processMetrics(data);
-    responseData.styleSheets = processStyle(data);
+    if (data.frames) {
+        responseData.frames = processFrames(data);
+    }
+
+    if (data.scripts) {
+        responseData.scripts = processScripts(data);
+    }
+
+    if (data.resources) {
+        responseData.resources = processResources(data);
+    }
+
+    if (data.metrics) {
+        responseData.metrics = processMetrics(data);
+    }
+
+    if (data.style) {
+        responseData.styleSheets = processStyle(data);
+    }
+
     //Remove undefined values
     return JSON.parse(JSON.stringify(responseData));
 }
@@ -67,7 +84,7 @@ function processScripts(data) {
 
         scriptObj.frameId = _scriptObj.executionContextAuxData.frameId;
 
-        const frame = data.frames[_scriptObj.frameId];
+        const frame = data.frames && data.frames[_scriptObj.frameId];
         if (frame) {
             scriptObj.frameURL = frame.url;
         }
@@ -88,9 +105,6 @@ function processScripts(data) {
 }
 
 function processResources(data) {
-    if (!data.resources) {
-        return;
-    }
     const requests = data.resources.requests;
     const responses = data.resources.responses;
 
@@ -116,14 +130,13 @@ function processResources(data) {
             request.referrerPolicy = req.referrerPolicy;
         }
 
-        const frame = data.frames[request.frameId];
+        const frame = data.frames && data.frames[request.frameId];
         if (frame) {
+            request.frame = frame;
             request.frameURL = frame.url;
         }
 
         addURLData(request);
-        request.frame = data.frames[request.frameId].url;
-
 
         if (request.postData) {
             request.postData.length = Math.round(request.postData.length / 1000) || 0;
