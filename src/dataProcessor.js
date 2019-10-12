@@ -3,7 +3,6 @@ const geoip = require('geoip-lite');
 //eslint-disable-next-line
 async function processData(data, opts) {
     const responseData = {};
-    data.events = data.events || [];
     data.frames = data.frames || {};
 
     if (data.err) {
@@ -47,11 +46,12 @@ function processScripts(data) {
         coverageMap[coverageObj.scriptId] = coverageObj.functions;
     }
 
-    //Set events
-    for (let i = 0; i < data.events.length; i++) {
-        const eventObj = data.events[i];
-        eventsMap[eventObj.scriptId] = eventsMap[eventObj.scriptId] || [];
-        eventsMap[eventObj.scriptId].push(eventObj);
+    if (data.events) {
+        for (let i = 0; i < data.events.length; i++) {
+            const eventObj = data.events[i];
+            eventsMap[eventObj.scriptId] = eventsMap[eventObj.scriptId] || [];
+            eventsMap[eventObj.scriptId].push(eventObj);
+        }
     }
 
     return data.scripts.map(_scriptObj => {
