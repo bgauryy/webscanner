@@ -1,5 +1,4 @@
 const session = require('./session.js');
-const Server = require('../public/server.js');
 const LOG = require('./utils/logger.js');
 
 /**
@@ -19,19 +18,6 @@ async function scan(opts) {
     } else {
         return data;
     }
-}
-
-/**
- *
- * @param data - scanning data object
- * @param port
- */
-function show(data, port = 3333) {
-    if (!data) {
-        LOG.error('Data object is missing');
-        return;
-    }
-    Server.show(data, port);
 }
 
 /**
@@ -81,6 +67,5 @@ function _getConfiguration(opts) {
 
 module.exports = {
     scan,
-    show,
     setPuppeteerPage
 };

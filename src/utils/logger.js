@@ -19,24 +19,28 @@ function setLogLevel(_logLevel) {
 
 function debug(str) {
     if (logLevel <= LOG.debug) {
+        // eslint-disable-next-line no-console
         console.log(colors.blue(getMessage(str)));
     }
 }
 
 function info(str) {
     if (logLevel <= LOG.info) {
+        // eslint-disable-next-line no-console
         console.log(colors.yellow(getMessage(str)));
     }
 }
 
 function warn(str) {
     if (logLevel <= LOG.warn) {
+        // eslint-disable-next-line no-console
         console.log(colors.yellow(getMessage(str)));
     }
 }
 
 function error(str) {
     if (logLevel <= LOG.error) {
+        // eslint-disable-next-line no-console
         console.log(colors.red(getMessage(str)));
     }
 }
