@@ -30,9 +30,8 @@
     "lint": "eslint src",
     "test": "yarn jest",
     "build": "rollup -c",
-    "build-view": "cd public && yarn install && yarn start",
-    "clean": "rimraf src/index.cjs.js src/index.esm.js public/dist public/node_modules",
-    "prepublishOnly": "yarn clean && yarn lint && yarn test && yarn build && yarn build-view"
+    "clean": "rimraf src/index.cjs.js src/index.esm.js",
+    "prepublishOnly": "yarn clean && yarn lint && yarn test && yarn build"
   },
   "husky": {
     "hooks": {
