@@ -45,6 +45,57 @@ Register a puppeteer page for a scan
 ## Client Plugins (!!WIP!!)
 dedicated JS client code that will  be integrated into each test for extra data
 
+
+## Examples
+
+#### Basic scan
+```javascript
+const Scanner = require('webscanner');
+
+Scanner.test({
+    url: 'http://example.com',
+    callback: (data) => {
+        console.log(data)
+    },
+    stopOnContentLoaded: true,
+    scanTime: 6,
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36'
+});
+```
+
+#### Async scan
+```javascript
+const Scanner = require('webscanner');
+
+(async function () {
+    const data = await Scanner.test({
+        url: 'http://example.com',
+        stopOnContentLoaded: true,
+        scanTime: 6
+    });
+    console.log(data);
+})();
+```
+
+#### Puppeteer integration 
+ ````javascript
+const puppeteer = require('puppeteer');
+const Scanner = require('webscanner');
+
+(async () => {
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+
+    await Scanner.setPuppeteerPage(page, {compress: false});
+    await page.goto('https://example.com/', {waitUntil: 'domcontentloaded'});
+    const data = await page.getData();
+    await browser.close();
+
+    console.log('data', data);
+})();
+
+````
+
 ## Scanning Object  Structure
 
 #### scripts \<array>
@@ -186,53 +237,3 @@ dedicated JS client code that will  be integrated into each test for extra data
 - FirstMeaningfulPaint
 - DomContentLoaded
 - NavigationStart
-
-## Examples
-
-#### Basic scan
-```javascript
-const Scanner = require('webscanner');
-
-Scanner.test({
-    url: 'http://example.com',
-    callback: (data) => {
-        console.log(data)
-    },
-    stopOnContentLoaded: true,
-    scanTime: 6,
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36'
-});
-```
-
-#### Async scan
-```javascript
-const Scanner = require('webscanner');
-
-(async function () {
-    const data = await Scanner.test({
-        url: 'http://example.com',
-        stopOnContentLoaded: true,
-        scanTime: 6
-    });
-    console.log(data);
-})();
-```
-
-#### Puppeteer integration 
- ````javascript
-const puppeteer = require('puppeteer');
-const Scanner = require('webscanner');
-
-(async () => {
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-
-    await Scanner.setPuppeteerPage(page, {compress: false});
-    await page.goto('https://example.com/', {waitUntil: 'domcontentloaded'});
-    const data = await page.getData();
-    await browser.close();
-
-    console.log('data', data);
-})();
-
-````
