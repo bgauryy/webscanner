@@ -173,6 +173,15 @@ async function getBestEffortCoverage(client) {
     }
 }
 
+async function getResearchData(client) {
+    const researchData = {};
+    const manifest = await client.Page.getAppManifest();
+
+    if (manifest && manifest.url) {
+        researchData.manifest = manifest;
+    }
+}
+
 module.exports = {
     init,
     getAllDOMEvents,
@@ -183,5 +192,6 @@ module.exports = {
     setUserAgent,
     setBlockedURL,
     getMetrics,
-    getBestEffortCoverage
+    getBestEffortCoverage,
+    getResearchData
 };

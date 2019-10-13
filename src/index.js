@@ -49,6 +49,7 @@ function _getConfiguration(opts) {
         },
         scan: {
             ...{
+                research: false,
                 scripts: true,
                 resources: true,
                 styles: true,

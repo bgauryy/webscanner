@@ -31,6 +31,9 @@ async function processData(data, opts) {
         responseData.styleSheets = processStyle(data);
     }
 
+    responseData.research = data.research;
+
+
     //Remove undefined values
     return JSON.parse(JSON.stringify(responseData));
 }
@@ -116,6 +119,10 @@ function processScripts(data) {
 function processResources(data) {
     const requests = data.resources.requests;
     const responses = data.resources.responses;
+
+    if (!requests || requests.length <= 0) {
+        return;
+    }
 
     return requests.map(_request => {
         const request = {

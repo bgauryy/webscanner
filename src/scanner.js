@@ -153,6 +153,10 @@ async function collectAllDOMEvents() {
 async function getData() {
     const scanObj = this.opts.scan;
 
+    if (scanObj.research) {
+        this.data.research = await chromeAPI.getResearchData(this.client);
+    }
+
     if (scanObj.metrics) {
         try {
             this.data.metrics = await chromeAPI.getMetrics(this.client);
@@ -161,7 +165,6 @@ async function getData() {
             //ignore
         }
     }
-
     return await processData(this.data, this.opts);
 }
 

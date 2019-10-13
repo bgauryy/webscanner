@@ -26,17 +26,19 @@ The perfect tool for web applications automated testing enhancements.
 	  urls list to block (wildcard are supported)      
      - **scan  [opt]**  \<object> 
 	     - content \<boolean>  *default = true* 
-		  should get scripts and css sources
+		  collect scripts and css sources
 	     - scripts \<boolean>  *default = true*
-	      should get scripts information
+	      collect scripts information
 	     - resources \<boolean> *default = true*
-	      should get network information
+	      collect network information
 	     - styles \<boolean> *default = true*
-	      should get css information
+	      collect css information
 	     - metrics \<boolean> *default = true*
-	      should get metrics information
+	      collect metrics information
 	     - frames \<boolean> *default = true*
-	     should get iframes information
+	     collect iframes information
+	     - research \<boolean> *default = false*
+	     collect research info (unstable)
 
    **returns** \<promise>: scanning data Object  
 
