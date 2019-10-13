@@ -32,25 +32,34 @@ Scanner.prototype.collectAllDOMEvents = collectAllDOMEvents;
 
 async function start() {
     const connection = await createConnection(this.opts);
+    const scanObj = this.opts.scan;
+    const getContent = Boolean(scanObj.content);
 
     this.client = connection.client;
     this.chrome = connection.chrome;
-
     if (!this.client) {
         throw new Error('Client is missing');
     }
 
     await chromeAPI.init(this.client);
-    await setNetworkListener(this.client, this.data.resources);
-    await setFramesListener(this.client, this.data.frames);
-    await setScriptsListener(this.client, this.data.scripts);
-    await setStyleListener(this.client, this.data.style);
+    setUserAgent(this.client, this.opts.userAgent);
+
+    if (scanObj.resources) {
+        await setNetworkListener(this.client, this.data.resources);
+    }
+    if (scanObj.frames) {
+        await setFramesListener(this.client, this.data.frames);
+    }
+    if (scanObj.scripts) {
+        await setScriptsListener(this.client, getContent, this.data.scripts);
+    }
+    if (scanObj.styles) {
+        await setStyleListener(this.client, getContent, this.data.style);
+    }
 
     if (this.opts.blockedUrls) {
         await chromeAPI.setBlockedURL(this.client, this.opts.blockedUrls);
     }
-
-    setUserAgent(this.client, this.opts.userAgent);
 }
 
 async function createConnection(opts) {
@@ -97,8 +106,8 @@ function setUserAgent(client, userAgent) {
     }
 }
 
-function setStyleListener(client, styles) {
-    chromeAPI.registerStyleEvents(client, (styleObject) => {
+function setStyleListener(client, getContent, styles) {
+    chromeAPI.registerStyleEvents(client, getContent, (styleObject) => {
         styles[styleObject.styleSheetId] = styleObject;
     });
 }
@@ -123,8 +132,8 @@ function setFramesListener(client, frames) {
     });
 }
 
-function setScriptsListener(client, scripts) {
-    chromeAPI.registerScriptExecution(client, (scriptObj) => {
+function setScriptsListener(client, getContent, scripts) {
+    chromeAPI.registerScriptExecution(client, getContent, (scriptObj) => {
         scripts.push(scriptObj);
     });
 }
@@ -142,8 +151,17 @@ async function collectAllDOMEvents() {
 }
 
 async function getData() {
-    this.data.metrics = await chromeAPI.getMetrics(this.client);
-    this.data.coverage = await chromeAPI.getBestEffortCoverage(this.client);
+    const scanObj = this.opts.scan;
+
+    if (scanObj.metrics) {
+        try {
+            this.data.metrics = await chromeAPI.getMetrics(this.client);
+            this.data.coverage = await chromeAPI.getBestEffortCoverage(this.client);
+        } catch (e) {
+            //ignore
+        }
+    }
+
     return await processData(this.data, this.opts);
 }
 

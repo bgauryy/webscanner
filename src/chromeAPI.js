@@ -110,31 +110,37 @@ function registerNetworkEvents(client, onRequest, onResponse) {
     });
 }
 
-function registerScriptExecution(client, handler) {
+function registerScriptExecution(client, getContent, handler) {
     client.Debugger.scriptParsed(async function (scriptObj) {
         const script = {...scriptObj};
 
         if (script.url !== '__puppeteer_evaluation_script__') {
-            try {
-                const source = await client.Debugger.getScriptSource({scriptId: script.scriptId});
-                script.source = source.scriptSource;
-            } catch (e) {
-                //ignore
+            if (getContent) {
+                try {
+                    const source = await client.Debugger.getScriptSource({scriptId: script.scriptId});
+                    script.source = source.scriptSource;
+                } catch (e) {
+                    //ignore
+                }
             }
             handler({...script});
         }
     });
 }
 
-function registerStyleEvents(client, handler) {
+function registerStyleEvents(client, getContent, handler) {
     client.CSS.styleSheetAdded(async function ({header}) {
         const styleObj = {...header};
-        try {
-            styleObj.source = await client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
-        } catch (e) {
-            //TODO - check
-            styleObj.source = '';
+
+        if (getContent) {
+            try {
+                styleObj.source = await client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
+            } catch (e) {
+                //TODO - check
+                styleObj.source = '';
+            }
         }
+
         handler(styleObj);
     });
 }

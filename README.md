@@ -24,8 +24,19 @@ The perfect tool for web applications automated testing enhancements.
 	      'all' | 'debug' | 'info' | 'warn' | 'error' | 'none'
 	   - **blockedUrls  [opt]**  \<array>
 	  urls list to block (wildcard are supported)      
-	    - **compress  [opt]**  \<boolean> *default = false
-	Compress scanning data object to `Uint8Array` array
+     - **scan  [opt]**  \<object> 
+	     - content \<boolean>  *default = true* 
+		  should get scripts and css sources
+	     - scripts \<boolean>  *default = true*
+	      should get scripts information
+	     - resources \<boolean> *default = true*
+	      should get network information
+	     - styles \<boolean> *default = true*
+	      should get css information
+	     - metrics \<boolean> *default = true*
+	      should get metrics information
+	     - frames \<boolean> *default = true*
+	     should get iframes information
 
    **returns** \<promise>: scanning data Object  
 
@@ -35,12 +46,10 @@ Register a puppeteer page for a scan
 - **page**  \<object> 
 	    puppeteer [page](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#class-page) object
  - **opts** \<object> 
-	- **compress  [opt]**  \<boolean> *default = false
-	Compress scanning data object to `Uint8Array` array
-	 - **logLevel  [opt]**  \<boolean> *default = 'none'*
-	      'all' | 'debug' | 'info' | 'warn' | 'error' | 'none'
-     - **blockedUrls  [opt]**  \<array>
-	  urls list to block (wildcard are supported)      
+	 - **logLevel**
+     - **blockedUrls**
+     - **scan**
+	        
 
 ## Client Plugins (!!WIP!!)
 dedicated JS client code that will  be integrated into each test for extra data
@@ -76,6 +85,29 @@ const Scanner = require('webscanner');
     console.log(data);
 })();
 ```
+
+#### scan with advanced configuration
+```javascript
+const Scanner = require('webscanner');
+
+(async function () {
+    const data = await Scanner.test({
+        url: 'http://example.com',
+        stopOnContentLoaded: true,
+        scanTime: 10,
+        scan: {
+            content: false,
+            scripts: false,
+            resources: true,
+            styles: false,
+            metrics: true,
+            frames: false,
+        }
+    });
+    console.log(data);
+})();
+```
+
 
 #### Puppeteer integration 
  ````javascript

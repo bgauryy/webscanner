@@ -31,6 +31,8 @@ async function setPuppeteerPage(page, opts = {}) {
 }
 
 function _getConfiguration(opts) {
+    opts.scan = opts.scan || {};
+    opts.chrome = opts.chrome || {};
     return {
         url: opts.url,
         userAgent: opts.userAgent || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
@@ -43,7 +45,17 @@ function _getConfiguration(opts) {
             ...{
                 port: 9222,
                 chromeFlags: ['--headless', '--disable-gpu']
-            }, ...((typeof opts.chrome === 'object') ? opts.chrome : {})
+            }, ...opts.chrome
+        },
+        scan: {
+            ...{
+                scripts: true,
+                resources: true,
+                styles: true,
+                metrics: true,
+                frames: true,
+                content: true
+            }, ...opts.scan
         }
     };
 }

@@ -39,20 +39,29 @@ function processStyle(data) {
     if (!data.style) {
         return;
     }
-    const styles = [];
-    const styleKeysMap = Object.keys(data.style);
 
-    for (let i = 0; i < styleKeysMap.length; i++) {
-        const style = data.style[styleKeysMap[i]];
-        style.source = style.source.text;
-        style.url = style.sourceURL;
-        addURLData(style);
-        styles.push(style);
+    let styles;
+
+    //eslint-disable-next-line
+    for (const styleId in data.style) {
+        styles = styles || [];
+        const style = data.style[styleId];
+        if (style) {
+            style.source = style.source && style.source.text;
+            style.url = style.sourceURL;
+            addURLData(style);
+            styles.push(style);
+        }
     }
+
     return styles;
 }
 
 function processScripts(data) {
+    if (!data.scripts || data.scripts.length <= 0) {
+        return;
+    }
+
     const coverage = data.coverage && data.coverage.result || [];
     const coverageMap = {};
     const eventsMap = {};
@@ -179,10 +188,11 @@ function processResources(data) {
 }
 
 function processFrames(data) {
-    const frames = [];
+    let frames;
 
     //eslint-disable-next-line
     for (const frameId in data.frames) {
+        frames = frames || [];
         const frame = data.frames[frameId];
         if (frame) {
             if (frame.url) {
