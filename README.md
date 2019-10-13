@@ -1,5 +1,5 @@
 
-# Web Scanner (!!UNDER CONSTRUCTION!!)
+# Web Scanner
 
 The perfect tool for web applications automated testing enhancements.
 -  Collect and aggregates resources data out of the box (performance,  network, styles..)
