@@ -1,6 +1,8 @@
 
 # Web Scanner
 
+![](./assets/bee.png)
+
 The perfect tool for web applications automated testing enhancements.
 -  Collect and aggregates resources data out of the box (performance,  network, styles..)
 - Configurable with simple API
