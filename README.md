@@ -11,120 +11,124 @@ The perfect tool for web applications automated testing enhancements.
 ### `Scanner.test(opts <object>)`
    - **opts** \<object> 
 	   - **url** \<string> 
-	   - **callback [opt]** \<function>
-	   callback to be called after the scan is finished
-	   - **userAgent [opt]** \<sting>
-	   - **stopOnContentLoaded** \<boolean> *default = true*
+	   - **callback [opt]** \<function>  callback to be called after the scan is finished
+	   -  **chrome  [opt]** \<object>	   [chrome](https://github.com/GoogleChrome/chrome-launcher) process object
+	   - **log  [opt]**  \<boolean> *default = false*
+	   - **rules [opt]** \<object> 
+		   - **userAgent** \<sting>
+		   - **stopOnContentLoaded** \<boolean> *default = true*
 	   Restrict load event before stop
-	   - **scanTime** \<number> *default = 5* 
+		   - **scanTime** \<number> *default = 5* 
 	   scanning time in seconds (after load event, is exists)
-	   -  **chrome  [opt]** \<object>
-	   [chrome](https://github.com/GoogleChrome/chrome-launcher) configuration object
-	   - **logLevel  [opt]**  \<boolean> *default = 'all'*
-	      'all' | 'debug' | 'info' | 'warn' | 'error' | 'none'
-	   - **blockedUrls  [opt]**  \<array>
+		   - **blockedUrls  [opt]**  \<array>
 	  urls list to block (wildcard are supported)      
-     - **scan  [opt]**  \<object> 
-	     - content \<boolean>  *default = true* 
+     - **collect  [opt]**  \<object> *default = all true* 
+	     - **content** \<boolean>
 		  collect scripts and css sources
-	     - scripts \<boolean>  *default = true*
+	     - **scripts** \<boolean>  *default = true*
 	      collect scripts information
-	     - resources \<boolean> *default = true*
+	     - **resources** \<boolean> *default = true*
 	      collect network information
-	     - styles \<boolean> *default = true*
+	     - **styles** \<boolean> *default = true*
 	      collect css information
-	     - metrics \<boolean> *default = true*
+	     - **metrics** \<boolean> *default = true*
 	      collect metrics information
-	     - frames \<boolean> *default = true*
+	     - **frames** \<boolean> *default = true*
 	     collect iframes information
-	     - research \<boolean> *default = false*
-	     collect research info (unstable)
+	     - **research** \<boolean> *default = false*
+	     collect research details
 
-   **returns** \<promise>: scanning data Object  
+   **returns** \<promise|object>: scanning data Object  
 
 
-### `Scanner.setPuppeteerPage (page <object>, opts <object>)` 
+### `Scanner.getPuppeteerSession (page <object>, opts <object>)` 
 Register a puppeteer page for a scan
 - **page**  \<object> 
 	    puppeteer [page](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#class-page) object
  - **opts** \<object> 
-	 - **logLevel**
-     - **blockedUrls**
-     - **scan**
-	        
 
-## Client Plugins (!!WIP!!)
-dedicated JS client code that will  be integrated into each test for extra data
-
+**returns** \<object>: page proxy object 
+- ***page.getData()***
+	-  returns scanning data (*must be called call before closing the browser*)
 
 ## Examples
 
 #### Basic scan
 ```javascript
-const Scanner = require('webscanner');
-
 Scanner.test({
     url: 'http://example.com',
+    log: true,
     callback: (data) => {
-        console.log(data)
+        console.log('data', data);
     },
-    stopOnContentLoaded: true,
-    scanTime: 6,
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36'
+    rules: {
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
+        stopOnContentLoaded: true,
+        scanTime: 5
+    },
+    collect: {
+        research: true,
+        content: false,
+        scripts: false,
+        resources: false,
+        styles: false,
+        metrics: false,
+        frames: true,
+        coverage: false
+    }
 });
 ```
 
 #### Async scan
 ```javascript
-const Scanner = require('webscanner');
-
 (async function () {
     const data = await Scanner.test({
         url: 'http://example.com',
-        stopOnContentLoaded: true,
-        scanTime: 6
-    });
-    console.log(data);
-})();
-```
-
-#### scan with advanced configuration
-```javascript
-const Scanner = require('webscanner');
-
-(async function () {
-    const data = await Scanner.test({
-        url: 'http://example.com',
-        stopOnContentLoaded: true,
-        scanTime: 10,
-        scan: {
+        log: true,
+        rules: {
+            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
+            stopOnContentLoaded: true,
+            scanTime: 5
+        },
+        collect: {
+            research: true,
             content: false,
             scripts: false,
-            resources: true,
+            resources: false,
             styles: false,
-            metrics: true,
-            frames: false,
+            metrics: false,
+            frames: true,
+            coverage: false
         }
     });
     console.log(data);
 })();
 ```
 
-
 #### Puppeteer integration 
  ````javascript
-const puppeteer = require('puppeteer');
-const Scanner = require('webscanner');
-
 (async () => {
     const browser = await puppeteer.launch();
-    const page = await browser.newPage();
+    const page = await Scanner.getPuppeteerSession(await browser.newPage(), {
+        log: true,
+        rules: {
+            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
+        },
+        collect: {
+            research: true,
+            content: false,
+            scripts: true,
+            resources: true,
+            styles: true,
+            metrics: true,
+            frames: true,
+            coverage: true
+        }
+    });
 
-    await Scanner.setPuppeteerPage(page, {compress: false});
-    await page.goto('https://example.com/', {waitUntil: 'domcontentloaded'});
+    await page.goto('http://example.com', {waitUntil: 'domcontentloaded'});
     const data = await page.getData();
     await browser.close();
-
     console.log('data', data);
 })();
 
@@ -271,3 +275,4 @@ const Scanner = require('webscanner');
 - FirstMeaningfulPaint
 - DomContentLoaded
 - NavigationStart
+

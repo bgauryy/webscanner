@@ -1,61 +1,35 @@
-const colors = require('colors');
+let isEnabled = false;
 
-const LOG = {
-    all: 0,
-    debug: 1,
-    info: 2,
-    warn: 3,
-    error: 4,
-    none: 5
-};
+function setEnabled(_isEnabled) {
+    isEnabled = _isEnabled;
+}
 
-let logLevel = LOG.all;
+function debug() {
+    log('debug', [...arguments]);
+}
 
-function setLogLevel(_logLevel) {
-    if (typeof LOG[_logLevel] === 'number') {
-        logLevel = LOG[_logLevel];
+function warn() {
+    log('warn', [...arguments]);
+}
+
+function error() {
+    log('error', [...arguments]);
+}
+
+function log(api, args) {
+    if (!isEnabled) {
+        return;
     }
+    args[0] = `WebInspector ${new Date()}: ${args[0]}`;
+    // eslint-disable-next-line no-console
+    console[api].apply(this, args);
 }
 
-function debug(str) {
-    if (logLevel <= LOG.debug) {
-        // eslint-disable-next-line no-console
-        console.log(colors.blue(getMessage(str)));
-    }
-}
-
-function info(str) {
-    if (logLevel <= LOG.info) {
-        // eslint-disable-next-line no-console
-        console.log(colors.yellow(getMessage(str)));
-    }
-}
-
-function warn(str) {
-    if (logLevel <= LOG.warn) {
-        // eslint-disable-next-line no-console
-        console.log(colors.yellow(getMessage(str)));
-    }
-}
-
-function error(str) {
-    if (logLevel <= LOG.error) {
-        // eslint-disable-next-line no-console
-        console.log(colors.red(getMessage(str)));
-    }
-}
-
-
-function getMessage(msg) {
-    return `webInspector: ${msg}`;
-}
 
 module.exports = {
     debug,
-    info,
     warn,
     error,
-    setLogLevel,
-    LOG
+    setEnabled
 };
 

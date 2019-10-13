@@ -1,6 +1,6 @@
 const LOG = require('./utils/logger.js');
 
-async function init(client) {
+async function init(client, opts) {
     const {CSS, Debugger, Network, Page, Runtime, DOM, Performance} = client;
 
     await Performance.enable();
@@ -16,6 +16,10 @@ async function init(client) {
 
     await Network.clearBrowserCache();
     await Network.clearBrowserCookies();
+
+    if (opts.collect.research) {
+        initResearch(client);
+    }
 }
 
 async function getAllDOMEvents(client,) {
@@ -164,22 +168,87 @@ async function getMetrics(client) {
     }
 }
 
-async function getBestEffortCoverage(client) {
-    try {
-        const coverageObj = await client.Profiler.getBestEffortCoverage();
-        return coverageObj && coverageObj.result;
-    } catch (e) {
-        LOG.error(e);
-    }
+async function initResearch(client) {
+    const storage = {};
+    const contexts = {};
+
+/*    client.Runtime.exceptionRevoked((obj) => {
+
+    });*/
+
+    client.Runtime.executionContextCreated((obj) => {
+        const {context: {id, origin, name, auxData}} = obj;
+        contexts[id] = {origin, name, auxData};
+    });
+
+    client.Runtime.executionContextDestroyed(({executionContextId}) => {
+        const context = contexts[executionContextId] || {};
+        context.destroyed = true;
+    });
+
+/*    client.ServiceWorker.workerRegistrationUpdated((obj) => {
+    });*/
+
+    client.DOMStorage.domStorageItemAdded(obj => {
+        //eslint-disable-next-line
+        const {storageId, key, newValue} = obj;
+        storage[key] = storage[key] || [];
+        storage[key].push(newValue);
+    });
+
+
+    await client.CSS.startRuleUsageTracking();
+
+    //Page.setAdBlockingEnabled
+    //Page.setBypassCSP
+    //Page.setDeviceMetricsOverride
+    //Page.setDeviceOrientationOverride
+    //Page.setFontFamilies
+    //Page.setFontSizes
+    //Page.setDownloadBehavior
+    //Page.setGeolocationOverride
+    //Browser.setPermission
+    //Debugger.getWasmBytecode
 }
 
-async function getResearchData(client) {
+//eslint-disable-next-line
+async function getResearch(client, data) {
     const researchData = {};
-    const manifest = await client.Page.getAppManifest();
 
+    const manifest = await client.Page.getAppManifest();
     if (manifest && manifest.url) {
         researchData.manifest = manifest;
     }
+    researchData.cookies = await client.Page.getCookies();
+    researchData.resourcesTree = await client.Page.getResourceTree();
+    researchData.frameTree = await client.Page.getFrameTree();
+    //researchData.layoutMetrics = await client.Page.getLayoutMetrics();
+    researchData.testReport = await client.Page.generateTestReport({message: 'dd'});
+    researchData.heapSize = await client.Runtime.getHeapUsage();
+
+
+    //await client.CSS.stopRuleUsageTracking();
+    researchData.cssCoverage = await client.CSS.takeCoverageDelta();
+
+    try {
+        const coverageObj = await client.Profiler.getBestEffortCoverage();
+        researchData.coverage = coverageObj && coverageObj.result;
+    } catch (e) {
+        LOG.error(e);
+    }
+
+    /*    //get all contextIds
+        //Runtime.globalLexicalScopeNames({executionContextId})
+        const content = {};
+        for (const frameId in data.frames) {
+            try {
+                content[frameId] = await client.Page.getResourceContent({frameId});
+            } catch (e) {
+                debugger;
+            }
+        }*/
+
+    return researchData;
 }
 
 module.exports = {
@@ -192,6 +261,5 @@ module.exports = {
     setUserAgent,
     setBlockedURL,
     getMetrics,
-    getBestEffortCoverage,
-    getResearchData
+    getResearch
 };

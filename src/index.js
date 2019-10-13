@@ -11,7 +11,7 @@ async function test(opts) {
         throw new Error('Configuration Error');
     }
     const conf = _getConfiguration(opts);
-    LOG.setLogLevel(opts.logLevel);
+    LOG.setEnabled(opts.log);
     const data = await session.scan(conf);
     if (conf.callback) {
         conf.callback(data);
@@ -21,47 +21,61 @@ async function test(opts) {
 }
 
 /**
+ * @deprecated use getPuppeteerSession instead
+ */
+async function setPuppeteerPage(page, opts = {}) {
+    return getPuppeteerSession(page, opts);
+}
+
+/**
  *
  * @param page - puppeteer page
  * @param opts - scanning configuration
  * @return {Promise}
  */
-async function setPuppeteerPage(page, opts = {}) {
-    return await session.setPuppeteerPage(page, _getConfiguration(opts));
+async function getPuppeteerSession(page, opts = {}) {
+    LOG.setEnabled(opts.log);
+    return await session.getPuppeteerSession(page, _getConfiguration(opts));
 }
 
-function _getConfiguration(opts) {
-    opts.scan = opts.scan || {};
-    opts.chrome = opts.chrome || {};
+
+function _getConfiguration(opts = {}) {
+    opts.callback = (typeof opts.callback === 'function') ? opts.callback : null;
+
+    const defaultCollect = {
+        research: false,
+        scripts: true,
+        resources: true,
+        styles: true,
+        metrics: true,
+        frames: true,
+        content: true,
+        coverage: true
+    };
+
+    const defaultChromeObj = {
+        port: 9222,
+        chromeFlags: ['--headless', '--disable-gpu']
+    };
+
+    const defaultRules = {
+        scanTime: 5,
+        stopOnContentLoaded: true,
+        blockedUrls: []
+    };
+
     return {
         url: opts.url,
-        userAgent: opts.userAgent || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
-        callback: (typeof opts.callback === 'function') ? opts.callback : null,
-        stopOnContentLoaded: (typeof opts.stopOnContentLoaded === 'boolean') ? opts.stopOnContentLoaded : true,
-        scanTime: (typeof opts.scanTime === 'number' && opts.scanTime > 0 && opts.scanTime < 1000) ? opts.scanTime : 10,
-        blockedUrls: (Array.isArray(opts.blockedUrls)) ? opts.blockedUrls : [],
-        compress: Boolean(opts.compress),
-        chrome: {
-            ...{
-                port: 9222,
-                chromeFlags: ['--headless', '--disable-gpu']
-            }, ...opts.chrome
-        },
-        scan: {
-            ...{
-                research: false,
-                scripts: true,
-                resources: true,
-                styles: true,
-                metrics: true,
-                frames: true,
-                content: true
-            }, ...opts.scan
-        }
+        chrome: {...defaultChromeObj, ...opts.chrome || {}},
+        callback: opts.callback,
+        log: opts.log || false,
+        rules: {...defaultRules, ...opts.rules || {}},
+        collect: {...defaultCollect, ...opts.collect || {}},
     };
 }
 
 module.exports = {
     test,
-    setPuppeteerPage
+    setPuppeteerPage,
+    getPuppeteerSession
 };

@@ -32,8 +32,8 @@ Scanner.prototype.collectAllDOMEvents = collectAllDOMEvents;
 
 async function start() {
     const connection = await createConnection(this.opts);
-    const scanObj = this.opts.scan;
-    const getContent = Boolean(scanObj.content);
+    const collectObj = this.opts.collect;
+    LOG.debug('Starting scanning', collectObj);
 
     this.client = connection.client;
     this.chrome = connection.chrome;
@@ -41,20 +41,20 @@ async function start() {
         throw new Error('Client is missing');
     }
 
-    await chromeAPI.init(this.client);
-    setUserAgent(this.client, this.opts.userAgent);
+    await chromeAPI.init(this.client, this.opts);
+    setUserAgent(this.client, this.opts.rules.userAgent);
 
-    if (scanObj.resources) {
+    if (collectObj.resources) {
         await setNetworkListener(this.client, this.data.resources);
     }
-    if (scanObj.frames) {
+    if (collectObj.frames) {
         await setFramesListener(this.client, this.data.frames);
     }
-    if (scanObj.scripts) {
-        await setScriptsListener(this.client, getContent, this.data.scripts);
+    if (collectObj.scripts) {
+        await setScriptsListener(this.client, collectObj.content, this.data.scripts);
     }
-    if (scanObj.styles) {
-        await setStyleListener(this.client, getContent, this.data.style);
+    if (collectObj.styles) {
+        await setStyleListener(this.client, collectObj.content, this.data.style);
     }
 
     if (this.opts.blockedUrls) {
@@ -66,11 +66,13 @@ async function createConnection(opts) {
     let client, chrome;
 
     if (opts.puppeteerPage) {
+        LOG.debug('Hooking to puppeteer connection');
         const page = opts.puppeteerPage;
         const connection = page._client._connection._url;
         const {hostname, port} = url.parse(connection, true);
         client = await CRI({host: hostname, port});
     } else {
+        LOG.debug('Creating chrome websocket connection');
         chrome = await chromeLauncher.launch(opts.chrome);
         client = await CRI();
     }
@@ -79,24 +81,27 @@ async function createConnection(opts) {
 }
 
 async function stop() {
+    LOG.debug('Closing chrome process');
+
     if (this.opts.puppeteerPage) {
+        LOG.debug('puppeteer session - not closing session');
         return;
     }
     try {
         if (this.client) {
             await this.client.close();
-            LOG.debug('closed chrome client');
+            LOG.debug('chrome client closed');
         }
     } catch (e) {
-        LOG.error(e);
+        LOG.error(e, e);
     }
     try {
         if (this.chrome) {
             await this.chrome.kill();
-            LOG.debug('closed chrome process');
+            LOG.debug('chrome process closed');
         }
     } catch (e) {
-        LOG.error(e);
+        LOG.error(e, e);
     }
 }
 
@@ -151,20 +156,16 @@ async function collectAllDOMEvents() {
 }
 
 async function getData() {
-    const scanObj = this.opts.scan;
+    const collectObj = this.opts.collect;
 
-    if (scanObj.research) {
-        this.data.research = await chromeAPI.getResearchData(this.client);
+    if (collectObj.metrics) {
+        this.data.metrics = await chromeAPI.getMetrics(this.client);
     }
 
-    if (scanObj.metrics) {
-        try {
-            this.data.metrics = await chromeAPI.getMetrics(this.client);
-            this.data.coverage = await chromeAPI.getBestEffortCoverage(this.client);
-        } catch (e) {
-            //ignore
-        }
+    if (collectObj.research) {
+        this.data.research = await chromeAPI.getResearch(this.client, this.data);
     }
+
     return await processData(this.data, this.opts);
 }
 
