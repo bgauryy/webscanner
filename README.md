@@ -36,7 +36,9 @@ The perfect tool for web applications automated testing enhancements.
 	     collect iframes information
 	     - **research** \<boolean> *default = false*
 	     collect research details
-
+	     - **serviceWorker** \<boolean> *default = true*
+	     collect service workers details
+	     
    **returns** \<promise|object>: scanning data Object  
 
 

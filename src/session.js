@@ -22,7 +22,7 @@ async function scan(opts) {
                 const data = await scanner.getData();
                 await scanner.stop();
                 resolve(data);
-            }, opts.scanTime * 1000);
+            }, opts.rules.scanTime * 1000);
         } catch (err) {
             LOG.error('Scanning error', err);
             await scanner.stop();

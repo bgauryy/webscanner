@@ -1,7 +1,8 @@
 const LOG = require('./utils/logger.js');
+const researchData = {};
 
-async function init(client, opts) {
-    const {CSS, Debugger, Network, Page, Runtime, DOM, Performance} = client;
+async function initScan(client, opts) {
+    const {ServiceWorker, CSS, Debugger, Network, Page, Runtime, DOM, Performance} = client;
 
     await Performance.enable();
     await Page.enable();
@@ -10,6 +11,7 @@ async function init(client, opts) {
     await CSS.enable();
     await Runtime.enable();
     await Network.enable();
+    await ServiceWorker.enable();
 
     await Debugger.setAsyncCallStackDepth({maxDepth: 1000});
     await Runtime.setMaxCallStackSizeToCapture({size: 1000});
@@ -18,8 +20,48 @@ async function init(client, opts) {
     await Network.clearBrowserCookies();
 
     if (opts.collect.research) {
-        initResearch(client);
+        await initResearch(client);
     }
+}
+
+async function initRules(client, {userAgent, blockedUrls}) {
+    if (userAgent) {
+        await client.Emulation.setUserAgentOverride({userAgent});
+    }
+    if (Array.isArray(blockedUrls) && blockedUrls.length > 0) {
+        await client.Network.setBlockedURLs({urls: blockedUrls});
+    }
+
+    //TODO - add
+    //Page.setAdBlockingEnabled
+    //Page.setBypassCSP
+    //Page.setDeviceMetricsOverride
+    //Page.setDeviceOrientationOverride
+    //Page.setFontFamilies
+    //Page.setFontSizes
+    //Page.setDownloadBehavior
+    //Page.setGeolocationOverride
+    //Browser.setPermission
+}
+
+
+function registerServiceWorkerEvents(client, getContent, registrationHandler, versionHandler, errorHandler) {
+    client.ServiceWorker.workerRegistrationUpdated(({registrations}) => {
+        const sw = registrations && registrations[0];
+        if (sw) {
+            registrationHandler(sw);
+        }
+    });
+    client.ServiceWorker.workerErrorReported(obj => {
+        errorHandler(obj);
+    });
+    client.ServiceWorker.workerVersionUpdated(({versions}) => {
+        const sw = versions && versions[0]; //registrationId, scriptURL, runningStatus, status, scriptLastModified, scriptResponseTime,controlledClients
+        if (sw) {
+            versionHandler(sw);
+        }
+    });
+    //ServiceWorker.inspectWorker
 }
 
 async function getAllDOMEvents(client,) {
@@ -149,16 +191,6 @@ function registerStyleEvents(client, getContent, handler) {
     });
 }
 
-function setUserAgent(client, userAgent) {
-    client.Emulation.setUserAgentOverride({userAgent: userAgent});
-}
-
-async function setBlockedURL(client, urls) {
-    if (Array.isArray(urls)) {
-        await client.Network.setBlockedURLs({urls});
-    }
-}
-
 async function getMetrics(client) {
     try {
         const metricsObj = await client.Performance.getMetrics();
@@ -169,52 +201,39 @@ async function getMetrics(client) {
 }
 
 async function initResearch(client) {
-    const storage = {};
-    const contexts = {};
+    researchData.storage = {};
+    researchData.contexts = {};
+    researchData.exceptions = [];
 
-/*    client.Runtime.exceptionRevoked((obj) => {
+    client.Runtime.exceptionRevoked((obj) => {
+        researchData.exceptions.push(obj);
+    });
 
-    });*/
+    client.Runtime.exceptionThrown(obj => {
+        researchData.exceptions.push(obj);
+    });
 
     client.Runtime.executionContextCreated((obj) => {
         const {context: {id, origin, name, auxData}} = obj;
-        contexts[id] = {origin, name, auxData};
+        researchData.contexts[id] = {origin, name, auxData};
     });
 
     client.Runtime.executionContextDestroyed(({executionContextId}) => {
-        const context = contexts[executionContextId] || {};
+        const context = researchData.contexts[executionContextId] || {};
         context.destroyed = true;
     });
 
-/*    client.ServiceWorker.workerRegistrationUpdated((obj) => {
-    });*/
-
     client.DOMStorage.domStorageItemAdded(obj => {
         //eslint-disable-next-line
-        const {storageId, key, newValue} = obj;
-        storage[key] = storage[key] || [];
-        storage[key].push(newValue);
+        researchData.storage[obj.key] = researchData.storage[obj.key] || [];
+        researchData.storage[obj.key].push(obj);
     });
 
-
     await client.CSS.startRuleUsageTracking();
-
-    //Page.setAdBlockingEnabled
-    //Page.setBypassCSP
-    //Page.setDeviceMetricsOverride
-    //Page.setDeviceOrientationOverride
-    //Page.setFontFamilies
-    //Page.setFontSizes
-    //Page.setDownloadBehavior
-    //Page.setGeolocationOverride
-    //Browser.setPermission
-    //Debugger.getWasmBytecode
 }
 
 //eslint-disable-next-line
 async function getResearch(client, data) {
-    const researchData = {};
-
     const manifest = await client.Page.getAppManifest();
     if (manifest && manifest.url) {
         researchData.manifest = manifest;
@@ -237,29 +256,41 @@ async function getResearch(client, data) {
         LOG.error(e);
     }
 
-    /*    //get all contextIds
-        //Runtime.globalLexicalScopeNames({executionContextId})
-        const content = {};
-        for (const frameId in data.frames) {
-            try {
-                content[frameId] = await client.Page.getResourceContent({frameId});
-            } catch (e) {
-                debugger;
-            }
-        }*/
+    //eslint-disable-next-line
+    for (const contextId in researchData.contexts) {
+        const context = researchData.contexts[contextId];
+        if (context) {
+            const scopes = await client.Runtime.globalLexicalScopeNames({contextId});
+            context.scopes = scopes;
+        }
+    }
 
     return researchData;
 }
 
+async function getSystemInfo(client) {
+    try {
+        const info = await client.SystemInfo.getInfo();
+        const process = await client.SystemInfo.getProcessInfo();
+        return {
+            info,
+            process
+        };
+    } catch (e) {
+        LOG.error(e);
+    }
+}
+
 module.exports = {
-    init,
+    initScan,
+    initRules,
     getAllDOMEvents,
     registerFrameEvents,
     registerNetworkEvents,
     registerScriptExecution,
     registerStyleEvents,
-    setUserAgent,
-    setBlockedURL,
+    registerServiceWorkerEvents,
     getMetrics,
-    getResearch
+    getResearch,
+    getSystemInfo
 };

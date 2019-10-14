@@ -8,7 +8,8 @@ const LOG = require('./utils/logger.js');
  */
 async function test(opts) {
     if (!opts || !opts.url) {
-        throw new Error('Configuration Error');
+        LOG.error('url is missing');
+        return;
     }
     const conf = _getConfiguration(opts);
     LOG.setEnabled(opts.log);
@@ -50,12 +51,13 @@ function _getConfiguration(opts = {}) {
         metrics: true,
         frames: true,
         content: true,
-        coverage: true
+        coverage: true,
+        serviceWorker: true
     };
 
     const defaultChromeObj = {
         port: 9222,
-        chromeFlags: ['--headless', '--disable-gpu']
+        chromeFlags: ['--headless', '--disable-gpu', '--enable-precise-memory-info']
     };
 
     const defaultRules = {

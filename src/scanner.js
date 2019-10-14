@@ -10,6 +10,7 @@ class Scanner {
         this.opts = opts;
         this.data = {
             scripts: [],
+            serviceWorker: {},
             resources: {
                 requests: [],
                 responses: {}
@@ -41,8 +42,8 @@ async function start() {
         throw new Error('Client is missing');
     }
 
-    await chromeAPI.init(this.client, this.opts);
-    setUserAgent(this.client, this.opts.rules.userAgent);
+    await chromeAPI.initScan(this.client, this.opts);
+    await chromeAPI.initRules(this.client, this.opts.rules);
 
     if (collectObj.resources) {
         await setNetworkListener(this.client, this.data.resources);
@@ -56,10 +57,11 @@ async function start() {
     if (collectObj.styles) {
         await setStyleListener(this.client, collectObj.content, this.data.style);
     }
-
-    if (this.opts.blockedUrls) {
-        await chromeAPI.setBlockedURL(this.client, this.opts.blockedUrls);
+    if (collectObj.serviceWorker) {
+        await setSWListener(this.client, collectObj.content, this.data.serviceWorker);
     }
+
+
 }
 
 async function createConnection(opts) {
@@ -105,16 +107,40 @@ async function stop() {
     }
 }
 
-function setUserAgent(client, userAgent) {
-    if (userAgent && typeof userAgent === 'string') {
-        chromeAPI.setUserAgent(client, userAgent);
-    }
-}
-
 function setStyleListener(client, getContent, styles) {
     chromeAPI.registerStyleEvents(client, getContent, (styleObject) => {
         styles[styleObject.styleSheetId] = styleObject;
     });
+}
+
+function setSWListener(client, getContent, serviceWorkers) {
+    chromeAPI.registerServiceWorkerEvents(client, getContent,
+        ({registrationId, scopeURL}) => {
+            serviceWorkers[registrationId] = {
+                scopeURL
+            };
+        },
+        ({registrationId, versionId, runningStatus, status}) => {
+            const sw = serviceWorkers[registrationId];
+            sw.version = sw.version || [];
+            sw.version.push(versionId);
+            sw.runningStatus = sw.runningStatus || [];
+            sw.runningStatus.push(runningStatus);
+            sw.status = sw.status || [];
+            sw.status.push(status);
+        },
+        ({registrationId, errorMessage, versionId, lineNumber, columnNumber}) => {
+            const sw = serviceWorkers[registrationId];
+            if (sw) {
+                sw.errors = sw.errors || [];
+                sw.errors.push({
+                    errorMessage,
+                    lineNumber,
+                    columnNumber,
+                    versionId
+                });
+            }
+        });
 }
 
 function setNetworkListener(client, network) {

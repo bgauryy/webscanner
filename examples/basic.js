@@ -22,4 +22,3 @@ Scanner.test({
         coverage: false
     }
 });
-
