@@ -185,7 +185,7 @@ function processResources(data) {
             response.timing = _response.timing; //TODO - process timing
             response.protocol = _response.protocol;
             response.securityState = _response.securityState;
-            response.security = _response.securityDetails;
+            response.securityDetails = _response.securityDetails;
 
             request.response = response;
         }

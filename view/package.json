@@ -6,6 +6,7 @@
     "build": "webpack --mode production"
   },
   "dependencies": {
+    "express": "^4.17.1",
     "@babel/preset-env": "^7.6.2",
     "@babel/preset-react": "^7.0.0",
     "@babel/runtime": "^7.6.2",
@@ -20,11 +21,11 @@
     "react-json-view": "^1.19.1",
     "react-table": "^6.10.3",
     "style-loader": "^1.0.0",
-    "webpack": "^4.41.0",
-    "webpack-cli": "^3.3.9"
+    "webpack": "^4.41.0"
   },
   "license": "MIT",
   "devDependencies": {
-    "@babel/plugin-transform-runtime": "^7.6.2"
+    "@babel/plugin-transform-runtime": "^7.6.2",
+    "webpack-cli": "^3.3.9"
   }
 }

@@ -10,6 +10,7 @@ async function run() {
     window.data = await (await fetch('./data.json')).json();
 
     const resources = getResourcesData(data);
+    debugger;
     render(<ResourcesTable resizable={true} data={resources}/>, document.getElementById("resources"));
 
     const scripts = data.scripts;
@@ -17,16 +18,15 @@ async function run() {
 }
 
 function getResourcesData(data) {
-    return data.resources.map(_resource => {
+    return data.resources.map(request => {
         const resource = {};
-        const request = _resource.request;
-        const response = _resource.response || _resource.redirectResponse || {};
+        const response = request.response || request.redirectResponse || {};
         const security = response && response.securityDetails || {};
-        const initiatorStack = _resource.initiator;
-        const initiator = getInitiator(_resource.initiator);
+        const initiatorStack = request.initiator;
+        const initiator = getInitiator(request.initiator);
 
         try {
-            const urlObj = new URL(_resource.url);
+            const urlObj = new URL(request.url);
             resource.host = urlObj.host;
             resource.pathname = urlObj.pathname;
             resource.queryParams = urlObj.searchParams;
@@ -35,14 +35,14 @@ function getResourcesData(data) {
             //ignore
         }
 
-        resource.frameId = _resource.frameId;
-        resource.frameURL = _resource.frame;
-        resource.timestamp = _resource.timestamp;
+        resource.frameId = request.frameId;
+        resource.frameURL = request.frame.url;
+        resource.timestamp = request.timestamp;
         resource.initiator = initiator;
         resource.initiatorStack = initiatorStack;
         resource.req_url_length = request.url.length;
         resource.req_method = request.method;
-        resource.req_type = _resource.type;
+        resource.req_type = request.type;
         resource.req_headers = request.headers;
         resource.req_post_data = request.postData || '-';
         resource.req_post_data_length = request.postData && request.postData.length || '-';
@@ -54,9 +54,9 @@ function getResourcesData(data) {
         resource.res_ip_timezone = response.timezone;
         resource.res_port = response.remotePort;
         resource.res_headers = response.headers;
-        resource.cert_cipher = security.cipher;
-        resource.cert_issuer = security.issuer;
-        resource.cert_sanList = security.sanList;
+        resource.cert_cipher = security.cipher || '';
+        resource.cert_issuer = security.issuer || '';
+        resource.cert_sanList = security.sanList || [];
 
         return resource;
     });
