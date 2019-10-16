@@ -66,6 +66,10 @@ function _getConfiguration(opts = {}) {
         blockedUrls: []
     };
 
+    const defaultPlugins = {
+        regex: false
+    };
+
     return {
         url: opts.url,
         chrome: {...defaultChromeObj, ...opts.chrome || {}},
@@ -73,6 +77,7 @@ function _getConfiguration(opts = {}) {
         log: opts.log || false,
         rules: {...defaultRules, ...opts.rules || {}},
         collect: {...defaultCollect, ...opts.collect || {}},
+        plugins: {...defaultPlugins, ...opts.plugins || {}},
     };
 }
 

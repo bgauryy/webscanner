@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const url = require('url');
 const chromeLauncher = require('chrome-launcher');
 const CRI = require('chrome-remote-interface');
@@ -61,7 +63,32 @@ async function start() {
         await setSWListener(this.client, collectObj.content, this.data.serviceWorker);
     }
 
+    if (this.opts.plugins) {
+        await handlePlugins(this.client, this.opts.plugins);
+    }
+}
 
+async function handlePlugins(client, plugins) {
+    let regexPlugin;
+
+    try {
+        regexPlugin = fs.readFileSync(path.resolve(__dirname, 'plugins', 'regex.js'), {encoding: 'UTF-8'});
+    } catch (e) {
+        LOG.error(e);
+    }
+
+    if (plugins.regex) {
+        //TODO - ignore this scriptId
+        await client.Page.addScriptToEvaluateOnNewDocument({source: regexPlugin});
+    }
+}
+
+async function getRegexData(client) {
+    const {result} = await client.Runtime.evaluate({
+        expression: 'window[".__regex"].data',
+        returnByValue: true
+    });
+    return JSON.parse(JSON.stringify(result.value));
 }
 
 async function createConnection(opts) {
@@ -190,6 +217,12 @@ async function getData() {
 
     if (collectObj.research) {
         this.data.research = await chromeAPI.getResearch(this.client, this.data);
+    }
+
+    const regexData = await getRegexData(this.client);
+    if (regexData) {
+        this.data.plugins = {};
+        this.data.plugins.regex = regexData;
     }
 
     return await processData(this.data, this.opts);

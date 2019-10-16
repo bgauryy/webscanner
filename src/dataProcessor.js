@@ -31,8 +31,14 @@ async function processData(data, opts) {
         responseData.styleSheets = processStyle(data);
     }
 
-    responseData.research = data.research;
+    if (data.research) {
+        responseData.research = data.research;
+    }
 
+    if (data.plugins && data.plugins.regex) {
+        responseData.plugins = responseData.plugins || {};
+        responseData.plugins.regex = data.plugins.regex;
+    }
 
     //Remove undefined values
     return JSON.parse(JSON.stringify(responseData));

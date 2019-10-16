@@ -2,7 +2,7 @@ const key = '.__regex';
 
 (function () {
     const obj = {
-        map: {},
+        data: {},
         exec: RegExp.prototype.exec
     };
 
@@ -12,23 +12,23 @@ const key = '.__regex';
     });
 })();
 
-
 //eslint-disable-next-line no-extend-native
 RegExp.prototype.exec = function (val) {
     const reg = new RegExp('\\d+:\\d+.*$', 'g');
     reg.exec = window[key].exec;
     const regVal = val + '';
-    let caller = ( getStackObj().caller || 'unknown').replace(reg, '');
+    let caller = (getStackObj().caller || 'unknown').replace(reg, '');
 
     try {
         caller = new URL(caller).host;
     } catch (e) {
         //ignore
     }
+    const data = window[key].data;
 
-    window[key].map[caller] = window[key].map[caller] || {};
-    window[key].map[caller][regVal] = window[key].map[caller][regVal] || new Set();
-    window[key].map[caller][regVal].add(regVal);
+    data[caller] = data[caller] || {};
+    data[caller][regVal] = data[caller][regVal] || new Set();
+    data[caller][regVal].add(regVal);
     return window[key].exec.call(this, val);
 };
 

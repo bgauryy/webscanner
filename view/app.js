@@ -9,27 +9,32 @@ const publicDir = path.join(__dirname, 'dist');
 const dataFilepath = path.join(publicDir, DATA_FILE);
 
 Scanner.test({
-    url: 'http://perimeterx.com',
+    url: 'https://www.example.com',
     log: true,
-    callback: (data) => {
-        startServer(data, 8080);
-    },
+    callback: onDataReceived,
     rules: {
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
         stopOnContentLoaded: true,
         scanTime: 5
     },
     collect: {
-        research: true,
-        content: true,
-        scripts: true,
-        resources: true,
-        styles: true,
-        metrics: true,
-        frames: true,
-        coverage: true
+        research: false,
+        content: false,
+        scripts: false,
+        resources: false,
+        styles: false,
+        metrics: false,
+        frames: false,
+        coverage: false
+    }, plugins: {
+        regex: true
     }
 });
+
+function onDataReceived(data) {
+    console.log(data);
+    startServer(data, 8080);
+}
 
 function startServer(data, port) {
     console.log(`Running server on localhost:${port} publicDir: ${publicDir}`);
@@ -61,6 +66,6 @@ function terminate(server) {
         console.log('Server closed');
         server.close();
     } catch (e) {
-        throw e;
+        console.log('Failed to close server', e);
     }
 }
