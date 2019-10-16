@@ -85,10 +85,16 @@ async function handlePlugins(client, plugins) {
 
 async function getRegexData(client) {
     const {result} = await client.Runtime.evaluate({
-        expression: 'window[".__regex"].data',
+        expression: 'window[".__regex"]',
         returnByValue: true
     });
-    return JSON.parse(JSON.stringify(result.value));
+
+    try {
+        return JSON.parse(result.value);
+    } catch (e) {
+        LOG.error('Failed to parse regex plugin data', e);
+    }
+
 }
 
 async function createConnection(opts) {
