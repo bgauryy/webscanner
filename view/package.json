@@ -2,7 +2,7 @@
   "name": "webscanner-preview",
   "version": "1.0.0",
   "scripts": {
-    "start": "webpack --mode development",
+    "dev": "webpack --mode development",
     "build": "webpack --mode production"
   },
   "dependencies": {
