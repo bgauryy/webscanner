@@ -1,9 +1,13 @@
+
 # Web Scanner
 
-The perfect tool for web applications automated testing enhancements.
--  Collect and aggregates resources data out of the box (performance,  network, styles..)
-- Configurable with simple API
-- Integrates with puppeteer
+Puppeteer extension for web applications data enrichment
+- Collect and aggregates resources
+- Get scripts and CSS content
+- Collect advanced performance metrics
+- Iframes execution
+- Service workers
+- Full network information
 
 ## API
 
@@ -38,6 +42,7 @@ The perfect tool for web applications automated testing enhancements.
 	     collect research details
 	     - **serviceWorker** \<boolean> *default = true*
 	     collect service workers details
+
 	     
    **returns** \<promise|object>: scanning data Object  
 
@@ -54,59 +59,7 @@ Register a puppeteer page for a scan
 
 ## Examples
 
-#### Basic scan
-```javascript
-Scanner.test({
-    url: 'http://example.com',
-    log: true,
-    callback: (data) => {
-        console.log('data', data);
-    },
-    rules: {
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
-        stopOnContentLoaded: true,
-        scanTime: 5
-    },
-    collect: {
-        research: true,
-        content: false,
-        scripts: false,
-        resources: false,
-        styles: false,
-        metrics: false,
-        frames: true,
-        coverage: false
-    }
-});
-```
-
-#### Async scan
-```javascript
-(async function () {
-    const data = await Scanner.test({
-        url: 'http://example.com',
-        log: true,
-        rules: {
-            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
-            stopOnContentLoaded: true,
-            scanTime: 5
-        },
-        collect: {
-            research: true,
-            content: false,
-            scripts: false,
-            resources: false,
-            styles: false,
-            metrics: false,
-            frames: true,
-            coverage: false
-        }
-    });
-    console.log(data);
-})();
-```
-
-#### Puppeteer integration 
+#### Basic integration 
  ````javascript
 (async () => {
     const browser = await puppeteer.launch();
@@ -134,6 +87,32 @@ Scanner.test({
 })();
 
 ````
+
+#### Standalone scan
+```javascript
+Scanner.test({
+    url: 'http://example.com',
+    log: true,
+    callback: (data) => {
+        console.log('data', data);
+    },
+    rules: {
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
+        stopOnContentLoaded: true,
+        scanTime: 5
+    },
+    collect: {
+        research: true,
+        content: false,
+        scripts: false,
+        resources: false,
+        styles: false,
+        metrics: false,
+        frames: true,
+        coverage: false
+    }
+});
+```
 
 ## Scanning Object  Structure
 

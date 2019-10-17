@@ -15,8 +15,7 @@
         for (const prop in data) {
             customData[prop] = Array.from(data[prop]);
         }
-
-        return JSON.stringify(customData);
+        return customData;
     }
 
     //eslint-disable-next-line
@@ -27,7 +26,7 @@
         let caller = (getStackObj().caller || 'unknown').replace(reg, '');
 
         try {
-            caller = new URL(caller).host;
+            caller = new URL(caller).href;
         } catch (e) {
             //ignore
         }

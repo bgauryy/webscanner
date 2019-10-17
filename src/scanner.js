@@ -90,11 +90,10 @@ async function getRegexData(client) {
     });
 
     try {
-        return JSON.parse(result.value);
+        return result.value;
     } catch (e) {
         LOG.error('Failed to parse regex plugin data', e);
     }
-
 }
 
 async function createConnection(opts) {
@@ -215,6 +214,7 @@ async function collectAllDOMEvents() {
 }
 
 async function getData() {
+    LOG.debug('Preparing data...');
     const collectObj = this.opts.collect;
 
     if (collectObj.metrics) {
