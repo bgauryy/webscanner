@@ -29,13 +29,15 @@ describe('context testing', function () {
                 scripts: false,
                 serviceWorker: false,
                 styles: false,
-                domEvents: false
+                domEvents: false,
             },
             log: false,
             rules: {
                 blockedUrls: [],
                 scanTime: 5000,
-                stopOnContentLoaded: true
+                stopOnContentLoaded: true,
+                disableCSP: false,
+                adBlocking: false,
             },
             stealth: false,
             page: {}

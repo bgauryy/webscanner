@@ -182,7 +182,6 @@ async function getData() {
     if (collect.coverage) {
         this.data.coverage = await chromeClient.getCoverage(this.client);
     }
-
     if (collect.research) {
         this.data.research = await chromeClient.getResearch(this.client, this.data);
     }

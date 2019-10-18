@@ -20,9 +20,14 @@ async function initScan(client) {
 
     await Network.clearBrowserCache();
     await Network.clearBrowserCookies();
+    await Page.clearCompilationCache();
 }
 
-async function initRules(client, {userAgent, blockedUrls, stealth}) {
+async function initRules(client, {userAgent, blockedUrls, stealth, adBlocking, disableCSP}) {
+    await client.Page.setDownloadBehavior({behavior: 'deny'});
+    await client.Page.setAdBlockingEnabled({enabled: Boolean(adBlocking)});
+    await client.Page.setBypassCSP({enabled: Boolean(disableCSP)});
+
     if (userAgent) {
         await client.Emulation.setUserAgentOverride({userAgent});
     }
@@ -50,16 +55,6 @@ async function initRules(client, {userAgent, blockedUrls, stealth}) {
             LOG.error(e);
         }
     }
-    //TODO - add
-    //Page.setAdBlockingEnabled
-    //Page.setBypassCSP
-    //Page.setDeviceMetricsOverride
-    //Page.setDeviceOrientationOverride
-    //Page.setFontFamilies
-    //Page.setFontSizes
-    //Page.setDownloadBehavior
-    //Page.setGeolocationOverride
-    //Browser.setPermission
 }
 
 function registerServiceWorkerEvents(client, getContent, registrationHandler, versionHandler, errorHandler) {

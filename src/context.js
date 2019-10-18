@@ -29,7 +29,9 @@ function getContext(page, opts = {}) {
     const defaultRules = {
         scanTime: 5000,
         stopOnContentLoaded: true,
-        blockedUrls: []
+        blockedUrls: [],
+        adBlocking: false,
+        disableCSP: false
     };
 
     return {
