@@ -35,9 +35,13 @@ async function processData(data, opts) {
         responseData.research = data.research;
     }
 
-    if (data.plugins && data.plugins.regex) {
-        responseData.plugins = responseData.plugins || {};
-        responseData.plugins.regex = data.plugins.regex;
+    if (data.cookies) {
+        responseData.cookies = data.cookies;
+    }
+
+    if (data.domEvents) {
+        //TODO - add by url
+        responseData.domEvents = data.domEvents;
     }
 
     //Remove undefined values
@@ -123,8 +127,8 @@ function processScripts(data) {
 }
 
 function processResources(data) {
-    const requests = data.resources.requests;
-    const responses = data.resources.responses;
+    const requests = data.resources.requests || {};
+    const responses = data.resources.responses || {};
 
     if (!requests || requests.length <= 0) {
         return;

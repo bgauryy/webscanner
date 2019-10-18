@@ -1,7 +1,9 @@
+const fs = require('fs');
+const path = require('path');
 const LOG = require('./utils/logger.js');
 const researchData = {};
 
-async function initScan(client, opts) {
+async function initScan(client) {
     const {ServiceWorker, CSS, Debugger, Network, Page, Runtime, DOM, Performance} = client;
 
     await Performance.enable();
@@ -18,20 +20,36 @@ async function initScan(client, opts) {
 
     await Network.clearBrowserCache();
     await Network.clearBrowserCookies();
-
-    if (opts.collect.research) {
-        await initResearch(client);
-    }
 }
 
-async function initRules(client, {userAgent, blockedUrls}) {
+async function initRules(client, {userAgent, blockedUrls, stealth}) {
     if (userAgent) {
         await client.Emulation.setUserAgentOverride({userAgent});
     }
     if (Array.isArray(blockedUrls) && blockedUrls.length > 0) {
         await client.Network.setBlockedURLs({urls: blockedUrls});
     }
-
+    if (stealth) {
+        try {
+            const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36';
+            //TODO - ignore this scriptId
+            await client.Page.addScriptToEvaluateOnNewDocument({source: fs.readFileSync(path.resolve(__dirname, 'plugins', 'stealth.js'), {encoding: 'UTF-8'})});
+            if (!userAgent) {
+                await client.Emulation.setUserAgentOverride({userAgent: ua});
+            }
+            await client.Network.setExtraHTTPHeaders({
+                headers: {
+                    'Accept-Encoding': 'gzip, deflate',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Cache-Control': 'no-cache',
+                    'Connection': 'keep-alive',
+                    'User-Agent': userAgent ? userAgent : ua
+                }
+            });
+        } catch (e) {
+            LOG.error(e);
+        }
+    }
     //TODO - add
     //Page.setAdBlockingEnabled
     //Page.setBypassCSP
@@ -43,7 +61,6 @@ async function initRules(client, {userAgent, blockedUrls}) {
     //Page.setGeolocationOverride
     //Browser.setPermission
 }
-
 
 function registerServiceWorkerEvents(client, getContent, registrationHandler, versionHandler, errorHandler) {
     client.ServiceWorker.workerRegistrationUpdated(({registrations}) => {
@@ -62,6 +79,10 @@ function registerServiceWorkerEvents(client, getContent, registrationHandler, ve
         }
     });
     //ServiceWorker.inspectWorker
+}
+
+async function setCoverage(client) {
+    await client.CSS.startRuleUsageTracking();
 }
 
 async function getAllDOMEvents(client,) {
@@ -228,8 +249,6 @@ async function initResearch(client) {
         researchData.storage[obj.key] = researchData.storage[obj.key] || [];
         researchData.storage[obj.key].push(obj);
     });
-
-    await client.CSS.startRuleUsageTracking();
 }
 
 //eslint-disable-next-line
@@ -238,23 +257,12 @@ async function getResearch(client, data) {
     if (manifest && manifest.url) {
         researchData.manifest = manifest;
     }
-    researchData.cookies = await client.Page.getCookies();
     researchData.resourcesTree = await client.Page.getResourceTree();
     researchData.frameTree = await client.Page.getFrameTree();
     //researchData.layoutMetrics = await client.Page.getLayoutMetrics();
     researchData.testReport = await client.Page.generateTestReport({message: 'dd'});
     researchData.heapSize = await client.Runtime.getHeapUsage();
 
-
-    //await client.CSS.stopRuleUsageTracking();
-    researchData.cssCoverage = await client.CSS.takeCoverageDelta();
-
-    try {
-        const coverageObj = await client.Profiler.getBestEffortCoverage();
-        researchData.coverage = coverageObj && coverageObj.result;
-    } catch (e) {
-        LOG.error(e);
-    }
 
     //eslint-disable-next-line
     for (const contextId in researchData.contexts) {
@@ -281,10 +289,22 @@ async function getSystemInfo(client) {
     }
 }
 
+async function getCookies(client) {
+    return await client.Page.getCookies();
+}
+
+async function getCoverage(client) {
+    //await client.CSS.stopRuleUsageTracking();
+    researchData.cssCoverage = await client.CSS.takeCoverageDelta();
+
+    const {result} = await client.Profiler.getBestEffortCoverage();
+    researchData.coverage = result;
+}
+
 module.exports = {
     initScan,
     initRules,
-    getAllDOMEvents,
+    initResearch,
     registerFrameEvents,
     registerNetworkEvents,
     registerScriptExecution,
@@ -292,5 +312,9 @@ module.exports = {
     registerServiceWorkerEvents,
     getMetrics,
     getResearch,
-    getSystemInfo
+    getCookies,
+    getAllDOMEvents,
+    getCoverage,
+    setCoverage,
+    getSystemInfo,
 };

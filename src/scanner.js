@@ -1,15 +1,34 @@
-const fs = require('fs');
-const path = require('path');
 const url = require('url');
-const chromeLauncher = require('chrome-launcher');
 const CRI = require('chrome-remote-interface');
 const LOG = require('./utils/logger.js');
 const {processData} = require('./dataProcessor.js');
-const chromeAPI = require('./chromeAPI.js');
+const chromeClient = require('./client.js');
+
+async function getPuppeteerSession(context) {
+    const scanner = new Scanner(context);
+    await scanner.init();
+    return new Proxy(context.page, {
+        get: function (page, prop) {
+            switch (prop) {
+                case 'getData':
+                    return async function () {
+                        return await scanner.getData();
+                    };
+                case 'close':
+                    return async function () {
+                        return await scanner.close();
+                    };
+                default:
+                    return page[prop];
+            }
+        }
+    });
+}
 
 class Scanner {
-    constructor(opts) {
-        this.opts = opts;
+    constructor(context) {
+        this.client = null;
+        this.context = context;
         this.data = {
             scripts: [],
             serviceWorker: {},
@@ -26,127 +45,69 @@ class Scanner {
     }
 }
 
-Scanner.prototype.start = start;
-Scanner.prototype.stop = stop;
+Scanner.prototype.init = init;
+Scanner.prototype.close = close;
 Scanner.prototype.getData = getData;
-Scanner.prototype.navigate = navigate;
-Scanner.prototype.waitDOMContentLoaded = waitDOMContentLoaded;
-Scanner.prototype.collectAllDOMEvents = collectAllDOMEvents;
 
-async function start() {
-    const connection = await createConnection(this.opts);
-    const collectObj = this.opts.collect;
-    LOG.debug('Starting scanning', collectObj);
+async function init() {
+    LOG.debug('Initiating Scanner');
+    const collect = this.context.collect;
+    this.client = await getChromeClient(this.context.page);
 
-    this.client = connection.client;
-    this.chrome = connection.chrome;
     if (!this.client) {
         throw new Error('Client is missing');
     }
 
-    await chromeAPI.initScan(this.client, this.opts);
-    await chromeAPI.initRules(this.client, this.opts.rules);
+    await chromeClient.initScan(this.client, this.context);
+    await chromeClient.initRules(this.client, this.context.rules);
 
-    if (collectObj.resources) {
-        await setNetworkListener(this.client, this.data.resources);
+    if (collect.requests || collect.responses) {
+        await setNetworkListener(this.client, collect, this.data.resources);
     }
-    if (collectObj.frames) {
+    if (collect.frames) {
         await setFramesListener(this.client, this.data.frames);
     }
-    if (collectObj.scripts) {
-        await setScriptsListener(this.client, collectObj.content, this.data.scripts);
+    if (collect.scripts) {
+        await setScriptsListener(this.client, collect.content, this.data.scripts);
     }
-    if (collectObj.styles) {
-        await setStyleListener(this.client, collectObj.content, this.data.style);
+    if (collect.styles) {
+        await setStyleListener(this.client, collect.content, this.data.style);
     }
-    if (collectObj.serviceWorker) {
-        await setSWListener(this.client, collectObj.content, this.data.serviceWorker);
+    if (collect.serviceWorker) {
+        await setSWListener(this.client, collect.content, this.data.serviceWorker);
     }
-
-    if (this.opts.plugins) {
-        await handlePlugins(this.client, this.opts.plugins);
+    if (collect.coverage) {
+        await chromeClient.setCoverage(this.client);
+    }
+    if (collect.research) {
+        await chromeClient.initResearch(this.client);
     }
 }
 
-async function handlePlugins(client, plugins) {
-    let regexPlugin;
+async function close() {
+    LOG.debug('Closing Scanner');
 
     try {
-        regexPlugin = fs.readFileSync(path.resolve(__dirname, 'plugins', 'regex.js'), {encoding: 'UTF-8'});
+        await this.client.close();
     } catch (e) {
         LOG.error(e);
     }
-
-    if (plugins.regex) {
-        //TODO - ignore this scriptId
-        await client.Page.addScriptToEvaluateOnNewDocument({source: regexPlugin});
-    }
 }
 
-async function getRegexData(client) {
-    const {result} = await client.Runtime.evaluate({
-        expression: 'window[".__regex"]',
-        returnByValue: true
-    });
-
-    try {
-        return result.value;
-    } catch (e) {
-        LOG.error('Failed to parse regex plugin data', e);
-    }
-}
-
-async function createConnection(opts) {
-    let client, chrome;
-
-    if (opts.puppeteerPage) {
-        LOG.debug('Hooking to puppeteer connection');
-        const page = opts.puppeteerPage;
-        const connection = page._client._connection._url;
-        const {hostname, port} = url.parse(connection, true);
-        client = await CRI({host: hostname, port});
-    } else {
-        LOG.debug('Creating chrome websocket connection');
-        chrome = await chromeLauncher.launch(opts.chrome);
-        client = await CRI();
-    }
-
-    return {client, chrome};
-}
-
-async function stop() {
-    LOG.debug('Closing chrome process');
-
-    if (this.opts.puppeteerPage) {
-        LOG.debug('puppeteer session - not closing session');
-        return;
-    }
-    try {
-        if (this.client) {
-            await this.client.close();
-            LOG.debug('chrome client closed');
-        }
-    } catch (e) {
-        LOG.error(e, e);
-    }
-    try {
-        if (this.chrome) {
-            await this.chrome.kill();
-            LOG.debug('chrome process closed');
-        }
-    } catch (e) {
-        LOG.error(e, e);
-    }
+async function getChromeClient(page) {
+    const connection = page._client._connection._url;
+    const {hostname, port} = url.parse(connection, true);
+    return await CRI({host: hostname, port});
 }
 
 function setStyleListener(client, getContent, styles) {
-    chromeAPI.registerStyleEvents(client, getContent, (styleObject) => {
+    chromeClient.registerStyleEvents(client, getContent, (styleObject) => {
         styles[styleObject.styleSheetId] = styleObject;
     });
 }
 
 function setSWListener(client, getContent, serviceWorkers) {
-    chromeAPI.registerServiceWorkerEvents(client, getContent,
+    chromeClient.registerServiceWorkerEvents(client, getContent,
         ({registrationId, scopeURL}) => {
             serviceWorkers[registrationId] = {
                 scopeURL
@@ -175,18 +136,22 @@ function setSWListener(client, getContent, serviceWorkers) {
         });
 }
 
-function setNetworkListener(client, network) {
-    chromeAPI.registerNetworkEvents(client,
+function setNetworkListener(client, opts, network) {
+    chromeClient.registerNetworkEvents(client,
         (request) => {
-            network.requests.push(request);
+            if (opts.requests) {
+                network.requests.push(request);
+            }
         },
         (response) => {
-            network.responses[response.requestId] = response;
+            if (opts.responses) {
+                network.responses[response.requestId] = response;
+            }
         });
 }
 
 function setFramesListener(client, frames) {
-    chromeAPI.registerFrameEvents(client, (frame, state) => {
+    chromeClient.registerFrameEvents(client, (frame, state) => {
         const frameId = frame.frameId || frame.id;
         frames[frameId] = frames[frameId] || {};
         frames[frameId] = Object.assign(frames[frameId], frame);
@@ -196,44 +161,34 @@ function setFramesListener(client, frames) {
 }
 
 function setScriptsListener(client, getContent, scripts) {
-    chromeAPI.registerScriptExecution(client, getContent, (scriptObj) => {
+    chromeClient.registerScriptExecution(client, getContent, (scriptObj) => {
         scripts.push(scriptObj);
     });
 }
 
-function navigate(url) {
-    return this.client.Page.navigate({url});
-}
-
-function waitDOMContentLoaded() {
-    return this.client.Page.domContentEventFired();
-}
-
-async function collectAllDOMEvents() {
-    this.data.events = await chromeAPI.getAllDOMEvents(this.client);
-}
-
 async function getData() {
     LOG.debug('Preparing data...');
-    const collectObj = this.opts.collect;
+    const collect = this.context.collect;
 
-    if (collectObj.metrics) {
-        this.data.metrics = await chromeAPI.getMetrics(this.client);
+    if (collect.domEvents) {
+        this.data.domEvents = await chromeClient.getAllDOMEvents(this.client);
+    }
+    if (collect.metrics) {
+        this.data.metrics = await chromeClient.getMetrics(this.client);
+    }
+    if (collect.cookies) {
+        this.data.cookies = await chromeClient.getCookies(this.client);
+    }
+    if (collect.coverage) {
+        this.data.coverage = await chromeClient.getCoverage(this.client);
     }
 
-    if (collectObj.research) {
-        this.data.research = await chromeAPI.getResearch(this.client, this.data);
+    if (collect.research) {
+        this.data.research = await chromeClient.getResearch(this.client, this.data);
     }
-
-    const regexData = await getRegexData(this.client);
-    if (regexData) {
-        this.data.plugins = {};
-        this.data.plugins.regex = regexData;
-    }
-
     return await processData(this.data, this.opts);
 }
 
 module.exports = {
-    Scanner
+    getPuppeteerSession
 };
