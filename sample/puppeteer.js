@@ -1,8 +1,10 @@
 const puppeteer = require('puppeteer');
 const Scanner = require('../src/index');
+const fs = require('fs');
+const path = require('path');
 
 (async () => {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({args: ["--proxy-server='direct://'", '--proxy-bypass-list=*']})
     const page = await Scanner.getSession(await browser.newPage(), {
         log: true,
         rules: {
@@ -12,20 +14,54 @@ const Scanner = require('../src/index');
             adBlocking: true,
         },
         collect: {
-            research: true,
-            domEvents: true,
-            content: true,
-            scripts: true,
-            resources: true,
-            styles: true,
-            metrics: true,
             frames: true,
-            coverage: true
+
+            scripts: true,
+            scriptSource: true,
+            scriptDOMEvents: true,
+            scriptCoverage: true,
+
+            styles: true,
+            styleSource: true,
+            styleCoverage: true,
+
+            requests: true,
+            responses: true,
+            bodyResponse: [],
+            dataURI: true,
+
+            serviceWorker: true,
+
+            logs: true,
+            console: true,
+            errors: true,
+            storage: true,
+            metrics: true,
+            cookies: true,
         }
     });
 
-    await page.goto('http://example.com', {waitUntil: 'load'});
+    await page.goto('https://example.com', {waitUntil: 'load'});
+    await sleep(10);
+
     const data = await page.getData();
     await browser.close();
-    console.log('data', data);
+    await saveData(data, path.resolve('result.json'));
 })();
+
+async function saveData(data, JSONPath) {
+    return new Promise((res) => {
+        fs.writeFile(JSONPath, JSON.stringify(data), function (err) {
+            if (err) {
+                console.log(err);
+            }
+            res();
+        });
+    });
+}
+
+async function sleep(seconds) {
+    return await new Promise(resolve => {
+        setTimeout(resolve, seconds * 1000);
+    });
+}

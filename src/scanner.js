@@ -30,17 +30,20 @@ class Scanner {
         this.client = null;
         this.context = context;
         this.data = {
-            scripts: [],
+            scripts: {},
             serviceWorker: {},
-            resources: {
-                requests: [],
-                responses: {}
-            },
+            requests: {},
             events: [],
             frames: {},
-            style: {},
+            styles: {},
+            research: {},
             metrics: null,
-            coverage: null
+            coverage: null,
+            logs: {},
+            console: {},
+            errors: [],
+            contexts: {},
+            storage: {}
         };
     }
 }
@@ -55,32 +58,33 @@ async function init() {
     this.client = await getChromeClient(this.context.page);
 
     if (!this.client) {
-        throw new Error('Client is missing');
+        LOG.error('Client is missing');
     }
 
-    await chromeClient.initScan(this.client, this.context);
-    await chromeClient.initRules(this.client, this.context.rules);
+    await chromeClient.initScan(this.client, this.context.collect, this.context.rules);
 
-    if (collect.requests || collect.responses) {
-        await setNetworkListener(this.client, collect, this.data.resources);
-    }
-    if (collect.frames) {
-        await setFramesListener(this.client, this.data.frames);
-    }
-    if (collect.scripts) {
-        await setScriptsListener(this.client, collect.content, this.data.scripts);
-    }
+    chromeClient.registerScriptExecution(this.client, collect.scriptSource, this.data.scripts);
+    chromeClient.registerFrameEvents(this.client, this.data.frames);
+    chromeClient.setContextListenr(this.client, this.data.contexts);
+    chromeClient.registerNetworkEvents(this.client, this.context.rules, this.context.collect, this.data.requests);
+
     if (collect.styles) {
-        await setStyleListener(this.client, collect.content, this.data.style);
+        chromeClient.registerStyleEvents(this.client, collect.content, this.data.styles);
     }
     if (collect.serviceWorker) {
         await setSWListener(this.client, collect.content, this.data.serviceWorker);
     }
-    if (collect.coverage) {
-        await chromeClient.setCoverage(this.client);
+    if (collect.logs) {
+        await chromeClient.setLogs(this.client, this.data.logs);
     }
-    if (collect.research) {
-        await chromeClient.initResearch(this.client);
+    if (collect.console) {
+        await chromeClient.setConsole(this.client, this.data.console);
+    }
+    if (collect.errors) {
+        await chromeClient.setErrors(this.client, this.data.errors);
+    }
+    if (collect.storage) {
+        await chromeClient.setStorage(this.client, this.data.storage);
     }
 }
 
@@ -100,14 +104,9 @@ async function getChromeClient(page) {
     return await CRI({host: hostname, port});
 }
 
-function setStyleListener(client, getContent, styles) {
-    chromeClient.registerStyleEvents(client, getContent, (styleObject) => {
-        styles[styleObject.styleSheetId] = styleObject;
-    });
-}
-
-function setSWListener(client, getContent, serviceWorkers) {
-    chromeClient.registerServiceWorkerEvents(client, getContent,
+//TODO - move to client.js
+async function setSWListener(client, content, serviceWorkers) {
+    await chromeClient.registerServiceWorkerEvents(client, content,
         ({registrationId, scopeURL}) => {
             serviceWorkers[registrationId] = {
                 scopeURL
@@ -136,41 +135,11 @@ function setSWListener(client, getContent, serviceWorkers) {
         });
 }
 
-function setNetworkListener(client, opts, network) {
-    chromeClient.registerNetworkEvents(client,
-        (request) => {
-            if (opts.requests) {
-                network.requests.push(request);
-            }
-        },
-        (response) => {
-            if (opts.responses) {
-                network.responses[response.requestId] = response;
-            }
-        });
-}
-
-function setFramesListener(client, frames) {
-    chromeClient.registerFrameEvents(client, (frame, state) => {
-        const frameId = frame.frameId || frame.id;
-        frames[frameId] = frames[frameId] || {};
-        frames[frameId] = Object.assign(frames[frameId], frame);
-        frames[frameId].state = frames[frameId].state || [];
-        frames[frameId].state.push(state);
-    });
-}
-
-function setScriptsListener(client, getContent, scripts) {
-    chromeClient.registerScriptExecution(client, getContent, (scriptObj) => {
-        scripts.push(scriptObj);
-    });
-}
-
 async function getData() {
     LOG.debug('Preparing data...');
     const collect = this.context.collect;
 
-    if (collect.domEvents) {
+    if (collect.scriptDOMEvents) {
         this.data.domEvents = await chromeClient.getAllDOMEvents(this.client);
     }
     if (collect.metrics) {
@@ -179,13 +148,13 @@ async function getData() {
     if (collect.cookies) {
         this.data.cookies = await chromeClient.getCookies(this.client);
     }
-    if (collect.coverage) {
+    if (collect.scriptCoverage || collect.styleCoverage) {
         this.data.coverage = await chromeClient.getCoverage(this.client);
     }
     if (collect.research) {
-        this.data.research = await chromeClient.getResearch(this.client, this.data);
+        this.data.research = await chromeClient.getResearch(this.client, this.data.research);
     }
-    return await processData(this.data, this.opts);
+    return await processData(this.data, this.context);
 }
 
 module.exports = {

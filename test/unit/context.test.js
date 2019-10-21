@@ -8,39 +8,36 @@ describe('context testing', function () {
 
         expect(context.getContext({}, {})).toEqual({
             callback: null,
-            chrome: {
-                chromeFlags: [
-                    '--headless',
-                    '--disable-gpu',
-                    '--enable-precise-memory-info'
-                ],
-                port: 9222
-            },
             collect: {
-                content: false,
+                bodyResponse: [],
+                console: false,
                 cookies: false,
-                coverage: false,
+                dataURI: false,
+                errors: false,
                 frames: false,
+                logs: false,
                 metrics: false,
                 requests: false,
-                research: false,
-                resources: false,
                 responses: false,
+                scriptCoverage: false,
+                scriptDOMEvents: false,
+                scriptSource: false,
                 scripts: false,
                 serviceWorker: false,
-                styles: false,
-                domEvents: false,
+                storage: false,
+                styleCoverage: false,
+                styleSource: true,
+                styles: false
             },
             log: false,
+            page: {},
             rules: {
-                blockedUrls: [],
-                scanTime: 5000,
-                stopOnContentLoaded: true,
-                disableCSP: false,
                 adBlocking: false,
+                blockedUrls: [],
+                disableCSP: false,
+                disableServices: false
             },
-            stealth: false,
-            page: {}
+            stealth: false
         });
     });
 });

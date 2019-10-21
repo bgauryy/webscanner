@@ -1,46 +1,52 @@
+const {enrichURLDetails, enrichIPDetails, getInitiator} = require('../src/utils/dataHelper.js');
+const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
 const fs = require('fs');
 const path = require('path');
 const LOG = require('./utils/logger.js');
-const researchData = {};
 
-async function initScan(client) {
-    const {ServiceWorker, CSS, Debugger, Network, Page, Runtime, DOM, Performance} = client;
+async function initScan(client, collect, rules) {
+    const {CSS, Debugger, Network, Page, Runtime, DOM} = client;
 
-    await Performance.enable();
     await Page.enable();
     await DOM.enable();
-    await Debugger.enable();
     await CSS.enable();
+    await Debugger.enable();
     await Runtime.enable();
     await Network.enable();
-    await ServiceWorker.enable();
-
-    await Debugger.setAsyncCallStackDepth({maxDepth: 1000});
-    await Runtime.setMaxCallStackSizeToCapture({size: 1000});
 
     await Network.clearBrowserCache();
     await Network.clearBrowserCookies();
-    await Page.clearCompilationCache();
-}
-
-async function initRules(client, {userAgent, blockedUrls, stealth, adBlocking, disableCSP}) {
+    await client.Debugger.setAsyncCallStackDepth({maxDepth: 1000});
+    await client.Runtime.setMaxCallStackSizeToCapture({size: 1000});
     await client.Page.setDownloadBehavior({behavior: 'deny'});
-    await client.Page.setAdBlockingEnabled({enabled: Boolean(adBlocking)});
-    await client.Page.setBypassCSP({enabled: Boolean(disableCSP)});
+    await client.Page.setAdBlockingEnabled({enabled: Boolean(rules.adBlocking)});
+    await client.Page.setBypassCSP({enabled: Boolean(rules.disableCSP)});
 
-    if (userAgent) {
-        await client.Emulation.setUserAgentOverride({userAgent});
+    if (collect.styleCoverage) {
+        await startCSSCoverageTracking(client);
     }
-    if (Array.isArray(blockedUrls) && blockedUrls.length > 0) {
+
+    if (rules.userAgent) {
+        await client.Emulation.setUserAgentOverride({userAgent: rules.userAgent});
+    }
+
+    let blockedUrls = rules.blockedUrls;
+    if (rules.disableServices) {
+        const services = getBlockedDomains().map(domain => `*${domain}*`);
+        blockedUrls = rules.blockedUrls.concat(services);
+    }
+
+    if (blockedUrls.length) {
         await client.Network.setBlockedURLs({urls: blockedUrls});
     }
-    if (stealth) {
+    if (rules.stealth) {
         try {
-            const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36';
+            const stealthUA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36';
             //TODO - ignore this scriptId
-            await client.Page.addScriptToEvaluateOnNewDocument({source: fs.readFileSync(path.resolve(__dirname, 'plugins', 'stealth.js'), {encoding: 'UTF-8'})});
-            if (!userAgent) {
-                await client.Emulation.setUserAgentOverride({userAgent: ua});
+            //eslint-disable-next-line
+            const scriptId = await client.Page.addScriptToEvaluateOnNewDocument({source: fs.readFileSync(path.resolve(__dirname, 'plugins', 'stealth.js'), {encoding: 'UTF-8'})});
+            if (!rules.userAgent) {
+                await client.Emulation.setUserAgentOverride({userAgent: stealthUA});
             }
             await client.Network.setExtraHTTPHeaders({
                 headers: {
@@ -48,7 +54,7 @@ async function initRules(client, {userAgent, blockedUrls, stealth, adBlocking, d
                     'Accept-Language': 'en-US,en;q=0.9',
                     'Cache-Control': 'no-cache',
                     'Connection': 'keep-alive',
-                    'User-Agent': userAgent ? userAgent : ua
+                    'User-Agent': rules.userAgent ? rules.userAgent : stealthUA
                 }
             });
         } catch (e) {
@@ -57,7 +63,9 @@ async function initRules(client, {userAgent, blockedUrls, stealth, adBlocking, d
     }
 }
 
-function registerServiceWorkerEvents(client, getContent, registrationHandler, versionHandler, errorHandler) {
+async function registerServiceWorkerEvents(client, getContent, registrationHandler, versionHandler, errorHandler) {
+    await client.ServiceWorker.enable();
+
     client.ServiceWorker.workerRegistrationUpdated(({registrations}) => {
         const sw = registrations && registrations[0];
         if (sw) {
@@ -74,13 +82,14 @@ function registerServiceWorkerEvents(client, getContent, registrationHandler, ve
         }
     });
     //ServiceWorker.inspectWorker
+
 }
 
-async function setCoverage(client) {
+async function startCSSCoverageTracking(client) {
     await client.CSS.startRuleUsageTracking();
 }
 
-async function getAllDOMEvents(client,) {
+async function getAllDOMEvents(client) {
     const DOMEvents = [];
 
     let evaluationRes = await client.Runtime.evaluate({expression: 'document.querySelectorAll("*");'});
@@ -123,7 +132,7 @@ async function getAllDOMEvents(client,) {
     return DOMEvents;
 }
 
-function registerFrameEvents(client, handler) {
+function registerFrameEvents(client, frames) {
     client.Page.frameStartedLoading((frame) => {
         handler(frame, 'loading');
     });
@@ -159,56 +168,210 @@ function registerFrameEvents(client, handler) {
     } catch (e) {
         //ignore
     }
+
+    function handler(frame, state) {
+        const {frameId, id, parentFrameId, loaderId, url, securityOrigin, mimeType, stack, name} = frame;
+        const _id = frameId || id;
+
+        frames[_id] = frames[_id] || {};
+        frames[_id].url = frames[_id].url || url;
+        frames[_id].parentFrameId = frames[_id].parentFrameId || parentFrameId;
+        frames[_id].loaderId = frames[_id].loaderId || loaderId;
+        frames[_id].securityOrigin = frames[_id].securityOrigin || securityOrigin;
+        frames[_id].mimeType = frames[_id].mimeType || mimeType;
+        frames[_id].stack = frames[_id].stack || stack; //TODO: get script!
+        frames[_id].name = frames[_id].name || name;
+        frames[_id].state = frames[_id].state || [];
+        enrichURLDetails(frames[_id], 'url');
+        frames[_id].state.push(state);
+    }
 }
 
-function registerNetworkEvents(client, onRequest, onResponse) {
-    client.Network.requestWillBeSent((networkObj) => {
-        const request = {url: networkObj.request.url, ...networkObj};
-        onRequest(request);
-    });
+function registerNetworkEvents(client, rules, collect, requests) {
+    if (collect.requests) {
+        handleRequests(client, rules, collect, requests);
+    }
 
-    client.Network.responseReceived((responseObj) => {
-        onResponse({...responseObj});
+    if (collect.requests && collect.responses) {
+        handleResponse(client, collect, requests);
+    }
+}
+
+function handleRequests(client, rules, collect, requests) {
+    const dataURIRegex = /^data:/;
+
+    client.Network.requestWillBeSent(({requestId, loaderId, documentURL, timestamp, wallTime, initiator, type, frameId, request: {url, method, headers, initialPriority}}) => {
+        if (!collect.dataURI && dataURIRegex.test(url)) {
+            return;
+        }
+
+        const request = {
+            url,
+            method,
+            initialPriority,
+            loaderId,
+            documentURL,
+            timestamp,
+            wallTime,
+            initiator,
+            headers,
+            type,
+            frameId
+        };
+        enrichURLDetails(request, 'url');
+        request.initiator.scriptId = getInitiator(request.initiator);
+        requests[requestId] = request;
     });
 }
 
-function registerScriptExecution(client, getContent, handler) {
-    client.Debugger.scriptParsed(async function (scriptObj) {
-        const script = {...scriptObj};
+function handleResponse(client, collect, requests) {
+    const getBodyResponseRegex = new RegExp(collect.bodyResponse.join('|'), 'gi');
 
-        if (script.url !== '__puppeteer_evaluation_script__') {
-            if (getContent) {
-                try {
-                    const source = await client.Debugger.getScriptSource({scriptId: script.scriptId});
-                    script.source = source.scriptSource;
-                } catch (e) {
-                    //ignore
+    client.Network.responseReceived(async (response) => {
+        const {
+            requestId,
+            timestamp,
+            type,
+            response: {
+                url,
+                status,
+                headers,
+                mimeType,
+                connectionReused,
+                remoteIPAddress,
+                remotePort,
+                fromDiskCache,
+                fromServiceWorker,
+                fromPrefetchCache,
+                encodedDataLength,
+                timing,
+                protocol,
+                securityState: {
+                    protocol: securityProtocol,
+                    keyExchangeGroup,
+                    cipher,
+                    certificateId,
+                    subjectName,
+                    sanList,
+                    issuer
                 }
             }
-            handler({...script});
+        } = response;
+
+        const request = requests[requestId];
+
+        if (!request) {
+            LOG.debug(`Request Id is missing ${requestId}`);
         }
+
+        const _response = {
+            timestamp,
+            status,
+            type,
+            content: {
+                encodedDataLength,
+            },
+            headers,
+            mimeType,
+            connectionReused,
+            ip: remoteIPAddress,
+            port: remotePort,
+            fromDiskCache: fromDiskCache || undefined,
+            fromServiceWorker: fromServiceWorker || undefined,
+            fromPrefetchCache: fromPrefetchCache || undefined,
+            timing,
+            protocol,
+            security: {
+                securityProtocol,
+                keyExchangeGroup,
+                cipher,
+                certificateId,
+                subjectName,
+                sanList,
+                issuer
+            }
+        };
+        enrichIPDetails(_response, 'ip');
+        if (getBodyResponseRegex.test(url)) {
+            try {
+                const obj = await client.Network.getResponseBody({requestId});
+                _response.content.body = obj.body;
+                _response.content.base64Encoded = obj.base64Encoded;
+            } catch (e) {
+                LOG.error(e);
+            }
+        }
+        request.response = _response;
     });
 }
 
-function registerStyleEvents(client, getContent, handler) {
-    client.CSS.styleSheetAdded(async function ({header}) {
-        const styleObj = {...header};
+function registerScriptExecution(client, getScriptSource, scripts) {
+    client.Debugger.scriptParsed(async function ({scriptId, url, executionContextId, hash, executionContextAuxData: {frameId}, sourceMapURL, hasSourceURL, isModule, length, stackTrace}) {
+        if (url === '__puppeteer_evaluation_script__' || url === '') {
+            return;
+        }
+        let source;
+
+        if (getScriptSource) {
+            try {
+                const {scriptSource} = await client.Debugger.getScriptSource({scriptId});
+                source = scriptSource;
+            } catch (e) {
+                //ignore
+            }
+        }
+
+        scripts[scriptId] = {
+            frameId,
+            url,
+            executionContextId,
+            hash,
+            sourceMapURL,
+            hasSourceURL,
+            isModule,
+            length,
+            source,
+            stackTrace
+        };
+    });
+
+    client.Debugger.scriptFailedToParse(({scriptId, url, executionContextId, executionContextAuxData: {frameId}, stackTrace}) => {
+        scripts[scriptId] = scripts[scriptId] || {
+            url, stackTrace, executionContextId, frameId
+        };
+        scripts[scriptId].parseError = true;
+    });
+}
+
+function registerStyleEvents(client, getContent, styles) {
+    client.CSS.styleSheetAdded(async function ({header: {styleSheetId, frameId, sourceURL, origin, ownerNode, isInline, length}}) {
+        const style = {
+            frameId,
+            url: sourceURL,
+            origin,
+            ownerNode,
+            isInline,
+            length
+        };
+        enrichURLDetails(style, 'url');
 
         if (getContent) {
             try {
-                styleObj.source = await client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
+                const {scriptSource} = await client.CSS.getStyleSheetText({styleSheetId});
+                style.source = scriptSource;
             } catch (e) {
-                //TODO - check
-                styleObj.source = '';
+                LOG.error(e);
+                style.source = '';
             }
         }
 
-        handler(styleObj);
+        styles[styleSheetId] = style;
     });
 }
 
 async function getMetrics(client) {
     try {
+        await client.Performance.enable();
         const metricsObj = await client.Performance.getMetrics();
         return metricsObj && metricsObj.metrics;
     } catch (e) {
@@ -216,38 +379,31 @@ async function getMetrics(client) {
     }
 }
 
-async function initResearch(client) {
-    researchData.storage = {};
-    researchData.contexts = {};
-    researchData.exceptions = [];
-
-    client.Runtime.exceptionRevoked((obj) => {
-        researchData.exceptions.push(obj);
+async function setStorage(client, storage) {
+    await client.DOMStorage.enable();
+    client.DOMStorage.domStorageItemAdded(({key, newValue: value, storageId: {securityOrigin, isLocalStorage}}) => {
+        const storageType = isLocalStorage ? 'localStorage' : 'sessionStorage';
+        storage[securityOrigin] = storage[securityOrigin] || {};
+        storage[securityOrigin][storageType] = storage[securityOrigin][storageType] || [];
+        storage[securityOrigin][storageType].push({key, value});
     });
+}
 
-    client.Runtime.exceptionThrown(obj => {
-        researchData.exceptions.push(obj);
-    });
-
-    client.Runtime.executionContextCreated((obj) => {
-        const {context: {id, origin, name, auxData}} = obj;
-        researchData.contexts[id] = {origin, name, auxData};
+function setContext(client, contexts) {
+    client.Runtime.executionContextCreated(({context: {id, origin, name, auxData}}) => {
+        contexts[id] = {origin, name, auxData};
     });
 
     client.Runtime.executionContextDestroyed(({executionContextId}) => {
-        const context = researchData.contexts[executionContextId] || {};
-        context.destroyed = true;
-    });
-
-    client.DOMStorage.domStorageItemAdded(obj => {
-        //eslint-disable-next-line
-        researchData.storage[obj.key] = researchData.storage[obj.key] || [];
-        researchData.storage[obj.key].push(obj);
+        const context = contexts[executionContextId];
+        if (context) {
+            context.destroyed = true;
+        }
     });
 }
 
 //eslint-disable-next-line
-async function getResearch(client, data) {
+async function getResearch(client, researchData) {
     const manifest = await client.Page.getAppManifest();
     if (manifest && manifest.url) {
         researchData.manifest = manifest;
@@ -284,22 +440,54 @@ async function getSystemInfo(client) {
     }
 }
 
+async function setLogs(client, logs) {
+    await client.Log.enable();
+    client.Log.entryAdded(({entry: {source, level, text, timestamp, url}}) => {
+        logs[level] = logs[level] || [];
+        logs[level].push({text, source, timestamp, url});
+    });
+}
+
+async function setConsole(client, console) {
+    client.Runtime.consoleAPICalled(({type, executionContextId, timestamp, stackTrace, args}) => {
+        console[type] = console[type] || [];
+        console[type].push({
+            value: args[0].value,
+            executionContextId,
+            timestamp,
+            stackTrace
+        });
+    });
+}
+
+async function setErrors(client, errors) {
+    client.Runtime.exceptionThrown(({timestamp, exceptionDetails: {url, executionContextId, stackTrace, exception: {description}}}) => {
+        errors.push({
+            url,
+            description,
+            executionContextId,
+            timestamp,
+            stackTrace
+        });
+    });
+}
+
 async function getCookies(client) {
     return await client.Page.getCookies();
 }
 
 async function getCoverage(client) {
-    //await client.CSS.stopRuleUsageTracking();
-    researchData.cssCoverage = await client.CSS.takeCoverageDelta();
-
+    const {coverage} = await client.CSS.takeCoverageDelta();
     const {result} = await client.Profiler.getBestEffortCoverage();
-    researchData.coverage = result;
+
+    return {
+        CSSCoverage: coverage,
+        JSCoverage: result
+    };
 }
 
 module.exports = {
     initScan,
-    initRules,
-    initResearch,
     registerFrameEvents,
     registerNetworkEvents,
     registerScriptExecution,
@@ -310,6 +498,10 @@ module.exports = {
     getCookies,
     getAllDOMEvents,
     getCoverage,
-    setCoverage,
     getSystemInfo,
+    setLogs,
+    setConsole,
+    setErrors,
+    setContextListenr: setContext,
+    setStorage,
 };

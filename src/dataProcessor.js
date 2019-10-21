@@ -1,272 +1,179 @@
-const geoip = require('geoip-lite');
-
-//eslint-disable-next-line
-async function processData(data, opts) {
+async function processData(data, {collect}) {
     if (!data) {
         return;
     }
     const responseData = {};
 
-    if (data.err) {
-        return {error: data.err};
-    }
+    processFrames(data.frames);
+    processScripts(data, collect);
+    processNetwork(data);
 
-    if (data.frames) {
-        responseData.frames = processFrames(data);
+    if (collect.frames) {
+        responseData.frames = data.frames;
     }
-
-    if (data.scripts) {
-        responseData.scripts = processScripts(data);
+    if (collect.scripts) {
+        responseData.scripts = data.scripts;
     }
-
-    if (data.resources) {
-        responseData.resources = processResources(data);
+    if (collect.requests) {
+        responseData.requests = data.requests;
     }
-
-    if (data.metrics) {
-        responseData.metrics = processMetrics(data);
+    if (collect.styles) {
+        processStyle(data, collect);
+        responseData.styleSheets = data.styles;
     }
-
-    if (data.style) {
-        responseData.styleSheets = processStyle(data);
+    if (collect.storage) {
+        responseData.storage = data.storage;
     }
-
-    if (data.research) {
-        responseData.research = data.research;
+    if (collect.serviceWorker) {
+        responseData.serviceWorker = data.serviceWorker;
     }
-
-    if (data.cookies) {
+    if (collect.metrics) {
+        responseData.metrics = processMetrics(data.metrics);
+    }
+    if (collect.cookies) {
         responseData.cookies = data.cookies;
     }
-
-    if (data.domEvents) {
-        //TODO - add by url
-        responseData.domEvents = data.domEvents;
+    if (collect.logs) {
+        responseData.logs = data.logs;
+    }
+    if (collect.console) {
+        responseData.console = data.console;
+    }
+    if (collect.errors) {
+        responseData.errors = data.errors;
+    }
+    if (collect.storage) {
+        responseData.storage = data.storage;
     }
 
     //Remove undefined values
     return JSON.parse(JSON.stringify(responseData));
 }
 
-function processStyle(data) {
-    if (!data.style) {
+function processScripts(data, collect) {
+    if (!Object.keys(data.scripts).length) {
         return;
     }
 
-    let styles;
+    const coverage = collect.scriptCoverage && data.coverage && data.coverage.JSCoverage;
+    if (coverage) {
+        for (let i = 0; i < coverage.length; i++) {
+            const {scriptId, functions} = coverage[i];
+            const script = data.scripts[scriptId];
 
-    //eslint-disable-next-line
-    for (const styleId in data.style) {
-        styles = styles || [];
-        const style = data.style[styleId];
-        if (style) {
-            style.source = style.source && style.source.text;
-            style.url = style.sourceURL;
-            addURLData(style);
-            styles.push(style);
-        }
-    }
+            if (!script) {
+                continue;
+            }
+            const functionsNames = new Set();
+            let usedBytes = 0;
 
-    return styles;
-}
+            for (let i = 0; i < functions.length; i++) {
+                const func = functions[i];
+                if (func.functionName) {
+                    functionsNames.add(func.functionName);
+                }
 
-function processScripts(data) {
-    if (!data.scripts || data.scripts.length <= 0) {
-        return;
-    }
-
-    const coverage = data.coverage && data.coverage.result || [];
-    const coverageMap = {};
-    const eventsMap = {};
-
-    //Set coverage
-    for (let i = 0; i < coverage.length; i++) {
-        const coverageObj = coverage[i];
-        coverageMap[coverageObj.scriptId] = coverageObj.functions;
-    }
-
-    if (data.events) {
-        for (let i = 0; i < data.events.length; i++) {
-            const eventObj = data.events[i];
-            eventsMap[eventObj.scriptId] = eventsMap[eventObj.scriptId] || [];
-            eventsMap[eventObj.scriptId].push(eventObj);
-        }
-    }
-
-    return data.scripts.map(_scriptObj => {
-        const scriptObj = {
-            scriptId: _scriptObj.scriptId,
-            url: _scriptObj.url,
-            isModule: Boolean(_scriptObj.isModule),
-            source: _scriptObj.source,
-            coverage: coverageMap[_scriptObj.scriptId],
-            length: getKBLength(_scriptObj.length),
-            events: eventsMap[_scriptObj.scriptId]
-        };
-
-        scriptObj.frameId = _scriptObj.executionContextAuxData.frameId;
-
-        const frame = data.frames && data.frames[_scriptObj.frameId];
-        if (frame) {
-            scriptObj.frameURL = frame.url;
-        }
-
-        if (frame && frame.url === scriptObj.url) {
-            scriptObj.host = 'inline';
-        } else {
-            addURLData(scriptObj);
-        }
-
-        //TODO - check
-        if (_scriptObj.stackTrace) {
-            scriptObj.stackTrace = _scriptObj.stackTrace;
-            scriptObj.parentScript = scriptObj.stackTrace.callFrames && scriptObj.stackTrace.callFrames[0];
-        }
-        return scriptObj;
-    });
-}
-
-function processResources(data) {
-    const requests = data.resources.requests || {};
-    const responses = data.resources.responses || {};
-
-    if (!requests || requests.length <= 0) {
-        return;
-    }
-
-    return requests.map(_request => {
-        const request = {
-            url: _request.url,
-            requestId: _request.requestId,
-            documentURL: _request.documentURL,
-            timestamp: _request.timestamp, //TODO - get relative time
-            wallTime: _request.wallTime, //TODO - get relative time
-            initiator: _request.initiator,
-            type: _request.type,
-            frameId: _request.frameId,
-            loaderId: _request.loaderId,
-        };
-
-        if (_request.request) {
-            const req = _request.request;
-            request.method = req.method;
-            request.headers = req.headers;
-            request.mixedContentType = req.mixedContentType;
-            request.initialPriority = req.initialPriority;
-            request.referrerPolicy = req.referrerPolicy;
-        }
-
-        const frame = data.frames && data.frames[request.frameId];
-        if (frame) {
-            request.frame = frame;
-            request.frameURL = frame.url;
-        }
-
-        addURLData(request);
-
-        if (request.postData) {
-            request.postData.length = Math.round(request.postData.length / 1000) || 0;
-        }
-
-        const _response = responses[request.requestId] && responses[request.requestId].response;
-        if (_response) {
-            const response = {};
-            const ip = _response.remoteIPAddress;
-
-            if (ip) {
-                const lookup = geoip.lookup(ip);
-                response.ip = ip;
-                if (lookup) {
-                    response.country = lookup.country;
-                    response.timezone = lookup.timezone;
+                for (let j = 0; j < func.ranges.length; j++) {
+                    const range = func.ranges[j];
+                    usedBytes += range.endOffset - range.startOffset;
+                    if (range.count > 1) {
+                        //TODO - check
+                    }
                 }
             }
-
-            response.status = _response.status;
-            response.statusText = _response.statusText || undefined;
-            response.headers = _response.headers;
-            response.mimeType = _response.mimeType;
-            response.connectionReused = _response.connectionReused;
-            response.remotePort = _response.remotePort;
-            response.fromDiskCache = _response.fromDiskCache;
-            response.fromServiceWorker = _response.fromServiceWorker;
-            response.fromPrefetchCache = _response.fromPrefetchCache;
-            response.encodedDataLength = _response.encodedDataLength;
-            response.timing = _response.timing; //TODO - process timing
-            response.protocol = _response.protocol;
-            response.securityState = _response.securityState;
-            response.securityDetails = _response.securityDetails;
-
-            request.response = response;
+            script.coverage = {
+                usedBytes,
+                usage: usedBytes / script.length,
+                functionsNames: Array.from(functionsNames).sort()
+            };
         }
+    }
 
-        return request;
-    });
-}
+    //Set events
+    if (data.domEvents) {
+        for (let i = 0; i < data.domEvents.length; i++) {
+            const eventObj = data.domEvents[i];
+            const script = data.scripts[eventObj.scriptId];
 
-function processFrames(data) {
-    let frames;
-
-    //eslint-disable-next-line
-    for (const frameId in data.frames) {
-        frames = frames || [];
-        const frame = data.frames[frameId];
-        if (frame) {
-            if (frame.url) {
-                addURLData(frame);
-            } else {
-                frame.url = 'about:blank';
+            if (script) {
+                delete eventObj.scriptId;
+                script.events = script.events || [];
+                script.events.push(eventObj);
             }
         }
-
-        frames.push({
-            frameId: frame.frameId,
-            parentFrameId: frame.parentFrameId,
-            url: frame.url,
-            host: frame.host,
-            pathname: frame.pathname,
-            port: frame.port,
-            path: frame.path,
-            query: frame.query,
-            stack: frame.stack,
-            loaderId: frame.loaderId,
-            name: frame.name,
-            state: frame.state
-        });
     }
-    return frames;
+
+    //eslint-disable-next-line
+    for (const scriptId in data.scripts) {
+        const script = data.scripts[scriptId];
+        const frame = data.frames[script.frameId];
+        script.frameURL = frame.url;
+
+        if (script.frameURL === script.url) {
+            script.url = 'inline';
+        }
+
+        //TODO - extract from function
+        if (script.stackTrace) {
+            script.parentScript = script.stackTrace.callFrames && script.stackTrace.callFrames[0];
+        }
+    }
 }
 
-function processMetrics(data) {
-    const metrics = {};
-    const metricsArr = data.metrics || [];
+function processStyle(data, collect) {
+    const coverage = collect.styleCoverage && data.coverage && data.coverage.CSSCoverage;
+    if (coverage) {
+        for (let i = 0; i < coverage.length; i++) {
+            const {styleSheetId, endOffset, startOffset} = coverage[i];
+            const style = data.styles[styleSheetId];
 
-    for (let i = 0; i < metricsArr.length; i++) {
-        const metric = metricsArr[i];
+            if (style) {
+                style.coverage = style.coverage || {};
+                style.coverage.usedBytes = style.coverage.usedBytes || 0;
+                style.coverage.usedBytes += endOffset - startOffset;
+            }
+
+        }
+    }
+    //eslint-disable-next-line
+    for (const styleId in data.styles) {
+        const style = data.styles[styleId];
+        if (style.coverage) {
+            style.coverage.usage = style.coverage.usedBytes / style.length;
+        }
+    }
+}
+
+function processNetwork(data) {
+    if (!Object.keys(data.requests).length) {
+        return;
+    }
+
+    //eslint-disable-next-line
+    for (const requestId in data.requests) {
+        const request = data.requests[requestId];
+        const frame = data.frames[request.frameId] || {};
+        request.frameURL = frame.url;
+    }
+    return data.requests;
+}
+
+function processFrames(frames) {
+    //eslint-disable-next-line
+    for (const frameId in frames) {
+        const frame = frames[frameId];
+        frame.url = frame.url || 'about:blank';
+    }
+}
+
+function processMetrics(collectedMetrics) {
+    const metrics = {};
+
+    for (let i = 0; i < collectedMetrics.length; i++) {
+        const metric = collectedMetrics[i];
         metrics[metric.name] = metric.value;
     }
     return metrics;
-}
-
-function addURLData(obj) {
-    if (!obj || !obj.url || typeof obj.url !== 'string') {
-        return;
-    }
-
-    try {
-        const urlObj = new URL(obj.url);
-        obj.host = urlObj.host;
-        obj.pathname = urlObj.pathname;
-        obj.port = urlObj.port || undefined;
-        obj.path = urlObj.path || undefined;
-        obj.query = urlObj.query || undefined;
-    } catch (e) {
-        //ignore
-    }
-}
-
-function getKBLength(length) {
-    return Math.round(length / 1000) || 0;
 }
 
 module.exports = {

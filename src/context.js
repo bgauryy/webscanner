@@ -6,38 +6,42 @@ function getContext(page, opts = {}) {
     opts.callback = (typeof opts.callback === 'function') ? opts.callback : null;
 
     const defaultCollect = {
-        research: false,
-        scripts: false,
-        resources: false,
-        requests: false,
-        responses: false,
-        styles: false,
-        metrics: false,
-        frames: false,
-        content: false,
-        coverage: false,
-        serviceWorker: false,
-        cookies: false,
-        domEvents: false,
-    };
+        frames: false, //Collect iframes data
 
-    const defaultChromeObj = {
-        port: 9222,
-        chromeFlags: ['--headless', '--disable-gpu', '--enable-precise-memory-info']
+        scripts: false, //Collect scripts data
+        scriptSource: false, //get script source
+        scriptDOMEvents: false, //get script registered DOM Events
+        scriptCoverage: false, //get script coverage
+
+        styles: false, //Collect style data
+        styleSource: true, //gets style source
+        styleCoverage: false, //get style coverage
+
+        serviceWorker: false,
+
+        requests: false, //Collect requests data
+        responses: false, //get response data per request
+        bodyResponse: [], // gets response body by url regex
+        dataURI: false, //enable data URI requests (default - false)
+
+        metrics: false,//collect browser metrics
+        cookies: false,//get all browser cookies
+        logs: false,//Collect browser logs
+        console: false,//Collect console AP usage
+        errors: false,//collect JS errors
+        storage: false,//collect storage events (localStorage, sessionStorage)
     };
 
     const defaultRules = {
-        scanTime: 5000,
-        stopOnContentLoaded: true,
-        blockedUrls: [],
-        adBlocking: false,
-        disableCSP: false
+        disableServices: false, //Disable common third party services
+        blockedUrls: [], //Set chrome blocked urls
+        adBlocking: false, //Enable ad blocking feature
+        disableCSP: false, //Disable browser CSP blocking
     };
 
     return {
         page, ...{
             stealth: Boolean(opts.stealth),
-            chrome: {...defaultChromeObj, ...opts.chrome || {}},
             callback: opts.callback,
             log: opts.log || false,
             rules: {...defaultRules, ...opts.rules || {}},
