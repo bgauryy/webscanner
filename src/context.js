@@ -22,7 +22,7 @@ function getContext(page, opts = {}) {
         requests: false, //Collect requests data
         responses: false, //get response data per request
         bodyResponse: [], // gets response body by url regex
-        dataURI: false, //enable data URI requests (default - false)
+        dataURI: false, //Collect data URI requests (returns url hash)
 
         metrics: false,//collect browser metrics
         cookies: false,//get all browser cookies

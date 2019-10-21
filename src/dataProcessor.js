@@ -17,6 +17,9 @@ async function processData(data, {collect}) {
     if (collect.requests) {
         responseData.requests = data.requests;
     }
+    if (collect.dataURI) {
+        responseData.dataURI = data.dataURI;
+    }
     if (collect.styles) {
         processStyle(data, collect);
         responseData.styleSheets = data.styles;

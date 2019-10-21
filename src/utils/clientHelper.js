@@ -1,5 +1,8 @@
 const geoip = require('geoip-lite');
+const crypto = require('crypto');
 const LOG = require('./logger');
+
+const dataURIRegex = /^data:/;
 
 function getInitiator(initiator) {
     if (initiator.type === 'parser') {
@@ -73,8 +76,20 @@ function enrichIPDetails(obj, IPProp) {
     }
 }
 
+function isDataURI(url) {
+    return dataURIRegex.test(url);
+}
+
+function getHash(str) {
+    return crypto.createHash('md5').update(str).digest('hex');
+}
+
 module.exports = {
     getInitiator,
     enrichURLDetails,
-    enrichIPDetails
+    enrichIPDetails,
+    isDataURI,
+    getHash
 };
+
+

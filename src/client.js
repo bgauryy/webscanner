@@ -1,4 +1,4 @@
-const {enrichURLDetails, enrichIPDetails, getInitiator} = require('../src/utils/dataHelper.js');
+const {enrichURLDetails, enrichIPDetails, getInitiator, isDataURI, getHash} = require('../src/utils/clientHelper.js');
 const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
 const fs = require('fs');
 const path = require('path');
@@ -187,9 +187,9 @@ function registerFrameEvents(client, frames) {
     }
 }
 
-function registerNetworkEvents(client, rules, collect, requests, scripts) {
+function registerNetworkEvents(client, rules, collect, requests, scripts, dataURIs) {
     if (collect.requests) {
-        handleRequests(client, rules, collect, requests);
+        handleRequests(client, rules, collect, requests, dataURIs);
     }
 
     if (collect.requests && collect.responses) {
@@ -197,14 +197,8 @@ function registerNetworkEvents(client, rules, collect, requests, scripts) {
     }
 }
 
-function handleRequests(client, rules, collect, requests) {
-    const dataURIRegex = /^data:/;
-
+function handleRequests(client, rules, collect, requests, dataURIs) {
     client.Network.requestWillBeSent(({requestId, loaderId, documentURL, timestamp, wallTime, initiator, type, frameId, request: {url, method, headers, initialPriority}}) => {
-        if (!collect.dataURI && dataURIRegex.test(url)) {
-            return;
-        }
-
         const request = {
             url,
             method,
@@ -218,6 +212,18 @@ function handleRequests(client, rules, collect, requests) {
             type,
             frameId
         };
+
+        if (isDataURI(url)) {
+            const split = url.split(';');
+            const protocol = split[0];
+            dataURIs[protocol] = dataURIs[protocol] || {};
+            request.hash = getHash(url);
+            delete request.url;
+            delete request.headers;
+            dataURIs[protocol][requestId] = request;
+            return;
+        }
+
         enrichURLDetails(request, 'url');
         request.initiator.scriptId = getInitiator(request.initiator);
         requests[requestId] = request;
@@ -257,12 +263,14 @@ function handleResponse(client, collect, requests, scripts) {
                 }
             }
         } = response;
+
+        if (isDataURI(url)) {
+            LOG.debug('Ignoring data URI response');
+            return;
+        }
+
         const request = requests[requestId];
         let initiatorOrigin;
-
-        if (!request) {
-            LOG.debug(`Request Id is missing ${requestId}`);
-        }
 
         try {
             const initiatorId = request.initiator.scriptId;

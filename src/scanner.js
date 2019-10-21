@@ -33,6 +33,7 @@ class Scanner {
             scripts: {},
             serviceWorker: {},
             requests: {},
+            dataURI: {},
             events: [],
             frames: {},
             styles: {},
@@ -66,7 +67,7 @@ async function init() {
     chromeClient.registerScriptExecution(this.client, collect.scriptSource, this.data.scripts);
     chromeClient.registerFrameEvents(this.client, this.data.frames);
     chromeClient.setContextListenr(this.client, this.data.contexts);
-    chromeClient.registerNetworkEvents(this.client, this.context.rules, this.context.collect, this.data.requests, this.data.scripts);
+    chromeClient.registerNetworkEvents(this.client, this.context.rules, this.context.collect, this.data.requests, this.data.scripts, this.data.dataURI);
 
     if (collect.styles) {
         chromeClient.registerStyleEvents(this.client, collect.content, this.data.styles);
