@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const LOG = require('./utils/logger.js');
 
+const FILTERED_REQUESTS_HEADERS = ['Upgrade-Insecure-Requests', 'User-Agent', 'Sec-Fetch-Mode', 'Sec-Fetch-User', 'Accept-Encoding', 'Accept-Language', 'Cache-Control', 'Connection', 'Referer', 'Origin'];
+
 async function initScan(client, collect, rules) {
     const {CSS, Debugger, Network, Page, Runtime, DOM} = client;
 
@@ -208,10 +210,11 @@ function handleRequests(client, rules, collect, requests, dataURIs) {
             timestamp,
             wallTime,
             initiator,
-            headers,
             type,
             frameId
         };
+
+        request.headers = getHeaders(headers);
 
         if (isDataURI(url)) {
             const split = url.split(';');
@@ -273,6 +276,11 @@ function handleResponse(client, collect, requests, scripts) {
         const request = requests[requestId];
         let initiatorOrigin;
 
+        if (!request) {
+            LOG.error(`Request is missing to ${url}`);
+            return;
+        }
+
         try {
             const initiatorId = request.initiator.scriptId;
             if (typeof parseInt(initiatorId) === 'number' && !Number.isNaN(parseInt(initiatorId))) {
@@ -317,7 +325,7 @@ function handleResponse(client, collect, requests, scripts) {
                 _response.content.body = obj.body;
                 _response.content.base64Encoded = obj.base64Encoded;
             } catch (e) {
-                LOG.error(e);
+                LOG.debug(`Failed to get response. ${url}`);
             }
         }
         request.response = _response;
@@ -359,6 +367,56 @@ function registerScriptExecution(client, getScriptSource, scripts) {
             url, stackTrace, executionContextId, frameId
         };
         scripts[scriptId].parseError = true;
+    });
+}
+
+//TODO: fix duplicated code
+async function registerWebsocket(client, websockets) {
+    client.Network.webSocketCreated(({requestId, url, initiator}) => {
+        const wsObj = {url, initiator};
+        wsObj.Initiatorscript = getInitiator(initiator);
+        websockets[requestId] = wsObj;
+    });
+    client.Network.webSocketFrameSent(({requestId, timestamp, response}) => {
+        const ws = websockets[requestId];
+        if (!ws) {
+            LOG.debug(`Websocket is missing ${requestId}`);
+            return;
+        }
+        ws.frames = ws.frames || [];
+        ws.frames.push({
+            ...response,
+            timestamp,
+            type: 'sent'
+        });
+    });
+    client.Network.webSocketFrameReceived(({requestId, timestamp, response}) => {
+        const ws = websockets[requestId];
+        if (!ws) {
+            LOG.debug(`Websocket is missing ${requestId}`);
+            return;
+        }
+        ws.frames = ws.frames || [];
+        ws.frames.push({
+            ...response,
+            timestamp,
+            type: 'received'
+        });
+    });
+    client.Network.webSocketClosed(({requestId, timestamp}) => {
+        const ws = websockets[requestId];
+        if (!ws) {
+            LOG.debug(`Websocket is missing ${requestId}`);
+        }
+        ws.closed = timestamp;
+    });
+    client.Network.webSocketFrameError(({requestId, timestamp, errorMessage}) => {
+        const ws = websockets[requestId];
+        if (!ws) {
+            LOG.debug(`Websocket is missing ${requestId}`);
+        }
+        ws.errors = ws.errors || [];
+        ws.errors.push({timestamp, errorMessage});
     });
 }
 
@@ -505,6 +563,18 @@ async function getCoverage(client) {
     };
 }
 
+function getHeaders(headers) {
+    let res;
+
+    for (const header in headers) {
+        if (!FILTERED_REQUESTS_HEADERS.includes(header)) {
+            res = res || {};
+            res[header] = headers[header];
+        }
+    }
+    return res;
+}
+
 module.exports = {
     initScan,
     registerFrameEvents,
@@ -523,4 +593,5 @@ module.exports = {
     setErrors,
     setContextListenr: setContext,
     setStorage,
+    registerWebsocket,
 };

@@ -27,7 +27,8 @@ describe('context testing', function () {
                 storage: false,
                 styleCoverage: false,
                 styleSource: true,
-                styles: false
+                styles: false,
+                websocket: false,
             },
             log: false,
             page: {},
@@ -35,9 +36,9 @@ describe('context testing', function () {
                 adBlocking: false,
                 blockedUrls: [],
                 disableCSP: false,
-                disableServices: false
+                disableServices: false,
             },
-            stealth: false
+            stealth: false,
         });
     });
 });
