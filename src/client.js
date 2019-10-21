@@ -218,6 +218,7 @@ function handleRequests(client, rules, collect, requests, dataURIs) {
             const protocol = split[0];
             dataURIs[protocol] = dataURIs[protocol] || {};
             request.hash = getHash(url);
+            request.length = (split[1] && split[1].length) || 0;
             delete request.url;
             delete request.headers;
             dataURIs[protocol][requestId] = request;
