@@ -187,13 +187,13 @@ function registerFrameEvents(client, frames) {
     }
 }
 
-function registerNetworkEvents(client, rules, collect, requests) {
+function registerNetworkEvents(client, rules, collect, requests, scripts) {
     if (collect.requests) {
         handleRequests(client, rules, collect, requests);
     }
 
     if (collect.requests && collect.responses) {
-        handleResponse(client, collect, requests);
+        handleResponse(client, collect, requests, scripts);
     }
 }
 
@@ -224,7 +224,7 @@ function handleRequests(client, rules, collect, requests) {
     });
 }
 
-function handleResponse(client, collect, requests) {
+function handleResponse(client, collect, requests, scripts) {
     const getBodyResponseRegex = new RegExp(collect.bodyResponse.join('|'), 'gi');
 
     client.Network.responseReceived(async (response) => {
@@ -257,11 +257,21 @@ function handleResponse(client, collect, requests) {
                 }
             }
         } = response;
-
         const request = requests[requestId];
+        let initiatorOrigin;
 
         if (!request) {
             LOG.debug(`Request Id is missing ${requestId}`);
+        }
+
+        try {
+            const initiatorId = request.initiator.scriptId;
+            if (typeof parseInt(initiatorId) === 'number' && !Number.isNaN(parseInt(initiatorId))) {
+                const initiator = scripts[request.initiator.scriptId];
+                initiatorOrigin = initiator && new URL(initiator.url).origin;
+            }
+        } catch (e) {
+            //ignore
         }
 
         const _response = {
@@ -292,7 +302,7 @@ function handleResponse(client, collect, requests) {
             }
         };
         enrichIPDetails(_response, 'ip');
-        if (getBodyResponseRegex.test(url)) {
+        if (getBodyResponseRegex.test(url) || getBodyResponseRegex.test(initiatorOrigin)) {
             try {
                 const obj = await client.Network.getResponseBody({requestId});
                 _response.content.body = obj.body;
