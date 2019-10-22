@@ -200,7 +200,7 @@ function registerNetworkEvents(client, rules, collect, requests, scripts, dataUR
 }
 
 function handleRequests(client, rules, collect, requests, dataURIs) {
-    client.Network.requestWillBeSent(({requestId, loaderId, documentURL, timestamp, wallTime, initiator, type, frameId, request: {url, method, headers, initialPriority}}) => {
+    client.Network.requestWillBeSent(async ({requestId, loaderId, documentURL, timestamp, wallTime, initiator, type, frameId, request: {url, method, headers, initialPriority}}) => {
         const request = {
             url,
             method,
@@ -226,6 +226,13 @@ function handleRequests(client, rules, collect, requests, dataURIs) {
             delete request.headers;
             dataURIs[protocol][requestId] = request;
             return;
+        }
+
+        //TODO - add post data by regex/config
+        try {
+            request.postData = await client.Network.getRequestPostData({requestId});
+        } catch (e) {
+            //ignore
         }
 
         enrichURLDetails(request, 'url');

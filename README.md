@@ -255,4 +255,3 @@ Scanner.test({
 - FirstMeaningfulPaint
 - DomContentLoaded
 - NavigationStart
-

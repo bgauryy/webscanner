@@ -15,7 +15,23 @@ async function processData(data, {collect}) {
         responseData.scripts = data.scripts;
     }
     if (collect.requests) {
-        responseData.requests = data.requests;
+        //TODO - move to function
+
+        const reqs = {};
+        //eslint-disable-next-line
+        for (const requestId in data.requests) {
+            const req = data.requests[requestId];
+            req.requestId = requestId;
+            try {
+                const origin = new URL(req.url).origin;
+                reqs[origin] = reqs[origin] || [];
+                reqs[origin].push(req);
+            } catch (e) {
+                reqs.other = reqs.other || [];
+                reqs.other.push(req);
+            }
+        }
+        responseData.requests = reqs;
     }
     if (collect.dataURI) {
         responseData.dataURI = data.dataURI;
