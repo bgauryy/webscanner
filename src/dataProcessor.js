@@ -9,6 +9,7 @@ async function processData(data, {collect}) {
     processNetwork(data);
 
     responseData.metadata = data.metadata;
+    responseData.metadata.metrics = processMetrics(data.metrics);
 
     if (collect.frames) {
         responseData.frames = data.frames;
@@ -51,9 +52,6 @@ async function processData(data, {collect}) {
     }
     if (collect.serviceWorker) {
         responseData.serviceWorker = data.serviceWorker;
-    }
-    if (collect.metrics) {
-        responseData.metrics = processMetrics(data.metrics);
     }
     if (collect.cookies) {
         responseData.cookies = data.cookies;

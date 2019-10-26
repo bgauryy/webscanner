@@ -16,7 +16,6 @@ describe('context testing', function () {
                 errors: false,
                 frames: false,
                 logs: false,
-                metrics: false,
                 requests: false,
                 responses: false,
                 scriptCoverage: false,

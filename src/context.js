@@ -21,7 +21,6 @@ function getContext(page, opts = {}) {
         //postData
         dataURI: false, //Collect data URI requests (returns url hash)
         websocket: false, //Collect websockets
-        metrics: false,//collect browser metrics
         cookies: false,//get all browser cookies
         logs: false,//Collect browser logs
         console: false,//Collect console AP usage
