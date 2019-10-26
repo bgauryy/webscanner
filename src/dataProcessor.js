@@ -8,8 +8,14 @@ async function processData(data, {collect}) {
     processScripts(data, collect);
     processNetwork(data);
 
+    responseData.metadata = data.metadata;
+
     if (collect.frames) {
         responseData.frames = data.frames;
+        //eslint-disable-next-line
+        for (const frameId in data.resourcesTree) {
+            responseData.frames[frameId] = {...responseData.frames[frameId], ...data.resourcesTree[frameId]};
+        }
     }
     if (collect.scripts) {
         responseData.scripts = data.scripts;

@@ -29,30 +29,34 @@ class Scanner {
     constructor(context) {
         this.client = null;
         this.context = context;
-        this.data = {
-            scripts: {},
-            serviceWorker: {},
-            requests: {},
-            websockets: {},
-            dataURI: {},
-            events: [],
-            frames: {},
-            styles: {},
-            research: {},
-            metrics: null,
-            coverage: null,
-            logs: {},
-            console: {},
-            errors: [],
-            contexts: {},
-            storage: {}
-        };
+        this.data = getCleanDataObject();
     }
 }
 
 Scanner.prototype.init = init;
 Scanner.prototype.close = close;
 Scanner.prototype.getData = getData;
+
+function getCleanDataObject() {
+    return {
+        scripts: {},
+        serviceWorker: {},
+        requests: {},
+        websockets: {},
+        dataURI: {},
+        events: [],
+        frames: {},
+        styles: {},
+        research: {},
+        metrics: null,
+        coverage: null,
+        logs: {},
+        console: {},
+        errors: [],
+        contexts: {},
+        storage: {}
+    };
+}
 
 async function init() {
     LOG.debug('Initiating Scanner');
@@ -67,7 +71,7 @@ async function init() {
 
     chromeClient.registerScriptExecution(this.client, collect.scriptSource, this.data.scripts);
     chromeClient.registerFrameEvents(this.client, this.data.frames);
-    chromeClient.setContextListenr(this.client, this.data.contexts);
+    chromeClient.setContext(this.client, this.data.contexts);
     chromeClient.registerNetworkEvents(this.client, this.context.rules, this.context.collect, this.data.requests, this.data.scripts, this.data.dataURI);
 
     if (collect.websocket) {
@@ -156,10 +160,12 @@ async function getData() {
     if (collect.scriptCoverage || collect.styleCoverage) {
         this.data.coverage = await chromeClient.getCoverage(this.client);
     }
-    if (collect.research) {
-        this.data.research = await chromeClient.getResearch(this.client, this.data.research);
-    }
-    return await processData(this.data, this.context);
+    await chromeClient.getExtras(this.client, this.context.collect, this.data);
+
+    const data = await processData(this.data, this.context);
+
+    this.data = getCleanDataObject();
+    return data;
 }
 
 module.exports = {

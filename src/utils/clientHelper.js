@@ -2,6 +2,7 @@ const geoip = require('geoip-lite');
 const crypto = require('crypto');
 const LOG = require('./logger');
 
+const FILTERED_REQUESTS_HEADERS = ['Upgrade-Insecure-Requests', 'User-Agent', 'Sec-Fetch-Mode', 'Sec-Fetch-User', 'Accept-Encoding', 'Accept-Language', 'Cache-Control', 'Connection', 'Referer', 'Origin'];
 const dataURIRegex = /^data:/;
 
 function getInitiator(initiator) {
@@ -84,12 +85,60 @@ function getHash(str) {
     return crypto.createHash('md5').update(str).digest('hex');
 }
 
+function getHeaders(headers) {
+    let res;
+
+    for (const header in headers) {
+        if (!FILTERED_REQUESTS_HEADERS.includes(header)) {
+            res = res || {};
+            res[header] = headers[header];
+        }
+    }
+    return res;
+}
+
+function getResourcesFromFrameTree(frameTree) {
+    const resources = {};
+
+    _getResources(frameTree);
+    return resources;
+
+    function _getResources(frameTree) {
+        const frame = frameTree.frame;
+        const frameObj = resources[frame.id] = {};
+
+        frameObj.url = frame.url;
+        frameObj.name = frame.name;
+        frameObj.resources = frameTree.resources;
+        frameObj.contentSize = {};
+
+        if (frameObj.resources) {
+            for (let i = 0; i < frameObj.resources.length; i++) {
+                const resource = frameObj.resources[i];
+                frameObj.contentSize[resource.type] = frameObj.contentSize[resource.type] || 0;
+                frameObj.contentSize[resource.type] += resource.contentSize;
+            }
+        }
+
+        if (frameTree.childFrames) {
+            for (let i = 0; i < frameTree.childFrames.length; i++) {
+                frameObj.children = frameObj.children || [];
+                const childFrame = frameTree.childFrames[i];
+                frameObj.children.push(childFrame.frame.id);
+                _getResources(childFrame);
+            }
+        }
+    }
+}
+
 module.exports = {
     getInitiator,
     enrichURLDetails,
     enrichIPDetails,
     isDataURI,
-    getHash
+    getHash,
+    getHeaders,
+    getResourcesFromFrameTree
 };
 
 

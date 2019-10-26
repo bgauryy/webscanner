@@ -7,21 +7,18 @@ function getContext(page, opts = {}) {
 
     const defaultCollect = {
         frames: false, //Collect iframes data
-
         scripts: false, //Collect scripts data
         scriptSource: false, //get script source
         scriptDOMEvents: false, //get script registered DOM Events
         scriptCoverage: false, //get script coverage
-
         styles: false, //Collect style data
         styleSource: true, //gets style source
         styleCoverage: false, //get style coverage
-
         serviceWorker: false,
-
         requests: false, //Collect requests data
         responses: false, //get response data per request
         bodyResponse: [], // gets response body by url regex
+        //postData
         dataURI: false, //Collect data URI requests (returns url hash)
         websocket: false, //Collect websockets
         metrics: false,//collect browser metrics

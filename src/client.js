@@ -1,10 +1,8 @@
-const {enrichURLDetails, enrichIPDetails, getInitiator, isDataURI, getHash} = require('../src/utils/clientHelper.js');
+const {enrichURLDetails, enrichIPDetails, getInitiator, isDataURI, getHash, getHeaders, getResourcesFromFrameTree} = require('../src/utils/clientHelper.js');
 const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
 const fs = require('fs');
 const path = require('path');
 const LOG = require('./utils/logger.js');
-
-const FILTERED_REQUESTS_HEADERS = ['Upgrade-Insecure-Requests', 'User-Agent', 'Sec-Fetch-Mode', 'Sec-Fetch-User', 'Accept-Encoding', 'Accept-Language', 'Cache-Control', 'Connection', 'Referer', 'Origin'];
 
 async function initScan(client, collect, rules) {
     const {CSS, Debugger, Network, Page, Runtime, DOM} = client;
@@ -475,7 +473,9 @@ async function setStorage(client, storage) {
 
 function setContext(client, contexts) {
     client.Runtime.executionContextCreated(({context: {id, origin, name, auxData}}) => {
-        contexts[id] = {origin, name, auxData};
+        if (name !== '__puppeteer_utility_world__') {
+            contexts[id] = {origin, name, auxData};
+        }
     });
 
     client.Runtime.executionContextDestroyed(({executionContextId}) => {
@@ -484,31 +484,6 @@ function setContext(client, contexts) {
             context.destroyed = true;
         }
     });
-}
-
-//eslint-disable-next-line
-async function getResearch(client, researchData) {
-    const manifest = await client.Page.getAppManifest();
-    if (manifest && manifest.url) {
-        researchData.manifest = manifest;
-    }
-    researchData.resourcesTree = await client.Page.getResourceTree();
-    researchData.frameTree = await client.Page.getFrameTree();
-    //researchData.layoutMetrics = await client.Page.getLayoutMetrics();
-    researchData.testReport = await client.Page.generateTestReport({message: 'dd'});
-    researchData.heapSize = await client.Runtime.getHeapUsage();
-
-
-    //eslint-disable-next-line
-    for (const contextId in researchData.contexts) {
-        const context = researchData.contexts[contextId];
-        if (context) {
-            const scopes = await client.Runtime.globalLexicalScopeNames({contextId});
-            context.scopes = scopes;
-        }
-    }
-
-    return researchData;
 }
 
 async function getSystemInfo(client) {
@@ -570,16 +545,33 @@ async function getCoverage(client) {
     };
 }
 
-function getHeaders(headers) {
-    let res;
+//eslint-disable-next-line
+async function getExtras(client, collect, data) {
+    data.metadata = {};
 
-    for (const header in headers) {
-        if (!FILTERED_REQUESTS_HEADERS.includes(header)) {
-            res = res || {};
-            res[header] = headers[header];
+    data.metadata.layoutMetrics = await client.Page.getLayoutMetrics();
+    data.metadata.heapSize = await client.Runtime.getHeapUsage();
+
+    const manifest = await client.Page.getAppManifest();
+    if (manifest && manifest.url) {
+        data.metadata.manifest = manifest;
+    }
+
+    if (collect.frames) {
+        const resources = await client.Page.getResourceTree();
+        data.resourcesTree = getResourcesFromFrameTree(resources.frameTree);
+    }
+
+    //TODO - ceck if needed
+    //eslint-disable-next-line
+    for (const contextId in data.contexts) {
+        const context = data.contexts[contextId];
+        if (context) {
+            context.lexicalScopeesNames = await client.Runtime.globalLexicalScopeNames({contextId});
         }
     }
-    return res;
+
+    return data;
 }
 
 module.exports = {
@@ -590,15 +582,15 @@ module.exports = {
     registerStyleEvents,
     registerServiceWorkerEvents,
     getMetrics,
-    getResearch,
+    getExtras,
     getCookies,
     getAllDOMEvents,
     getCoverage,
-    getSystemInfo,
     setLogs,
     setConsole,
     setErrors,
-    setContextListenr: setContext,
+    setContext,
     setStorage,
     registerWebsocket,
+    getSystemInfo,
 };
