@@ -535,14 +535,20 @@ async function getCookies(client) {
     return await client.Page.getCookies();
 }
 
-async function getCoverage(client) {
-    const {coverage} = await client.CSS.takeCoverageDelta();
-    const {result} = await client.Profiler.getBestEffortCoverage();
+async function getCoverage(client, scriptCoverage, styleCoverage) {
+    const res = {};
 
-    return {
-        CSSCoverage: coverage,
-        JSCoverage: result
-    };
+    if (scriptCoverage) {
+        const {result} = await client.Profiler.getBestEffortCoverage();
+        res.JSCoverage = result;
+    }
+
+    if (styleCoverage) {
+        const {coverage} = await styleCoverage && client.CSS.takeCoverageDelta();
+        res.CSSCoverage = coverage;
+    }
+
+    return res;
 }
 
 //eslint-disable-next-line

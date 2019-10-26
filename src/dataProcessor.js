@@ -1,15 +1,21 @@
-async function processData(data, {collect}) {
-    if (!data) {
+const LOG = require('../src/utils/logger');
+
+function processData(data, context) {
+    if (!data || !context) {
         return;
     }
+
+    const collect = context.collect || {};
     const responseData = {};
 
     processFrames(data.frames);
     processScripts(data, collect);
     processNetwork(data);
 
-    responseData.metadata = data.metadata;
-    responseData.metadata.metrics = processMetrics(data.metrics);
+    if (data.metadata) {
+        responseData.metadata = data.metadata;
+        responseData.metadata.metrics = processMetrics(data.metrics);
+    }
 
     if (collect.frames) {
         responseData.frames = data.frames;
@@ -74,42 +80,12 @@ async function processData(data, {collect}) {
 }
 
 function processScripts(data, collect) {
-    if (!Object.keys(data.scripts).length) {
+    if (!data.scripts || !Object.keys(data.scripts).length) {
         return;
     }
 
-    const coverage = collect.scriptCoverage && data.coverage && data.coverage.JSCoverage;
-    if (coverage) {
-        for (let i = 0; i < coverage.length; i++) {
-            const {scriptId, functions} = coverage[i];
-            const script = data.scripts[scriptId];
-
-            if (!script) {
-                continue;
-            }
-            const functionsNames = new Set();
-            let usedBytes = 0;
-
-            for (let i = 0; i < functions.length; i++) {
-                const func = functions[i];
-                if (func.functionName) {
-                    functionsNames.add(func.functionName);
-                }
-
-                for (let j = 0; j < func.ranges.length; j++) {
-                    const range = func.ranges[j];
-                    usedBytes += range.endOffset - range.startOffset;
-                    if (range.count > 1) {
-                        //TODO - check
-                    }
-                }
-            }
-            script.coverage = {
-                usedBytes,
-                usage: usedBytes / script.length,
-                functionsNames: Array.from(functionsNames).sort()
-            };
-        }
+    if (collect.scriptCoverage) {
+        processScriptCoverage(data);
     }
 
     //Set events
@@ -168,7 +144,7 @@ function processStyle(data, collect) {
 }
 
 function processNetwork(data) {
-    if (!Object.keys(data.requests).length) {
+    if (!data.requests || !Object.keys(data.requests).length) {
         return;
     }
 
@@ -189,7 +165,7 @@ function processFrames(frames) {
     }
 }
 
-function processMetrics(collectedMetrics) {
+function processMetrics(collectedMetrics = []) {
     const metrics = {};
 
     for (let i = 0; i < collectedMetrics.length; i++) {
@@ -199,6 +175,77 @@ function processMetrics(collectedMetrics) {
     return metrics;
 }
 
+function processScriptCoverage(data) {
+    const coverage = data.coverage.JSCoverage.sort((a, b) => {
+        return +a.scriptId >= +b.scriptId ? 1 : -1;
+    });
+
+    for (let i = 0; i < coverage.length; i++) {
+        const {scriptId, functions, url} = coverage[i];
+
+        if (url === '__puppeteer_evaluation_script__') {
+            continue;
+        }
+        const script = data.scripts[scriptId];
+        const functionsNames = new Set();
+        const coverageRanges = [];
+
+        if (!script) {
+            LOG.debug(`Script ${scriptId} is missing`);
+            continue;
+        }
+        for (let i = 0; i < functions.length; i++) {
+            const func = functions[i];
+            const ranges = func.ranges;
+            if (func.functionName) {
+                functionsNames.add(func.functionName);
+            }
+
+            for (let j = 0; j < ranges.length; j++) {
+                const {startOffset, endOffset} = ranges[j];
+
+                if (coverageRanges.length === 0) {
+                    coverageRanges.push({startOffset, endOffset});
+                } else {
+                    let merged = false;
+                    for (let i = 0; i < coverageRanges.length; i++) {
+                        const r = coverageRanges[j];
+                        const isStartUnion = r.startOffset <= startOffset && r.endOffset <= endOffset && r.endOffset >= startOffset;
+                        const isEndUnion = r.endOffset >= endOffset && r.startOffset >= startOffset && r.startOffset <= endOffset;
+                        const isUnion = (r.startOffset > startOffset && r.endOffset < endOffset) || (r.startOffset < startOffset && r.endOffset > endOffset);
+
+                        if (isStartUnion || isEndUnion || isUnion) {
+                            coverageRanges[j] = {
+                                startOffset: Math.min(r.startOffset, startOffset),
+                                endOffset: Math.max(r.endOffset, endOffset)
+                            };
+                            merged = true;
+                            break;
+                        }
+                    }
+
+                    if (!merged) {
+                        coverageRanges.push({startOffset, endOffset});
+                    }
+                }
+            }
+        }
+        let usedBytes = 0;
+
+        for (let i = 0; i < coverageRanges.length; i++) {
+            const {startOffset, endOffset} = coverageRanges[i];
+            usedBytes += endOffset - startOffset;
+        }
+
+        script.coverage = {
+            usedBytes,
+            usage: usedBytes / script.length,
+            functionsNames: Array.from(functionsNames).sort()
+        };
+    }
+}
+
 module.exports = {
-    processData
+    processData,
+    processScriptCoverage
 };

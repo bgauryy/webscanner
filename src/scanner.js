@@ -157,9 +157,7 @@ async function getData() {
     if (collect.cookies) {
         this.data.cookies = await chromeClient.getCookies(this.client);
     }
-    if (collect.scriptCoverage || collect.styleCoverage) {
-        this.data.coverage = await chromeClient.getCoverage(this.client);
-    }
+    this.data.coverage = await chromeClient.getCoverage(this.client, collect.scriptCoverage, collect.styleCoverage);
     await chromeClient.getExtras(this.client, this.context.collect, this.data);
 
     const data = await processData(this.data, this.context);
