@@ -188,52 +188,51 @@ function processScriptCoverage(data) {
         }
         const script = data.scripts[scriptId];
         const functionsNames = new Set();
-        const coverageRanges = [];
+        const ranges = [];
 
         if (!script) {
             LOG.debug(`Script ${scriptId} is missing`);
             continue;
         }
+
         for (let i = 0; i < functions.length; i++) {
-            const func = functions[i];
-            const ranges = func.ranges;
-            if (func.functionName) {
-                functionsNames.add(func.functionName);
+            const funcObj = functions[i];
+            const coverageCandidate = funcObj.ranges[0];
+
+            if (!coverageCandidate.count) {
+                //ignore
+                continue;
+            }
+            functionsNames.add(funcObj.functionName || '[[anonymous]]');
+
+            if (ranges.length === 0) {
+                ranges.push(coverageCandidate);
+                continue;
             }
 
+            let merged = false;
             for (let j = 0; j < ranges.length; j++) {
-                const {startOffset, endOffset} = ranges[j];
+                const coverage = ranges[j];
 
-                if (coverageRanges.length === 0) {
-                    coverageRanges.push({startOffset, endOffset});
-                } else {
-                    let merged = false;
-                    for (let i = 0; i < coverageRanges.length; i++) {
-                        const r = coverageRanges[j];
-                        const isStartUnion = r.startOffset <= startOffset && r.endOffset <= endOffset && r.endOffset >= startOffset;
-                        const isEndUnion = r.endOffset >= endOffset && r.startOffset >= startOffset && r.startOffset <= endOffset;
-                        const isUnion = (r.startOffset > startOffset && r.endOffset < endOffset) || (r.startOffset < startOffset && r.endOffset > endOffset);
-
-                        if (isStartUnion || isEndUnion || isUnion) {
-                            coverageRanges[j] = {
-                                startOffset: Math.min(r.startOffset, startOffset),
-                                endOffset: Math.max(r.endOffset, endOffset)
-                            };
-                            merged = true;
-                            break;
-                        }
-                    }
-
-                    if (!merged) {
-                        coverageRanges.push({startOffset, endOffset});
-                    }
+                if (isRangeContains(coverageCandidate, coverage)) {
+                    ranges[j] = {
+                        startOffset: Math.min(coverage.startOffset, coverageCandidate.startOffset),
+                        endOffset: Math.max(coverage.endOffset, coverageCandidate.endOffset)
+                    };
+                    merged = true;
+                    break;
                 }
             }
+
+            if (!merged) {
+                ranges.push(coverageCandidate);
+            }
         }
+
         let usedBytes = 0;
 
-        for (let i = 0; i < coverageRanges.length; i++) {
-            const {startOffset, endOffset} = coverageRanges[i];
+        for (let i = 0; i < ranges.length; i++) {
+            const {startOffset, endOffset} = ranges[i];
             usedBytes += endOffset - startOffset;
         }
 
@@ -243,6 +242,13 @@ function processScriptCoverage(data) {
             functionsNames: Array.from(functionsNames).sort()
         };
     }
+}
+
+function isRangeContains(p1, p2) {
+    const isStartUnion = p1.startOffset <= p2.startOffset && p1.endOffset <= p2.endOffset && p1.endOffset >= p2.startOffset;
+    const isEndUnion = p1.endOffset >= p2.endOffset && p1.startOffset >= p2.startOffset && p1.startOffset <= p2.endOffset;
+    const isUnion = (p1.startOffset > p2.startOffset && p1.endOffset < p2.endOffset) || (p1.startOffset < p2.startOffset && p1.endOffset > p2.endOffset);
+    return isStartUnion || isEndUnion || isUnion;
 }
 
 module.exports = {
