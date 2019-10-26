@@ -187,7 +187,8 @@ function processScriptCoverage(data) {
             continue;
         }
         const script = data.scripts[scriptId];
-        const functionsNames = new Set();
+        const usedFunctions = new Set();
+        const unusedFunctionsNames = new Set();
         const ranges = [];
 
         if (!script) {
@@ -198,12 +199,13 @@ function processScriptCoverage(data) {
         for (let i = 0; i < functions.length; i++) {
             const funcObj = functions[i];
             const coverageCandidate = funcObj.ranges[0];
+            const functionName = funcObj.functionName || '[[anonymous]]';
 
             if (!coverageCandidate.count) {
-                //ignore
+                unusedFunctionsNames.add(functionName);
                 continue;
             }
-            functionsNames.add(funcObj.functionName || '[[anonymous]]');
+            usedFunctions.add(functionName);
 
             if (ranges.length === 0) {
                 ranges.push(coverageCandidate);
@@ -239,7 +241,8 @@ function processScriptCoverage(data) {
         script.coverage = {
             usedBytes,
             usage: usedBytes / script.length,
-            functionsNames: Array.from(functionsNames).sort()
+            usedFunctions: Array.from(usedFunctions).sort(),
+            unusedFunctions: Array.from(unusedFunctionsNames).sort(),
         };
     }
 }
