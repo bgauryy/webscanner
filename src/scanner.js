@@ -151,12 +151,10 @@ async function getData() {
     if (collect.scriptDOMEvents) {
         this.data.domEvents = await chromeClient.getAllDOMEvents(this.client);
     }
-    if (collect.metrics) {
-        this.data.metrics = await chromeClient.getMetrics(this.client);
-    }
     if (collect.cookies) {
         this.data.cookies = await chromeClient.getCookies(this.client);
     }
+    this.data.metrics = await chromeClient.getMetrics(this.client);
     this.data.coverage = await chromeClient.getCoverage(this.client, collect.scriptCoverage, collect.styleCoverage);
     await chromeClient.getExtras(this.client, this.context.collect, this.data);
 

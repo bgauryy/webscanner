@@ -165,7 +165,7 @@ function processFrames(frames) {
     }
 }
 
-function processMetrics(collectedMetrics = []) {
+function processMetrics(collectedMetrics) {
     const metrics = {};
 
     for (let i = 0; i < collectedMetrics.length; i++) {
