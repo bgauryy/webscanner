@@ -74,10 +74,10 @@ Register a puppeteer page for a scan
 ## Scanning Object  Structure (WIP)
 - **log** \<boolean> enable console logging 
 - **rules**\<object>
-      - **userAgent** \<string> automation user agent
-      - **disableCSP**  \<boolean> disable CSP restriction
-      - **adBlocking** \<boolean> enable ad blocking feature
-      - **disableServices** \<boolean> disable common third party services 
+  - **userAgent** \<string> automation user agent
+  - **disableCSP**  \<boolean> disable CSP restriction
+  - **adBlocking** \<boolean> enable ad blocking feature
+  - **disableServices** \<boolean> disable common third party services 
 - **collect** <obj>
 	- **frames** \<boolean> Collect iframes
 	- **scripts** \<boolean> Collect scripts
