@@ -7,7 +7,8 @@ describe('context testing', function () {
         }).toThrowError('page is missing');
 
         expect(context.getContext({}, {})).toEqual({
-            callback: null,
+            log: false,
+            page: {},
             collect: {
                 bodyResponse: [],
                 console: false,
@@ -29,15 +30,13 @@ describe('context testing', function () {
                 styles: false,
                 websocket: false,
             },
-            log: false,
-            page: {},
             rules: {
                 adBlocking: false,
                 blockedUrls: [],
                 disableCSP: false,
                 disableServices: false,
+                stealth: false,
             },
-            stealth: false,
         });
     });
 });

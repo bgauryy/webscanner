@@ -1,257 +1,103 @@
 
 # Web Scanner
 
-Puppeteer extension for web applications data enrichment
-- Collect and aggregates resources
-- Get scripts and CSS content
-- Collect advanced performance metrics
-- Iframes execution
+The missing piece of web automation sessions.
+WebScanner is a puppeteer extension that enriches web automation sessions with important data using advanced [chrome devtools protocol API](https://chromedevtools.github.io/devtools-protocol/)
+
+**Collected data:**
+- Resources data
+- Page content
+- Performance and timing metrics 
+- CSS and JS coverage
 - Service workers
-- Full network information
+- DOM events
+- Error logs
 
 ## API
-
-### `Scanner.test(opts <object>)`
-   - **opts** \<object> 
-	   - **url** \<string> 
-	   - **callback [opt]** \<function>  callback to be called after the scan is finished
-	   -  **chrome  [opt]** \<object>	   [chrome](https://github.com/GoogleChrome/chrome-launcher) process object
-	   - **log  [opt]**  \<boolean> *default = false*
-	   - **rules [opt]** \<object> 
-		   - **userAgent** \<sting>
-		   - **stopOnContentLoaded** \<boolean> *default = true*
-	   Restrict load event before stop
-		   - **scanTime** \<number> *default = 5* 
-	   scanning time in seconds (after load event, is exists)
-		   - **blockedUrls  [opt]**  \<array>
-	  urls list to block (wildcard are supported)      
-     - **collect  [opt]**  \<object> *default = all true* 
-	     - **content** \<boolean>
-		  collect scripts and css sources
-	     - **scripts** \<boolean>  *default = true*
-	      collect scripts information
-	     - **resources** \<boolean> *default = true*
-	      collect network information
-	     - **styles** \<boolean> *default = true*
-	      collect css information
-	     - **metrics** \<boolean> *default = true*
-	      collect metrics information
-	     - **frames** \<boolean> *default = true*
-	     collect iframes information
-	     - **research** \<boolean> *default = false*
-	     collect research details
-	     - **serviceWorker** \<boolean> *default = true*
-	     collect service workers details
-
-	     
-   **returns** \<promise|object>: scanning data Object  
-
 
 ### `Scanner.getPuppeteerSession (page <object>, opts <object>)` 
 Register a puppeteer page for a scan
 - **page**  \<object> 
-	    puppeteer [page](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#class-page) object
+	     [puppeteer page](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#class-page) 
  - **opts** \<object> 
 
 **returns** \<object>: page proxy object 
 - ***page.getData()***
 	-  returns scanning data (*must be called call before closing the browser*)
 
-## Examples
+## Example
 
-#### Basic integration 
  ````javascript
 (async () => {
-    const browser = await puppeteer.launch();
-    const page = await Scanner.getPuppeteerSession(await browser.newPage(), {
-        log: true,
+    const browser = await puppeteer.launch({
+        args: ['--proxy-server="direct://"', '--proxy-bypass-list=*', '--enable-precise-memory-info']
+    });
+    const page = await Scanner.getSession(await browser.newPage(), {
+        log: false,
         rules: {
+            stealth: true,
             userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
+            disableCSP: false,
+            adBlocking: false,
+            disableServices: false,
         },
         collect: {
-            research: true,
-            content: false,
-            scripts: true,
-            resources: true,
-            styles: true,
-            metrics: true,
             frames: true,
-            coverage: true
+            scripts: true,
+            scriptSource: true,
+            scriptDOMEvents: true,
+            scriptCoverage: true,
+            styles: true,
+            styleSource: true,
+            styleCoverage: true,
+            requests: true,
+            responses: true,
+            bodyResponse: [],
+            dataURI: true,
+            websocket: true,
+            serviceWorker: true,
+            logs: true,
+            console: true,
+            errors: true,
+            storage: true,
+            cookies: true,
         }
     });
-
-    await page.goto('http://example.com', {waitUntil: 'domcontentloaded'});
+    const url = 'https://example.com';
+    await page.goto(url, {waitUntil: ['domcontentloaded', 'load'], timeout: 0});
+    //<Your Automation Code>
     const data = await page.getData();
     await browser.close();
-    console.log('data', data);
 })();
-
 ````
 
-#### Standalone scan
-```javascript
-Scanner.test({
-    url: 'http://example.com',
-    log: true,
-    callback: (data) => {
-        console.log('data', data);
-    },
-    rules: {
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
-        stopOnContentLoaded: true,
-        scanTime: 5
-    },
-    collect: {
-        research: true,
-        content: false,
-        scripts: false,
-        resources: false,
-        styles: false,
-        metrics: false,
-        frames: true,
-        coverage: false
-    }
-});
-```
+## Scanning Object  Structure (WIP)
+- **log** \<boolean> enable console logging 
+- **rules**\<object>
+      - **userAgent** \<string> automation user agent
+      - **disableCSP**  \<boolean> disable CSP restriction
+      - **adBlocking** \<boolean> enable ad blocking feature
+      - **disableServices** \<boolean> disable common third party services 
+- **collect** <obj>
+	- **frames** \<boolean> Collect iframes
+	- **scripts** \<boolean> Collect scripts
+	- **scriptSource**\<boolean> Get scripts sources
+	- **scriptDOMEvents**\<boolean> DOM Events registration
+	- **scriptCoverage**\<boolean> Calculate scripts coverage
+	- **styles**\<boolean> Collect CSS 
+	- **styleSource**\<boolean>  Get CSS sources
+	- **styleCoverage**\<boolean>  Calculate CSS coverage
+	- **serviceWorker**\<boolean> Collect Service workers data
+	- **requests**\<boolean> Collect page requests data
+	- 	**dataURI**\<boolean>, //Collect data URI requests (returns url hash)
+	- **responses**\<boolean>  Collect responses 
+	- **bodyResponse**: [\<string>]  Collects response body (by *src/dest* regex array)
+	- **websocket**\<boolean> Collect websocket connections
+	- **cookies**\<boolean>  Returns all cookies from the page
+	- **storage**\<boolean> Collect localStorage and sessionStorage entities
+	- **logs**\<boolean> Collect browser logs 
+	- **console**\<boolean> Collect console API usage
+	- **errors**\<boolean> Collect unhandled page errors
 
-## Scanning Object  Structure
+## Received Data Structure (WIP)
 
-#### scripts \<array>
-- scriptId
-- url
-- host
-- pathname
-- port
-- path
-- query
-- isModule 
-- source 
-- frameURL 
-- stackTrace
- -parentScript
-
-#### resources \<array>
-- requestId
-- url
-- host
-- pathname
-- port
-- path
-- query
-- documentURL
-- frame
-- timestamp
-- initiator
-- response
-	- status
-	- method
-	- headers
-	- mimeType
-	- connectionReused
-	- remoteIPAddress
-	- ip
-	- timezone
-	- remotePort
-	- fromServiceWorker
-	- fromPrefetchCache
-	- fromDiskCache
-	- encodedDataLength
-	- protocol
-	- securityState
-	- timing
-		- requestTime
-		- proxyStart
-		- proxyEnd
-		- dnsStart
-		- dnsEnd
-		- connectStart
-		- connectEnd
-		- sslStart
-		- sslEnd
-		- workerStart
-		- workerReady
-		- sendStart
-		- sendEnd
-		- pushStart
-		- pushEnd
-		- receiveHeadersEnd
-	- securityDetails
-		- protocol
-		- keyExchange
-		- keyExchangeGroup
-		- cipher
-		- certificateId
-		- subjectName
-		- sanList \<array>
-		- issuer
-		- validFrom
-		- validTo
-		- signedCertificateTimestampList
-		- certificateTransparencyCompliance
-
-#### styleSheets \<array>
-- styleSheetId
-- frameId
-- sourceURL
-- url
-- host
-- pathname
-- port
-- path
-- origin
-- title
-- ownerNode
-- disabled
-- isInline
-- startLine
-- startColumn
-- length
-- source
-
-#### frames \<array>
-- frameId
-- parentFrameId
-- state
-- url
-- host
-- pathname
-- port
-- path
-- query
-- securityOrigin
-- mimeType
-- stack
-
-#### metrics \<object>
-- Timestamp
-- AudioHandlers
-- Documents
-- Frames
-- JSEventListeners
-- LayoutObjects
-- MediaKeySessions
-- MediaKeys
-- Nodes
-- Resources
-- ContextLifecycleStateObservers
-- V8PerContextDatas
-- WorkerGlobalScopes
-- UACSSResources
-- RTCPeerConnections
-- ResourceFetchers
-- AdSubframes
-- DetachedScriptStates
-- LayoutCount
-- RecalcStyleCount
-- LayoutDuration
-- RecalcStyleDuration
-- ScriptDuration
-- V8CompileDuration
-- TaskDuration
-- TaskOtherDuration
-- ThreadTime
-- JSHeapUsedSize
-- JSHeapTotalSize
-- FirstMeaningfulPaint
-- DomContentLoaded
-- NavigationStart

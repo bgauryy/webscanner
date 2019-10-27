@@ -3,8 +3,6 @@ function getContext(page, opts = {}) {
         throw new Error('page is missing');
     }
 
-    opts.callback = (typeof opts.callback === 'function') ? opts.callback : null;
-
     const defaultCollect = {
         frames: false, //Collect iframes data
         scripts: false, //Collect scripts data
@@ -18,9 +16,8 @@ function getContext(page, opts = {}) {
         requests: false, //Collect requests data
         responses: false, //get response data per request
         bodyResponse: [], // gets response body by url regex
-        //postData
         dataURI: false, //Collect data URI requests (returns url hash)
-        websocket: false, //Collect websockets
+        websocket: false, //Collect websocket connections
         cookies: false,//get all browser cookies
         logs: false,//Collect browser logs
         console: false,//Collect console AP usage
@@ -29,6 +26,7 @@ function getContext(page, opts = {}) {
     };
 
     const defaultRules = {
+        stealth: Boolean(opts.stealth),
         disableServices: false, //Disable common third party services
         blockedUrls: [], //Set chrome blocked urls
         adBlocking: false, //Enable ad blocking feature
@@ -37,8 +35,6 @@ function getContext(page, opts = {}) {
 
     return {
         page, ...{
-            stealth: Boolean(opts.stealth),
-            callback: opts.callback,
             log: opts.log || false,
             rules: {...defaultRules, ...opts.rules || {}},
             collect: {...defaultCollect, ...opts.collect || {}}
