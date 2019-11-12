@@ -5,7 +5,7 @@ const path = require('path');
 const LOG = require('./utils/logger.js');
 
 async function initScan(client, collect, rules) {
-    const {CSS, Debugger, Network, Page, Runtime, DOM} = client;
+    const {Profiler, CSS, Debugger, Network, Page, Runtime, DOM} = client;
 
     await Page.enable();
     await DOM.enable();
@@ -13,13 +13,6 @@ async function initScan(client, collect, rules) {
     await Debugger.enable();
     await Runtime.enable();
     await Network.enable();
-
-/*
-    await Profiler.enable();
-    await Profiler.setSamplingInterval({interval: 1000});
-    await Profiler.start();
-*/
-
     await Network.clearBrowserCache();
     await Network.clearBrowserCookies();
     await client.Debugger.setAsyncCallStackDepth({maxDepth: 1000});
@@ -30,6 +23,12 @@ async function initScan(client, collect, rules) {
 
     if (collect.styleCoverage) {
         await startCSSCoverageTracking(client);
+    }
+
+    if (collect.JSMetrics || collect.scriptCoverage) {
+        await Profiler.enable();
+        await Profiler.setSamplingInterval({interval: 1000});
+        await Profiler.start();
     }
 
     if (rules.userAgent) {
@@ -335,7 +334,7 @@ function handleResponse(client, collect, requests, scripts) {
                 _response.content.body = obj.body;
                 _response.content.base64Encoded = obj.base64Encoded;
             } catch (e) {
-                LOG.debug(`Failed to get response. ${url}`);
+                //ignore
             }
         }
         request.response = _response;
@@ -456,16 +455,6 @@ function registerStyleEvents(client, getContent, styles) {
     });
 }
 
-async function getMetrics(client) {
-    try {
-        await client.Performance.enable();
-        const metricsObj = await client.Performance.getMetrics();
-        return metricsObj && metricsObj.metrics;
-    } catch (e) {
-        LOG.error(e);
-    }
-}
-
 async function setStorage(client, storage) {
     await client.DOMStorage.enable();
     client.DOMStorage.domStorageItemAdded(({key, newValue: value, storageId: {securityOrigin, isLocalStorage}}) => {
@@ -489,19 +478,6 @@ function setContext(client, contexts) {
             context.destroyed = true;
         }
     });
-}
-
-async function getSystemInfo(client) {
-    try {
-        const info = await client.SystemInfo.getInfo();
-        const process = await client.SystemInfo.getProcessInfo();
-        return {
-            info,
-            process
-        };
-    } catch (e) {
-        LOG.error(e);
-    }
 }
 
 async function setLogs(client, logs) {
@@ -540,20 +516,14 @@ async function getCookies(client) {
     return await client.Page.getCookies();
 }
 
-async function getCoverage(client, scriptCoverage, styleCoverage) {
-    const res = {};
+async function getStyleCoverage(client) {
+    const {coverage} = await client.CSS.takeCoverageDelta();
+    return coverage;
+}
 
-    if (scriptCoverage) {
-        const {result} = await client.Profiler.getBestEffortCoverage();
-        res.JSCoverage = result;
-    }
-
-    if (styleCoverage) {
-        const {coverage} = await styleCoverage && client.CSS.takeCoverageDelta();
-        res.CSSCoverage = coverage;
-    }
-
-    return res;
+async function getScriptCoverage(client) {
+    const {result} = await client.Profiler.getBestEffortCoverage();
+    return result;
 }
 
 async function getResources(client) {
@@ -561,59 +531,82 @@ async function getResources(client) {
     return getResourcesFromFrameTree(resources.frameTree);
 }
 
-//eslint-disable-next-line
-async function getExtras(client, collect, data) {
-  /*  data.metadata = {};
+async function getMetadata(client) {
+    const data = {};
 
-    data.metadata.layoutMetrics = await client.Page.getLayoutMetrics();
-    data.metadata.heapSize = await client.Runtime.getHeapUsage();
+    data.layoutMetrics = await client.Page.getLayoutMetrics();
+    data.heapSize = await client.Runtime.getHeapUsage();
+    data.metrics = await _getMetrics(client);
+    data.manifest = await _getManifest(client);
+    data.systemInfo = await _getSystemInfo(client);
 
+    return data;
+}
+
+async function _getMetrics(client) {
+    try {
+        await client.Performance.enable();
+        const metricsObj = await client.Performance.getMetrics();
+        return metricsObj && metricsObj.metrics;
+    } catch (e) {
+        LOG.error(e);
+    }
+}
+
+async function _getManifest(client) {
     const manifest = await client.Page.getAppManifest();
     if (manifest && manifest.url) {
-        data.metadata.manifest = manifest;
+        return manifest;
     }
+}
 
-    //TODO - ceck if needed
+async function _getSystemInfo(client) {
+    try {
+        const info = await client.SystemInfo.getInfo();
+        const process = await client.SystemInfo.getProcessInfo();
+        return {
+            info,
+            process
+        };
+    } catch (e) {
+        LOG.error(e);
+    }
+}
+
+async function calculateJSExecution(client) {
     //eslint-disable-next-line
-    for (const contextId in data.contexts) {
-        const context = data.contexts[contextId];
-        if (context) {
-            context.lexicalScopeesNames = await client.Runtime.globalLexicalScopeNames({contextId});
-        }
-    }
-
     const {profile: {nodes, samples, timeDeltas, startTime, endTime}} = await client.Profiler.stop();
-
-
     const nodesMap = {};
+
     nodes.forEach((node) => {
         nodesMap[node.id] = node;
     });
-    debugger;
-    const functions = nodes.map(node => {
-        const frame = node.callFrame;
-        const name = frame.functionName;
-        const lineNumber = frame.lineNumber;
-        const columnNumber = frame.columnNumber;
-        const id = `${name}${lineNumber}${columnNumber}`;
-        const scriptId = frame.scriptId;
-        const hitCount = node.hitCount;
 
-        return {
-            id,
-            name,
-            lineNumber,
-            columnNumber,
-            scriptId,
-            hitCount,
-            ticks: (node.positionTicks && node.positionTicks[0] && node.positionTicks[0].ticks) || -1
-        };
-    })
+    const functions = nodes
+        .map(node => {
+            const frame = node.callFrame;
+            const name = frame.functionName;
+            const lineNumber = frame.lineNumber;
+            const columnNumber = frame.columnNumber;
+            const id = `${name}${lineNumber}${columnNumber}`;
+            const scriptId = frame.scriptId;
+            const hitCount = node.hitCount;
+
+            return {
+                id,
+                name,
+                lineNumber,
+                columnNumber,
+                scriptId,
+                hitCount,
+                ticks: (node.positionTicks && node.positionTicks[0] && node.positionTicks[0].ticks) || -1
+            };
+        })
         .sort((n1, n2) => {
             return n1.ticks >= n2.ticks ? -1 : 1;
         });
 
-    return data;*/
+    return functions;
 }
 
 module.exports = {
@@ -623,17 +616,17 @@ module.exports = {
     registerScriptExecution,
     registerStyleEvents,
     registerServiceWorkerEvents,
-    getMetrics,
-    getExtras,
     getCookies,
     getAllDOMEvents,
-    getCoverage,
+    getStyleCoverage,
+    getScriptCoverage,
     setLogs,
     setConsole,
     setErrors,
     setContext,
     setStorage,
     registerWebsocket,
-    getSystemInfo,
+    calculateJSExecution,
+    getMetadata,
     getResources,
 };

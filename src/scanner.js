@@ -154,15 +154,22 @@ async function getData() {
     if (collect.cookies) {
         this.data.cookies = await chromeClient.getCookies(this.client);
     }
-    if (collect.metrics) {
-        this.data.metrics = await chromeClient.getMetrics(this.client);
-    }
-
     if (collect.resources) {
         this.data.resources = await chromeClient.getResources(this.client);
     }
-
-    this.data.coverage = await chromeClient.getCoverage(this.client, collect.scriptCoverage, collect.styleCoverage);
+    if (collect.styleCoverage) {
+        this.data.styleCoverage = await chromeClient.getStyleCoverage(this.client);
+    }
+    if (collect.scriptCoverage) {
+        this.data.scriptCoverage = await chromeClient.getScriptCoverage(this.client);
+    }
+    if (collect.metadata) {
+        this.data.metadata = await chromeClient.getMetadata(this.client);
+    }
+    //TODO: IMPL
+    if (collect.JSMetrics) {
+        this.data.JSCoverage = await chromeClient.calculateJSExecution(this.client);
+    }
 
     const data = await processData(this.data, this.context);
 

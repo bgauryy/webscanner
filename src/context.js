@@ -24,6 +24,8 @@ function getContext(page, opts = {}) {
         errors: false,//collect JS errors
         storage: false,//collect storage events (localStorage, sessionStorage)
         resources: false, //collect all resources
+        JSMetrics: false, //collect js execution metrics
+        metadata: false, //collect js execution metrics
     };
 
     const defaultRules = {

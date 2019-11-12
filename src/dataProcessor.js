@@ -9,13 +9,7 @@ function processData(data, context) {
     const responseData = {};
 
     processFrames(data.frames);
-    processScripts(data, collect);
     processNetwork(data);
-
-    if (data.metadata) {
-        responseData.metadata = data.metadata;
-        responseData.metadata.metrics = processMetrics(data.metrics);
-    }
 
     if (collect.frames) {
         responseData.frames = data.frames;
@@ -25,33 +19,25 @@ function processData(data, context) {
         }
     }
     if (collect.scripts) {
+        processScripts(data, collect);
         responseData.scripts = data.scripts;
     }
-    if (collect.requests) {
-        //TODO - move to function
-
-        const reqs = {};
-        //eslint-disable-next-line
-        for (const requestId in data.requests) {
-            const req = data.requests[requestId];
-            req.requestId = requestId;
-            try {
-                const origin = new URL(req.url).origin;
-                reqs[origin] = reqs[origin] || [];
-                reqs[origin].push(req);
-            } catch (e) {
-                reqs.other = reqs.other || [];
-                reqs.other.push(req);
-            }
+    if (collect.styles) {
+        if (collect.styleCoverage) {
+            processStyleCoverage(data, collect);
         }
-        responseData.requests = reqs;
+        responseData.styleSheets = data.styles;
+    }
+    if (data.metadata) {
+        responseData.metadata = data.metadata;
+        responseData.metadata.metrics = processMetrics(data.metrics);
+    }
+
+    if (collect.requests) {
+        responseData.requests = processRequests(data);
     }
     if (collect.dataURI) {
         responseData.dataURI = data.dataURI;
-    }
-    if (collect.styles) {
-        processStyle(data, collect);
-        responseData.styleSheets = data.styles;
     }
     if (collect.storage) {
         responseData.storage = data.storage;
@@ -77,9 +63,25 @@ function processData(data, context) {
     if (collect.resources) {
         responseData.resources = data.resources;
     }
-
     //Remove undefined values
     return JSON.parse(JSON.stringify(responseData));
+}
+
+function processRequests(data) {
+    const reqs = {};
+    //eslint-disable-next-line
+    for (const requestId in data.requests) {
+        const req = data.requests[requestId];
+        req.requestId = requestId;
+        try {
+            const origin = new URL(req.url).origin;
+            reqs[origin] = reqs[origin] || [];
+            reqs[origin].push(req);
+        } catch (e) {
+            reqs.other = reqs.other || [];
+            reqs.other.push(req);
+        }
+    }
 }
 
 function processScripts(data, collect) {
@@ -91,7 +93,6 @@ function processScripts(data, collect) {
         processScriptCoverage(data);
     }
 
-    //Set events
     if (data.domEvents) {
         for (let i = 0; i < data.domEvents.length; i++) {
             const eventObj = data.domEvents[i];
@@ -122,21 +123,20 @@ function processScripts(data, collect) {
     }
 }
 
-function processStyle(data, collect) {
-    const coverage = collect.styleCoverage && data.coverage && data.coverage.CSSCoverage;
-    if (coverage) {
-        for (let i = 0; i < coverage.length; i++) {
-            const {styleSheetId, endOffset, startOffset} = coverage[i];
-            const style = data.styles[styleSheetId];
+function processStyleCoverage(data,) {
+    const coverage = data.styleCoverage || [];
 
-            if (style) {
-                style.coverage = style.coverage || {};
-                style.coverage.usedBytes = style.coverage.usedBytes || 0;
-                style.coverage.usedBytes += endOffset - startOffset;
-            }
+    for (let i = 0; i < coverage.length; i++) {
+        const {styleSheetId, endOffset, startOffset} = coverage[i];
+        const style = data.styles[styleSheetId];
 
+        if (style) {
+            style.coverage = style.coverage || {};
+            style.coverage.usedBytes = style.coverage.usedBytes || 0;
+            style.coverage.usedBytes += endOffset - startOffset;
         }
     }
+
     //eslint-disable-next-line
     for (const styleId in data.styles) {
         const style = data.styles[styleId];
@@ -241,7 +241,7 @@ function processScriptCoverage(data) {
             usedBytes += endOffset - startOffset;
         }
 
-        script.coverage = {
+        script.functionCoverage = {
             usedBytes,
             usage: usedBytes / script.length,
             usedFunctions: Array.from(usedFunctions).sort(),

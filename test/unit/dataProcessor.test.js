@@ -111,8 +111,9 @@ describe('dataProcessor script coverage', function () {
         };
 
         processScriptCoverage(data, {});
+
         expect(data.scripts['a']).toEqual({
-            'coverage': {
+            'functionCoverage': {
                 'usedFunctions': ['funcA', 'funcB', 'funcC', 'funcD'],
                 'unusedFunctions': [],
                 'usage': 1,
@@ -122,7 +123,7 @@ describe('dataProcessor script coverage', function () {
         });
 
         expect(data.scripts['b']).toEqual({
-            'coverage': {
+            'functionCoverage': {
                 'usedFunctions': ['funcA', 'funcB', 'funcC', 'funcD', 'funcE', 'funcF'],
                 'unusedFunctions': ['funcG'],
                 'usage': 0.3,
@@ -3574,9 +3575,9 @@ describe('dataProcessor script coverage', function () {
         };
 
         processScriptCoverage(data, {});
-        expect(data.scripts['c'].coverage.usage).toEqual(0.9819457136506211);
-        expect(data.scripts['c'].coverage.usedBytes).toEqual(79516);
-        expect(data.scripts['c'].coverage.unusedFunctions).toEqual([
+        expect(data.scripts['c'].functionCoverage.usage).toEqual(0.9819457136506211);
+        expect(data.scripts['c'].functionCoverage.usedBytes).toEqual(79516);
+        expect(data.scripts['c'].functionCoverage.unusedFunctions).toEqual([
             'AppMeasurement.a.D',
             'AppMeasurement.a.Db',
             'AppMeasurement.a.F',

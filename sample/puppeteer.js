@@ -35,9 +35,10 @@ const path = require('path');
             console: true,
             errors: true,
             storage: true,
-            metrics: true,
+            metadata: true,
             cookies: true,
             resources: true,
+            JSMetrics: true
         }
     });
 

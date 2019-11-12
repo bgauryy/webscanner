@@ -30,6 +30,8 @@ describe('context testing', function () {
                 styles: false,
                 websocket: false,
                 resources: false,
+                JSMetrics: false,
+                metadata: false,
             },
             rules: {
                 adBlocking: false,
