@@ -3,6 +3,7 @@ const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
 const fs = require('fs');
 const path = require('path');
 const LOG = require('./utils/logger.js');
+const ignoredScripts = {};
 
 async function initScan(client, collect, rules) {
     const {Profiler, CSS, Debugger, Network, Page, Runtime, DOM} = client;
@@ -47,9 +48,8 @@ async function initScan(client, collect, rules) {
     if (rules.stealth) {
         try {
             const stealthUA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36';
-            //TODO - ignore this scriptId
-            //eslint-disable-next-line
-            const scriptId = await client.Page.addScriptToEvaluateOnNewDocument({source: fs.readFileSync(path.resolve(__dirname, 'plugins', 'stealth.js'), {encoding: 'UTF-8'})});
+            const {identifier} = await client.Page.addScriptToEvaluateOnNewDocument({source: fs.readFileSync(path.resolve(__dirname, 'plugins', 'stealth.js'), {encoding: 'UTF-8'})});
+            ignoredScripts[identifier] = 1;
             if (!rules.userAgent) {
                 await client.Emulation.setUserAgentOverride({userAgent: stealthUA});
             }
@@ -575,8 +575,11 @@ async function _getSystemInfo(client) {
 
 async function calculateJSExecution(client) {
     //eslint-disable-next-line
-    const {profile: {nodes, samples, timeDeltas, startTime, endTime}} = await client.Profiler.stop();
+    let {profile: {nodes, samples, timeDeltas, startTime, endTime}} = await client.Profiler.stop();
     const nodesMap = {};
+    const DEFAULT_SCRIPT_ID = '0';
+
+    nodes = nodes.filter(n => !ignoredScripts[n.callFrame.scriptId] && n.callFrame.scriptId !== DEFAULT_SCRIPT_ID);
 
     nodes.forEach((node) => {
         nodesMap[node.id] = node;
