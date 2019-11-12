@@ -179,7 +179,7 @@ function processMetrics(collectedMetrics) {
 }
 
 function processScriptCoverage(data) {
-    const coverage = data.coverage.JSCoverage.sort((a, b) => {
+    const coverage = data.scriptCoverage.sort((a, b) => {
         return +a.scriptId >= +b.scriptId ? 1 : -1;
     });
 
