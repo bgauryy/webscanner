@@ -74,6 +74,9 @@ function processData(data, context) {
     if (collect.storage) {
         responseData.storage = data.storage;
     }
+    if (collect.resources) {
+        responseData.resources = data.resources;
+    }
 
     //Remove undefined values
     return JSON.parse(JSON.stringify(responseData));

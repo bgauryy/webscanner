@@ -14,6 +14,12 @@ async function initScan(client, collect, rules) {
     await Runtime.enable();
     await Network.enable();
 
+/*
+    await Profiler.enable();
+    await Profiler.setSamplingInterval({interval: 1000});
+    await Profiler.start();
+*/
+
     await Network.clearBrowserCache();
     await Network.clearBrowserCookies();
     await client.Debugger.setAsyncCallStackDepth({maxDepth: 1000});
@@ -282,7 +288,6 @@ function handleResponse(client, collect, requests, scripts) {
         let initiatorOrigin;
 
         if (!request) {
-            LOG.error(`Request is missing to ${url}`);
             return;
         }
 
@@ -551,9 +556,14 @@ async function getCoverage(client, scriptCoverage, styleCoverage) {
     return res;
 }
 
+async function getResources(client) {
+    const resources = await client.Page.getResourceTree();
+    return getResourcesFromFrameTree(resources.frameTree);
+}
+
 //eslint-disable-next-line
 async function getExtras(client, collect, data) {
-    data.metadata = {};
+  /*  data.metadata = {};
 
     data.metadata.layoutMetrics = await client.Page.getLayoutMetrics();
     data.metadata.heapSize = await client.Runtime.getHeapUsage();
@@ -561,11 +571,6 @@ async function getExtras(client, collect, data) {
     const manifest = await client.Page.getAppManifest();
     if (manifest && manifest.url) {
         data.metadata.manifest = manifest;
-    }
-
-    if (collect.frames) {
-        const resources = await client.Page.getResourceTree();
-        data.resourcesTree = getResourcesFromFrameTree(resources.frameTree);
     }
 
     //TODO - ceck if needed
@@ -577,7 +582,38 @@ async function getExtras(client, collect, data) {
         }
     }
 
-    return data;
+    const {profile: {nodes, samples, timeDeltas, startTime, endTime}} = await client.Profiler.stop();
+
+
+    const nodesMap = {};
+    nodes.forEach((node) => {
+        nodesMap[node.id] = node;
+    });
+    debugger;
+    const functions = nodes.map(node => {
+        const frame = node.callFrame;
+        const name = frame.functionName;
+        const lineNumber = frame.lineNumber;
+        const columnNumber = frame.columnNumber;
+        const id = `${name}${lineNumber}${columnNumber}`;
+        const scriptId = frame.scriptId;
+        const hitCount = node.hitCount;
+
+        return {
+            id,
+            name,
+            lineNumber,
+            columnNumber,
+            scriptId,
+            hitCount,
+            ticks: (node.positionTicks && node.positionTicks[0] && node.positionTicks[0].ticks) || -1
+        };
+    })
+        .sort((n1, n2) => {
+            return n1.ticks >= n2.ticks ? -1 : 1;
+        });
+
+    return data;*/
 }
 
 module.exports = {
@@ -599,4 +635,5 @@ module.exports = {
     setStorage,
     registerWebsocket,
     getSystemInfo,
+    getResources,
 };

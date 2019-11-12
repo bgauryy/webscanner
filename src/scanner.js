@@ -158,10 +158,11 @@ async function getData() {
         this.data.metrics = await chromeClient.getMetrics(this.client);
     }
 
-    this.data.coverage = await chromeClient.getCoverage(this.client, collect.scriptCoverage, collect.styleCoverage);
+    if (collect.resources) {
+        this.data.resources = await chromeClient.getResources(this.client);
+    }
 
-    //TODO: check why fails
-    //await chromeClient.getExtras(this.client, this.context.collect, this.data);
+    this.data.coverage = await chromeClient.getCoverage(this.client, collect.scriptCoverage, collect.styleCoverage);
 
     const data = await processData(this.data, this.context);
 

@@ -23,6 +23,7 @@ function getContext(page, opts = {}) {
         console: false,//Collect console AP usage
         errors: false,//collect JS errors
         storage: false,//collect storage events (localStorage, sessionStorage)
+        resources: false, //collect all resources
     };
 
     const defaultRules = {

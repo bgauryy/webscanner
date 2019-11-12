@@ -29,6 +29,7 @@ describe('context testing', function () {
                 styleSource: true,
                 styles: false,
                 websocket: false,
+                resources: false,
             },
             rules: {
                 adBlocking: false,

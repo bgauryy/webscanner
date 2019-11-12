@@ -37,6 +37,7 @@ const path = require('path');
             storage: true,
             metrics: true,
             cookies: true,
+            resources: true,
         }
     });
 
