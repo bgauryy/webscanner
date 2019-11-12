@@ -121,14 +121,30 @@ async function setSWListener(client, content, serviceWorkers) {
                 scopeURL
             };
         },
-        ({registrationId, versionId, runningStatus, status}) => {
-            const sw = serviceWorkers[registrationId];
+        (_sw) => {
+            const sw = serviceWorkers[_sw.registrationId];
             sw.version = sw.version || [];
-            sw.version.push(versionId);
             sw.runningStatus = sw.runningStatus || [];
-            sw.runningStatus.push(runningStatus);
             sw.status = sw.status || [];
-            sw.status.push(status);
+            sw.clients = sw.clients || [];
+
+            if (_sw.version) {
+                sw.version.push(_sw.version);
+            }
+            if (_sw.runningStatus) {
+                sw.runningStatus.push(_sw.runningStatus);
+            }
+            if (_sw.status) {
+                sw.status.push(_sw.status);
+            }
+            if (_sw.controlledClients && _sw.controlledClients.length) {
+                sw.clients.push(_sw.controlledClients);
+            }
+
+            sw.scriptResponseTime = sw.scriptResponseTime || _sw.scriptResponseTime;
+            sw.scriptLastModified = sw.scriptLastModified || _sw.scriptLastModified;
+            sw.url = sw.url || _sw.scriptURL;
+            sw.targetId = sw.targetId || _sw.targetId;
         },
         ({registrationId, errorMessage, versionId, lineNumber, columnNumber}) => {
             const sw = serviceWorkers[registrationId];
