@@ -63,6 +63,11 @@ function processData(data, context) {
     if (collect.resources) {
         responseData.resources = data.resources;
     }
+    if (collect.JSMetrics) {
+        //TODO - impl
+        responseData.JSMetrics = data.JSMetrics;
+    }
+
     //Remove undefined values
     return JSON.parse(JSON.stringify(responseData));
 }

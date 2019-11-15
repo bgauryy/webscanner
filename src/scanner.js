@@ -182,9 +182,8 @@ async function getData() {
     if (collect.metadata) {
         this.data.metadata = await chromeClient.getMetadata(this.client);
     }
-    //TODO: IMPL
     if (collect.JSMetrics) {
-        this.data.JSCoverage = await chromeClient.calculateJSExecution(this.client);
+        this.data.JSMetrics = await chromeClient.getExecutionMetrics(this.client);
     }
 
     const data = await processData(this.data, this.context);

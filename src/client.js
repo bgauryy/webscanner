@@ -573,43 +573,61 @@ async function _getSystemInfo(client) {
     }
 }
 
-async function calculateJSExecution(client) {
+async function getExecutionMetrics(client) {
     //eslint-disable-next-line
     let {profile: {nodes, samples, timeDeltas, startTime, endTime}} = await client.Profiler.stop();
+    let nodesIndex = 0;
+
     const nodesMap = {};
-    const DEFAULT_SCRIPT_ID = '0';
+    const scriptsExecution = {};
+    const internalExecution = {};
+    const INTERNAL_SCRIPT_ID = '0';
 
-    nodes = nodes.filter(n => !ignoredScripts[n.callFrame.scriptId] && n.callFrame.scriptId !== DEFAULT_SCRIPT_ID);
+    //eslint-disable-next-line
+    nodes = nodes.map(_node => {
+        const {callFrame: {functionName, scriptId, url, lineNumber, columnNumber}, hitCount, id, children, positionTicks} = _node;
+        const hits = nodesIndex + hitCount;
+        const isIgnoredScript = !!ignoredScripts[scriptId];
+        let nodeExecutionTime = 0;
 
-    nodes.forEach((node) => {
-        nodesMap[node.id] = node;
+        for (; nodesIndex < hits; nodesIndex++) {
+            const time = Number(((timeDeltas[nodesIndex] / 1000) || 0).toFixed(2));
+            nodeExecutionTime += time;
+        }
+
+        const node = {
+            scriptId,
+            url,
+            functionName,
+            lineNumber,
+            columnNumber,
+            children,
+            nodeExecutionTime,
+            positionTicks
+        };
+
+        if (nodeExecutionTime) {
+            if (scriptId === INTERNAL_SCRIPT_ID) {
+                internalExecution[functionName] = internalExecution[functionName] || 0;
+                internalExecution[functionName] += nodeExecutionTime;
+            } else if (!isIgnoredScript) {
+                scriptsExecution[scriptId] = scriptsExecution[scriptId] || 0;
+                scriptsExecution[scriptId] += nodeExecutionTime;
+                nodesMap[id] = node;
+                return node;
+            }
+        }
     });
 
-    const functions = nodes
-        .map(node => {
-            const frame = node.callFrame;
-            const name = frame.functionName;
-            const lineNumber = frame.lineNumber;
-            const columnNumber = frame.columnNumber;
-            const id = `${name}${lineNumber}${columnNumber}`;
-            const scriptId = frame.scriptId;
-            const hitCount = node.hitCount;
+    nodes = nodes.filter(n => !!n).sort((n1, n2) => {
+        return n1.nodeExecutionTime > n2.nodeExecutionTime ? -1 : 1;
+    });
 
-            return {
-                id,
-                name,
-                lineNumber,
-                columnNumber,
-                scriptId,
-                hitCount,
-                ticks: (node.positionTicks && node.positionTicks[0] && node.positionTicks[0].ticks) || -1
-            };
-        })
-        .sort((n1, n2) => {
-            return n1.ticks >= n2.ticks ? -1 : 1;
-        });
-
-    return functions;
+    return {
+        scriptsExecution,
+        internalExecution,
+        nodes
+    };
 }
 
 module.exports = {
@@ -629,7 +647,7 @@ module.exports = {
     setContext,
     setStorage,
     registerWebsocket,
-    calculateJSExecution,
+    getExecutionMetrics,
     getMetadata,
     getResources,
 };
