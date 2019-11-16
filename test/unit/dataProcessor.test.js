@@ -19,96 +19,96 @@ describe('dataProcessor script coverage', function () {
                 'c': {length: 80978},
             },
             scriptCoverage: [
-                    {
-                        scriptId: 'a',
-                        functions: [
-                            {
-                                ranges: [{
-                                    startOffset: 20, endOffset: 60,
-                                    count: 1
-                                }],
-                                functionName: 'funcA',
-                            },
-                            {
-                                ranges: [{
-                                    startOffset: 40, endOffset: 150,
-                                    count: 1
-                                }],
-                                functionName: 'funcB',
-                            },
-                            {
-                                ranges: [{
-                                    startOffset: 90, endOffset: 100,
-                                    count: 1
-                                }],
-                                functionName: 'funcC',
-                            },
-                            {
-                                ranges: [{
-                                    startOffset: 0, endOffset: 150,
-                                    count: 1
-                                }],
-                                functionName: 'funcD',
-                            },
-                        ]
-                    },
-                    {
-                        scriptId: 'b',
-                        functions: [
-                            {
-                                ranges: [{
-                                    startOffset: 0, endOffset: 100, count: 1
-                                }],
-                                functionName: 'funcA',
-                            },
-                            {
-                                ranges: [{
-                                    startOffset: 100, endOffset: 300,
-                                    count: 1
-                                }],
-                                functionName: 'funcB'
-                            },
-                            {
-                                ranges: [{
-                                    startOffset: 75, endOffset: 270,
-                                    count: 1
-                                }],
-                                functionName: 'funcC',
-                            },
-                            {
-                                ranges: [{
-                                    startOffset: 80, endOffset: 260,
-                                    count: 1
-                                }],
-                                functionName: 'funcD',
-                            },
-                            {
-                                ranges: [{
-                                    startOffset: 60, endOffset: 271,
-                                    count: 1
-                                }],
-                                functionName: 'funcE',
-                            },
-                            {
-                                ranges: [{
-                                    startOffset: 60, endOffset: 271,
-                                    count: 1
-                                }],
-                                functionName: 'funcF',
-                            },
-                            {
-                                ranges: [{
-                                    startOffset: 200, endOffset: 301,
-                                    count: 0
-                                }],
-                                functionName: 'funcG',
-                            },
-                        ]
-                    },
-                ]
+                {
+                    scriptId: 'a',
+                    functions: [
+                        {
+                            ranges: [{
+                                startOffset: 20, endOffset: 60,
+                                count: 1
+                            }],
+                            functionName: 'funcA',
+                        },
+                        {
+                            ranges: [{
+                                startOffset: 40, endOffset: 150,
+                                count: 1
+                            }],
+                            functionName: 'funcB',
+                        },
+                        {
+                            ranges: [{
+                                startOffset: 90, endOffset: 100,
+                                count: 1
+                            }],
+                            functionName: 'funcC',
+                        },
+                        {
+                            ranges: [{
+                                startOffset: 0, endOffset: 150,
+                                count: 1
+                            }],
+                            functionName: 'funcD',
+                        },
+                    ]
+                },
+                {
+                    scriptId: 'b',
+                    functions: [
+                        {
+                            ranges: [{
+                                startOffset: 0, endOffset: 100, count: 1
+                            }],
+                            functionName: 'funcA',
+                        },
+                        {
+                            ranges: [{
+                                startOffset: 100, endOffset: 300,
+                                count: 1
+                            }],
+                            functionName: 'funcB'
+                        },
+                        {
+                            ranges: [{
+                                startOffset: 75, endOffset: 270,
+                                count: 1
+                            }],
+                            functionName: 'funcC',
+                        },
+                        {
+                            ranges: [{
+                                startOffset: 80, endOffset: 260,
+                                count: 1
+                            }],
+                            functionName: 'funcD',
+                        },
+                        {
+                            ranges: [{
+                                startOffset: 60, endOffset: 271,
+                                count: 1
+                            }],
+                            functionName: 'funcE',
+                        },
+                        {
+                            ranges: [{
+                                startOffset: 60, endOffset: 271,
+                                count: 1
+                            }],
+                            functionName: 'funcF',
+                        },
+                        {
+                            ranges: [{
+                                startOffset: 200, endOffset: 301,
+                                count: 0
+                            }],
+                            functionName: 'funcG',
+                        },
+                    ]
+                },
+            ]
         };
 
-        processScriptCoverage(data, {});
+        processScriptCoverage(data.scripts, data.scriptCoverage);
 
         expect(data.scripts['a']).toEqual({
             'functionCoverage': {
@@ -119,7 +119,6 @@ describe('dataProcessor script coverage', function () {
             },
             'length': 150
         });
-
         expect(data.scripts['b']).toEqual({
             'functionCoverage': {
                 'usedFunctions': ['funcA', 'funcB', 'funcC', 'funcD', 'funcE', 'funcF'],
@@ -3569,8 +3568,8 @@ describe('dataProcessor script coverage', function () {
 
             ]
         };
+        processScriptCoverage(data.scripts, data.scriptCoverage);
 
-        processScriptCoverage(data, {});
         expect(data.scripts['c'].functionCoverage.usage).toEqual(0.9819457136506211);
         expect(data.scripts['c'].functionCoverage.usedBytes).toEqual(79516);
         expect(data.scripts['c'].functionCoverage.unusedFunctions).toEqual([

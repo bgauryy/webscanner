@@ -574,59 +574,9 @@ async function _getSystemInfo(client) {
 }
 
 async function getExecutionMetrics(client) {
-    //eslint-disable-next-line
-    let {profile: {nodes, samples, timeDeltas, startTime, endTime}} = await client.Profiler.stop();
-    let nodesIndex = 0;
-
-    const nodesMap = {};
-    const scriptsExecution = {};
-    const internalExecution = {};
-    const INTERNAL_SCRIPT_ID = '0';
-
-    //eslint-disable-next-line
-    nodes = nodes.map(_node => {
-        const {callFrame: {functionName, scriptId, url, lineNumber, columnNumber}, hitCount, id, children, positionTicks} = _node;
-        const hits = nodesIndex + hitCount;
-        const isIgnoredScript = !!ignoredScripts[scriptId];
-        let nodeExecutionTime = 0;
-
-        for (; nodesIndex < hits; nodesIndex++) {
-            const time = Number(((timeDeltas[nodesIndex] / 1000) || 0).toFixed(2));
-            nodeExecutionTime += time;
-        }
-
-        const node = {
-            scriptId,
-            url,
-            functionName,
-            lineNumber,
-            columnNumber,
-            children,
-            nodeExecutionTime,
-            positionTicks
-        };
-
-        if (nodeExecutionTime) {
-            if (scriptId === INTERNAL_SCRIPT_ID) {
-                internalExecution[functionName] = internalExecution[functionName] || 0;
-                internalExecution[functionName] += nodeExecutionTime;
-            } else if (!isIgnoredScript) {
-                scriptsExecution[scriptId] = scriptsExecution[scriptId] || 0;
-                scriptsExecution[scriptId] += nodeExecutionTime;
-                nodesMap[id] = node;
-                return node;
-            }
-        }
-    });
-
-    nodes = nodes.filter(n => !!n).sort((n1, n2) => {
-        return n1.nodeExecutionTime > n2.nodeExecutionTime ? -1 : 1;
-    });
-
+    const {profile: {nodes, samples, timeDeltas, startTime, endTime}} = await client.Profiler.stop();
     return {
-        scriptsExecution,
-        internalExecution,
-        nodes
+        nodes, samples, timeDeltas, startTime, endTime, ignoredScripts
     };
 }
 

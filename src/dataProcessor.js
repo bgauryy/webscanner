@@ -8,100 +8,218 @@ function processData(data, context) {
     const collect = context.collect || {};
     const responseData = {};
 
-    processFrames(data.frames);
-    processNetwork(data);
-
     if (collect.frames) {
-        responseData.frames = data.frames;
-        //eslint-disable-next-line
-        for (const frameId in data.resourcesTree) {
-            responseData.frames[frameId] = {...responseData.frames[frameId], ...data.resourcesTree[frameId]};
-        }
+        responseData.frames = processFrames(data.frames, data.resourcesTree);
+    }
+    if (collect.requests) {
+        responseData.requests = processRequests(data.requests, responseData.frames);
     }
     if (collect.scripts) {
-        processScripts(data, collect);
-        responseData.scripts = data.scripts;
-    }
-    if (collect.styles) {
-        if (collect.styleCoverage) {
-            processStyleCoverage(data, collect);
-        }
-        responseData.styleSheets = data.styles;
-    }
-    if (data.metadata) {
-        responseData.metadata = data.metadata;
-        responseData.metadata.metrics = processMetrics(data.metrics);
-    }
-
-    if (collect.requests) {
-        responseData.requests = processRequests(data);
-    }
-    if (collect.dataURI) {
-        responseData.dataURI = data.dataURI;
-    }
-    if (collect.storage) {
-        responseData.storage = data.storage;
-    }
-    if (collect.serviceWorker) {
-        responseData.serviceWorker = data.serviceWorker;
-    }
-    if (collect.cookies) {
-        responseData.cookies = data.cookies;
-    }
-    if (collect.logs) {
-        responseData.logs = data.logs;
-    }
-    if (collect.console) {
-        responseData.console = data.console;
-    }
-    if (collect.errors) {
-        responseData.errors = data.errors;
-    }
-    if (collect.storage) {
-        responseData.storage = data.storage;
-    }
-    if (collect.resources) {
-        responseData.resources = data.resources;
+        responseData.scripts = processScripts(data.scripts, data.domEvents, data.scriptCoverage, responseData.frames);
     }
     if (collect.JSMetrics) {
-        //TODO - impl
-        responseData.JSMetrics = data.JSMetrics;
+        responseData.JSMetrics = processJSMetrics(data.JSMetrics, responseData.scripts);
     }
+    if (collect.styles) {
+        responseData.styleSheets = processStyle(data.styles, data.styleCoverage);
+    }
+    if (collect.metadata) {
+        responseData.metadata = processMetadata(data.metadata);
+    }
+    if (collect.serviceWorker) {
+        responseData.serviceWorker = processServiceWorker(data.serviceWorker);
+    }
+
+    responseData.storage = data.storage;
+    responseData.dataURI = data.dataURI;
+    responseData.cookies = data.cookies;
+    responseData.logs = data.logs;
+    responseData.console = data.console;
+    responseData.errors = data.errors;
+    responseData.storage = data.storage;
+    responseData.resources = data.resources;
 
     //Remove undefined values
     return JSON.parse(JSON.stringify(responseData));
 }
 
-function processRequests(data) {
-    const reqs = {};
+function processServiceWorker(serviceWorkers) {
+    serviceWorkers = serviceWorkers || {};
+    const _serviceWorkers = [];
+
     //eslint-disable-next-line
-    for (const requestId in data.requests) {
-        const req = data.requests[requestId];
-        req.requestId = requestId;
-        try {
-            const origin = new URL(req.url).origin;
-            reqs[origin] = reqs[origin] || [];
-            reqs[origin].push(req);
-        } catch (e) {
-            reqs.other = reqs.other || [];
-            reqs.other.push(req);
-        }
+    for (const id in serviceWorkers) {
+        _serviceWorkers.push(serviceWorkers[id]);
     }
+    return _serviceWorkers;
 }
 
-function processScripts(data, collect) {
-    if (!data.scripts || !Object.keys(data.scripts).length) {
+function processStyle(styles, styleCoverage,) {
+    styles = styles || {};
+    styleCoverage = styleCoverage || [];
+
+    for (let i = 0; i < styleCoverage.length; i++) {
+        const {styleSheetId, endOffset, startOffset} = styleCoverage[i];
+        const style = styles[styleSheetId];
+
+        if (style) {
+            style.coverage = style.coverage || {};
+            style.coverage.usedBytes = style.coverage.usedBytes || 0;
+            style.coverage.usedBytes += endOffset - startOffset;
+        }
+    }
+
+    //eslint-disable-next-line
+    for (const styleId in styles) {
+        const style = styles[styleId];
+        if (style.coverage) {
+            style.coverage.usage = style.coverage.usedBytes / style.length;
+        }
+    }
+
+    return styles;
+}
+
+function processFrames(frames, resourcesTree) {
+    frames = frames || {};
+    resourcesTree = resourcesTree || {};
+
+    //eslint-disable-next-line
+    for (const frameId in frames) {
+        const frame = frames[frameId];
+        frame.url = frame.url || 'about:blank';
+    }
+
+    //eslint-disable-next-line
+    for (const frameId in resourcesTree) {
+        frames[frameId] = {...frames[frameId], ...resourcesTree[frameId]};
+    }
+    return frames;
+}
+
+//eslint-disable-next-line
+function processJSMetrics(JSMetrics, scripts) {
+    if (!JSMetrics) {
         return;
     }
+    scripts = scripts || {};
 
-    if (collect.scriptCoverage) {
-        processScriptCoverage(data);
+    const {timeDeltas, ignoredScripts} = JSMetrics;
+    const nodesMap = {};
+    const childrenMap = {};
+    const functionExecution = {};
+    const scriptsExecution = {};
+    const internalExecution = {};
+    const INTERNAL_SCRIPT_ID = '0';
+
+    let {nodes} = JSMetrics;
+    let nodesIndex = 0;
+
+    nodes = nodes.map(_node => {
+        const {callFrame: {functionName, scriptId, url, lineNumber, columnNumber}, hitCount, id: nodeId, children} = _node;
+        const hits = nodesIndex + hitCount;
+        const isIgnoredScript = !!ignoredScripts[scriptId];
+        let executionTime = 0;
+
+        for (; nodesIndex < hits; nodesIndex++) {
+            executionTime += timeDeltas[nodesIndex];
+        }
+        executionTime = Number(((executionTime / 1000) || 0).toFixed(2));
+
+        if (!executionTime || isIgnoredScript) {
+            //eslint-disable-next-line
+            return;
+        }
+
+        if (scriptId === INTERNAL_SCRIPT_ID) {
+            internalExecution[functionName] = internalExecution[functionName] || 0;
+            internalExecution[functionName] += executionTime;
+        } else {
+            scriptsExecution[scriptId] = scriptsExecution[scriptId] || 0;
+            scriptsExecution[scriptId] += executionTime;
+        }
+        if (children) {
+            childrenMap[nodeId] = children;
+        }
+
+        const functionId = `${scriptId}${functionName}${lineNumber}${columnNumber}`;
+        functionExecution[functionId] = functionExecution[functionId] || {
+            url,
+            scriptId,
+            functionName,
+            lineNumber,
+            columnNumber,
+            hits: 0,
+            executionTime: 0
+        };
+        functionExecution[functionId].hits++;
+        functionExecution[functionId].executionTime += executionTime;
+
+        nodesMap[nodeId] = {
+            nodeId,
+            scriptId,
+            url,
+            functionName,
+            lineNumber,
+            columnNumber,
+            executionTime
+        };
+        return nodeId;
+    }).filter(n => !!n);
+
+    //eslint-disable-next-line
+    for (const parentNodeId in childrenMap) {
+        const parentNode = nodesMap[parentNodeId];
+        const childrenNodes = childrenMap[parentNodeId].map(nodeId => {
+            return {...nodesMap[nodeId], hasParent: true};
+        }).filter(n => !!n);
+
+        if (childrenNodes.length) {
+            parentNode.childrenNodes = childrenNodes;
+        }
     }
 
-    if (data.domEvents) {
-        for (let i = 0; i < data.domEvents.length; i++) {
-            const eventObj = data.domEvents[i];
-            const script = data.scripts[eventObj.scriptId];
+    //eslint-disable-next-line
+    nodes = nodes.map(nodeId => {
+        const node = nodesMap[nodeId];
+        if (!node.hasParent) {
+            delete node.nodeId;
+            if (node.scriptId === INTERNAL_SCRIPT_ID) {
+                node.isInternal = true;
+                delete node.scriptId;
+            }
+            return node;
+        }
+    }).filter(node => !!node);
+
+    let functions = [];
+    //eslint-disable-next-line
+    for (const fId in functionExecution) {
+        functions.push(functionExecution[fId]);
+    }
+    functions = functions.sort((a, b) => a.executionTime > b.executionTime ? -1 : 1);
+
+    //TODO: get stackTime from nodeTree
+    return {
+        scriptsExecution,
+        internalExecution,
+        nodes,
+        functions
+    };
+}
+
+function processScripts(scripts, domEvents, scriptCoverage, frames) {
+    scripts = scripts || {};
+    frames = frames || {};
+
+    if (scriptCoverage) {
+        processScriptCoverage(scripts, scriptCoverage);
+    }
+
+    if (domEvents) {
+        for (let i = 0; i < domEvents.length; i++) {
+            const eventObj = domEvents[i];
+            const script = scripts[eventObj.scriptId];
 
             if (script) {
                 delete eventObj.scriptId;
@@ -112,79 +230,61 @@ function processScripts(data, collect) {
     }
 
     //eslint-disable-next-line
-    for (const scriptId in data.scripts) {
-        const script = data.scripts[scriptId];
-        const frame = data.frames[script.frameId];
-        script.frameURL = frame.url;
+    for (const scriptId in scripts) {
+        const script = scripts[scriptId];
 
-        if (script.frameURL === script.url) {
-            script.url = 'inline';
-        }
+        if (script) {
+            const frame = frames[script.frameId] || {};
 
-        //TODO - extract from function
-        if (script.stackTrace) {
-            script.parentScript = script.stackTrace.callFrames && script.stackTrace.callFrames[0];
+            script.frameURL = frame.url;
+            if (script.frameURL === script.url) {
+                script.url = 'inline';
+            }
+            //TODO - extract from function
+            if (script.stackTrace) {
+                script.parentScript = script.stackTrace.callFrames && script.stackTrace.callFrames[0];
+            }
         }
     }
+
+    return scripts;
 }
 
-function processStyleCoverage(data,) {
-    const coverage = data.styleCoverage || [];
-
-    for (let i = 0; i < coverage.length; i++) {
-        const {styleSheetId, endOffset, startOffset} = coverage[i];
-        const style = data.styles[styleSheetId];
-
-        if (style) {
-            style.coverage = style.coverage || {};
-            style.coverage.usedBytes = style.coverage.usedBytes || 0;
-            style.coverage.usedBytes += endOffset - startOffset;
-        }
-    }
+function processRequests(requests, frames) {
+    requests = requests || {};
+    frames = frames || {};
+    const _requests = [];
 
     //eslint-disable-next-line
-    for (const styleId in data.styles) {
-        const style = data.styles[styleId];
-        if (style.coverage) {
-            style.coverage.usage = style.coverage.usedBytes / style.length;
-        }
-    }
-}
+    for (const requestId in requests) {
+        const request = requests[requestId];
+        const frame = frames[request.frameId] || {};
 
-function processNetwork(data) {
-    if (!data.requests || !Object.keys(data.requests).length) {
-        return;
-    }
-
-    //eslint-disable-next-line
-    for (const requestId in data.requests) {
-        const request = data.requests[requestId];
-        const frame = data.frames[request.frameId] || {};
+        request.requestId = requestId;
         request.frameURL = frame.url;
+        _requests.push(request);
     }
-    return data.requests;
+    return _requests;
 }
 
-function processFrames(frames) {
-    //eslint-disable-next-line
-    for (const frameId in frames) {
-        const frame = frames[frameId];
-        frame.url = frame.url || 'about:blank';
+function processMetadata(metadata) {
+    metadata = metadata || {};
+
+    if (metadata.metrics) {
+        const metrics = metadata.metrics;
+        delete metadata.metrics;
+        metadata.metrics = {};
+
+        for (let i = 0; i < metrics.length; i++) {
+            const metric = metrics[i];
+            metadata.metrics[metric.name] = metric.value;
+        }
     }
+    return metadata;
 }
 
-function processMetrics(collectedMetrics) {
-    const metrics = {};
-
-    for (let i = 0; i < collectedMetrics.length; i++) {
-        const metric = collectedMetrics[i];
-        metrics[metric.name] = metric.value;
-    }
-    return metrics;
-}
-
-function processScriptCoverage(data) {
-    const coverage = data.scriptCoverage.sort((a, b) => {
+function processScriptCoverage(scripts, scriptCoverage) {
+    const coverage = scriptCoverage.sort((a, b) => {
         return +a.scriptId >= +b.scriptId ? 1 : -1;
     });
 
@@ -194,7 +294,7 @@ function processScriptCoverage(data) {
         if (url === '__puppeteer_evaluation_script__') {
             continue;
         }
-        const script = data.scripts[scriptId];
+        const script = scripts[scriptId];
         const usedFunctions = new Set();
         const unusedFunctionsNames = new Set();
         const ranges = [];
