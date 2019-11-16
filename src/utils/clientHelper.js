@@ -131,6 +131,10 @@ function getResourcesFromFrameTree(frameTree) {
     }
 }
 
+function isEmptyObject(obj) {
+    return !obj || Object.keys(obj).length === 0;
+}
+
 module.exports = {
     getInitiator,
     enrichURLDetails,
@@ -138,7 +142,8 @@ module.exports = {
     isDataURI,
     getHash,
     getHeaders,
-    getResourcesFromFrameTree
+    getResourcesFromFrameTree,
+    isEmptyObject
 };
 
 

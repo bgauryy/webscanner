@@ -1,4 +1,5 @@
 const LOG = require('../src/utils/logger');
+const {isEmptyObject} = require('../src/utils/clientHelper');
 
 function processData(data, context) {
     if (!data || !context) {
@@ -7,9 +8,9 @@ function processData(data, context) {
 
     const collect = context.collect || {};
     const responseData = {};
-
+    //TODO: remove URL for none-frame resources
     if (collect.frames) {
-        responseData.frames = processFrames(data.frames, data.resourcesTree);
+        responseData.frames = processFrames(data.frames, data.resources);
     }
     if (collect.requests) {
         responseData.requests = processRequests(data.requests, responseData.frames);
@@ -29,22 +30,29 @@ function processData(data, context) {
     if (collect.serviceWorker) {
         responseData.serviceWorker = processServiceWorker(data.serviceWorker);
     }
-
-    responseData.storage = data.storage;
-    responseData.dataURI = data.dataURI;
-    responseData.cookies = data.cookies;
-    responseData.logs = data.logs;
-    responseData.console = data.console;
-    responseData.errors = data.errors;
-    responseData.storage = data.storage;
-    responseData.resources = data.resources;
-
+    if (!isEmptyObject(data.errors)) {
+        responseData.errors = data.errors;
+    }
+    if (!isEmptyObject(data.console)) {
+        responseData.console = data.console;
+    }
+    if (!isEmptyObject(data.logs)) {
+        responseData.logs = data.logs;
+    }
+    if (!isEmptyObject(data.dataURI)) {
+        responseData.dataURI = data.dataURI;
+    }
+    if (!isEmptyObject(data.storage)) {
+        responseData.storage = data.storage;
+    }
+    if (!isEmptyObject(data.cookies)) {
+        responseData.cookies = data.cookies;
+    }
     //Remove undefined values
     return JSON.parse(JSON.stringify(responseData));
 }
 
 function processServiceWorker(serviceWorkers) {
-    serviceWorkers = serviceWorkers || {};
     const _serviceWorkers = [];
 
     //eslint-disable-next-line
