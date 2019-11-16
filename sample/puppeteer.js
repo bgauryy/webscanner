@@ -5,7 +5,7 @@ const path = require('path');
 
 (async () => {
     const browser = await puppeteer.launch({
-        args: ['--disable-contextual-search', '–disable-translate', '--disable-headless-mode', "--proxy-server='direct://'", '--proxy-bypass-list=*',]
+        args: ['--proxy-server="direct://"', '--proxy-bypass-list=*', '--disable-web-security']
     });
     const page = await Scanner.getSession(await browser.newPage(), {
         log: true,
