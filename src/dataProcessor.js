@@ -8,7 +8,7 @@ function processData(data, context) {
 
     const collect = context.collect || {};
     const responseData = {};
-    //TODO: remove URL for none-frame resources
+    //TODO: remove URL for none-frame resources. move frames to default ?
     if (collect.frames) {
         responseData.frames = processFrames(data.frames, data.resources);
     }
