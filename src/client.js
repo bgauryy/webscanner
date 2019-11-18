@@ -481,7 +481,20 @@ function setContext(client, contexts) {
 }
 
 async function setLogs(client, logs) {
+    const threshold = 50;
     await client.Log.enable();
+    await client.Log.startViolationsReport({
+        config: [
+            {name: 'longTask', threshold},
+            {name: 'longLayout', threshold},
+            {name: 'blockedEvent', threshold},
+            {name: 'blockedParser', threshold},
+            {name: 'discouragedAPIUse', threshold},
+            {name: 'handler', threshold},
+            {name: 'recurringHandler', threshold},
+        ]
+    });
+
     client.Log.entryAdded(({entry: {source, level, text, timestamp, url}}) => {
         logs[level] = logs[level] || [];
         logs[level].push({text, source, timestamp, url});
@@ -501,6 +514,13 @@ async function setConsole(client, console) {
 }
 
 async function setErrors(client, errors) {
+
+
+/*    client.Runtime.exceptionRevoked(obj => {
+        debugger;
+    });*/
+
+
     client.Runtime.exceptionThrown(({timestamp, exceptionDetails: {url, executionContextId, stackTrace, exception: {description}}}) => {
         errors.push({
             url,
