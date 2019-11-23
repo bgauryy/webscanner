@@ -11,7 +11,7 @@ describe('context testing', function () {
             page: {},
             collect: {
                 bodyResponse: [],
-                console: false,
+                console: true,
                 cookies: false,
                 dataURI: false,
                 errors: false,
