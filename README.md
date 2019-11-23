@@ -102,3 +102,4 @@ Register a puppeteer page for a scan
 ## Received Data Structure (WIP)
 
 
+
