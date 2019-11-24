@@ -39,6 +39,7 @@ describe('context testing', function () {
                 disableCSP: false,
                 disableServices: false,
                 stealth: false,
+                logsThreshold: 50
             },
         });
     });
