@@ -480,8 +480,7 @@ function setContext(client, contexts) {
     });
 }
 
-async function setLogs(client, logs) {
-    const threshold = 50;
+async function setLogs(client, logs, threshold) {
     await client.Log.enable();
     await client.Log.startViolationsReport({
         config: [

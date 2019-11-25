@@ -34,6 +34,7 @@ function getContext(page, opts = {}) {
         blockedUrls: [], //Set chrome blocked urls
         adBlocking: false, //Enable ad blocking feature
         disableCSP: false, //Disable browser CSP blocking
+        logsThreshold: 50, //default logs treshold
     };
 
     return {

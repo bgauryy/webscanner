@@ -84,7 +84,7 @@ async function init() {
         await setSWListener(this.client, collect.content, this.data.serviceWorker);
     }
     if (collect.logs) {
-        await chromeClient.setLogs(this.client, this.data.logs);
+        await chromeClient.setLogs(this.client, this.data.logs, this.context.rules.logsThreshold);
     }
     if (collect.console) {
         await chromeClient.setConsole(this.client, this.data.console);
