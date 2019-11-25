@@ -40,6 +40,7 @@ Register a puppeteer page for a scan
             disableCSP: false,
             adBlocking: false,
             disableServices: false,
+	    logsThreshold: 50,
         },
         collect: {
             frames: true,
