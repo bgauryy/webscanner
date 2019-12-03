@@ -40,6 +40,7 @@ Register a puppeteer page for a scan
             disableCSP: false,
             adBlocking: false,
             disableServices: false,
+	    logsThreshold: 50,
         },
         collect: {
             frames: true,
@@ -77,7 +78,8 @@ Register a puppeteer page for a scan
   - **userAgent** \<string> automation user agent
   - **disableCSP**  \<boolean> disable CSP restriction
   - **adBlocking** \<boolean> enable ad blocking feature
-  - **disableServices** \<boolean> disable common third party services 
+  - **disableServices** \<boolean> disable common third party services
+  - **logsThreshold** \<number> the threshold (in milliseconds) to trigger upon
 - **collect** <obj>
 	- **frames** \<boolean> Collect iframes
 	- **scripts** \<boolean> Collect scripts
