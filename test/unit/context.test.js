@@ -28,7 +28,6 @@ describe('context testing', function () {
                 network: {
                     content: false,
                     cookies: false,
-                    dataURI: false,
                     requests: true,
                     websocket: false
                 },

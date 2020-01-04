@@ -12,7 +12,7 @@ function processData(data, context) {
     if (collect.frames) {
         responseData.frames = processFrames(data.frames, data.resources);
     }
-    if (collect.requests) {
+    if (collect.network) {
         responseData.requests = processRequests(data.requests, responseData.frames);
     }
     if (collect.scripts) {
@@ -48,7 +48,9 @@ function processData(data, context) {
     if (!isEmptyObject(data.cookies)) {
         responseData.cookies = data.cookies;
     }
-    //Remove undefined values
+    queueMicrotask(() => {
+        data = {};
+    });
     return JSON.parse(JSON.stringify(responseData));
 }
 

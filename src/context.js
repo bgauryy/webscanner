@@ -2,7 +2,6 @@ const DEFAULT_COLLECT_CONFIGURATION = {
     network: {
         requests: true,
         content: false,  //headers, body
-        dataURI: false, //ignore dataURL
         websocket: false,
         cookies: false,
     },
