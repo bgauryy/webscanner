@@ -3,44 +3,62 @@ const context = require('../../src/context.js');
 describe('context testing', function () {
     test('should return valid context object', () => {
         expect(() => {
-            context.getContext();
-        }).toThrowError('page is missing');
+            context.createContext();
+        }).toThrowError('Page object is missing');
 
-        expect(context.getContext({}, {})).toEqual({
-            log: false,
-            page: {},
+        expect(context.createContext({})).toEqual({
             collect: {
-                bodyResponse: [],
-                console: false,
-                cookies: false,
-                dataURI: false,
-                errors: false,
-                frames: false,
-                logs: false,
-                requests: false,
-                responses: false,
-                scriptCoverage: false,
-                scriptDOMEvents: false,
-                scriptSource: false,
-                scripts: false,
-                serviceWorker: false,
-                storage: false,
-                styleCoverage: false,
-                styleSource: true,
-                styles: false,
-                websocket: false,
-                resources: false,
-                JSMetrics: false,
-                metadata: false,
+                css: {
+                    content: false,
+                    coverage: false
+                },
+                dom: {
+                    events: false,
+                    snapshots: false
+                },
+                frames: {
+                    resources: false
+                },
+                monitor: {
+                    console: false,
+                    errors: false,
+                    logs: false,
+                    logsThreshold: 50
+                },
+                network: {
+                    content: false,
+                    cookies: false,
+                    dataURI: false,
+                    requests: true,
+                    websocket: false
+                },
+                performance: {
+                    metrics: false
+                },
+                script: {
+                    content: false,
+                    coverage: false
+                },
+                storage: {
+                    indexedDB: false,
+                    webStorage: false
+                },
+                workers: {
+                    content: false,
+                    serviceWorkers: false,
+                    workers: false,
+                    worklets: false
+                }
             },
+            page: {},
             rules: {
                 adBlocking: false,
                 blockedUrls: [],
                 disableCSP: false,
                 disableServices: false,
-                stealth: false,
-                logsThreshold: 50
-            },
+                log: false,
+                stealth: true
+            }
         });
     });
 });

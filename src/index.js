@@ -1,16 +1,18 @@
-const scanner = require('./scanner.js');
+const scanner = require('./session.js');
 const LOG = require('./utils/logger.js');
-const {getContext} = require('./context.js');
+const {createContext} = require('./context.js');
 
 /**
  *
- * @param page - puppeteer page
- * @param opts - scanning configuration
+ * @param page {object} puppeteer page object
+ * @param collectConf {object} WebScanner collect configuration
+ * @param rulesConf {object} WebScanner scanning rules
  * @return {Promise}
  */
-async function getSession(page, opts = {}) {
-    const context = getContext(page, opts);
+async function getSession(page, collectConf, rulesConf) {
+    const context = createContext(page, collectConf, rulesConf);
     LOG.setEnabled(context.log);
+    //TODO(Guy):support more than one interface
     return await scanner.getPuppeteerSession(context);
 }
 

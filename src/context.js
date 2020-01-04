@@ -1,51 +1,83 @@
-function getContext(page, opts = {}) {
-    if (!page) {
-        throw new Error('page is missing');
+const DEFAULT_COLLECT_CONFIGURATION = {
+    network: {
+        requests: true,
+        content: false,  //headers, body
+        dataURI: false, //ignore dataURL
+        websocket: false,
+        cookies: false,
+    },
+    frames: {
+        resources: false,
+    },
+    workers: {
+        content: false,
+        workers: false,
+        worklets: false,
+        serviceWorkers: false,
+    },
+    css: {
+        content: false,
+        coverage: false, //style and script coverage
+    },
+    script: {
+        content: false,  //headers, body
+        coverage: false, //style and script coverage
+    },
+    storage: {
+        webStorage: false,//localStorage, sessionStorage
+        indexedDB: false,
+    },
+    monitor: {
+        errors: false,
+        console: false,
+        logs: false,
+        logsThreshold: 50, //default logs threshold time
+    },
+    dom: {
+        events: false,
+        snapshots: false
+    },
+    performance: {
+        metrics: false
     }
+};
 
-    const defaultCollect = {
-        frames: false, //Collect iframes data
-        scripts: false, //Collect scripts data
-        scriptSource: false, //get script source
-        scriptDOMEvents: false, //get script registered DOM Events
-        scriptCoverage: false, //get script coverage
-        styles: false, //Collect style data
-        styleSource: true, //gets style source
-        styleCoverage: false, //get style coverage
-        serviceWorker: false,
-        requests: false, //Collect requests data
-        responses: false, //get response data per request
-        bodyResponse: [], // gets response body by url regex
-        dataURI: false, //Collect data URI requests (returns url hash)
-        websocket: false, //Collect websocket connections
-        cookies: false,//get all browser cookies
-        logs: false,//Collect browser logs
-        console: false,//Collect console AP usage
-        errors: false,//collect JS errors
-        storage: false,//collect storage events (localStorage, sessionStorage)
-        resources: false, //collect all resources
-        JSMetrics: false, //collect js execution metrics
-        metadata: false, //collect js execution metrics
-    };
+const DEFAULT_RULES_CONFIGURATION = {
+    log: false,
+    stealth: true, //TODO: scramle headers
+    disableServices: false, //Disable common third party services
+    blockedUrls: [], //Set chrome blocked urls
+    adBlocking: false, //Enable ad blocking feature
+    disableCSP: false, //Disable browser CSP blocking
+};
 
-    const defaultRules = {
-        stealth: Boolean(opts.stealth),
-        disableServices: false, //Disable common third party services
-        blockedUrls: [], //Set chrome blocked urls
-        adBlocking: false, //Enable ad blocking feature
-        disableCSP: false, //Disable browser CSP blocking
-        logsThreshold: 50, //default logs treshold
-    };
-
-    return {
+/**
+ * Creating scanning context
+ * @param page {object} Puppeteer Page object
+ * @param collectConf {object} WebScanner scanning collection configuration
+ * @param rulesConf {object} WebScanner rules configuration
+ * @return {object}
+ */
+function createContext(page, collectConf = {}, rulesConf = {}) {
+    if (!page) {
+        throw new Error('Page object is missing');
+    }
+    const context = {
         page, ...{
-            log: opts.log || false,
-            rules: {...defaultRules, ...opts.rules || {}},
-            collect: {...defaultCollect, ...opts.collect || {}}
+            rules: {...DEFAULT_RULES_CONFIGURATION},
+            collect: {...DEFAULT_COLLECT_CONFIGURATION}
         }
     };
+
+    for (const prop in DEFAULT_COLLECT_CONFIGURATION) {
+        context.collect[prop] = {...collectConf[prop], ...DEFAULT_COLLECT_CONFIGURATION[prop]};
+    }
+    for (const prop in DEFAULT_RULES_CONFIGURATION) {
+        context.rules[prop] = typeof rulesConf[prop] === 'boolean' ? rulesConf[prop] : DEFAULT_RULES_CONFIGURATION[prop];
+    }
+    return context;
 }
 
 module.exports = {
-    getContext
+    createContext
 };
