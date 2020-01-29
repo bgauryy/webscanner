@@ -8,6 +8,10 @@ const path = require('path');
         args: ['--proxy-server="direct://"', '--proxy-bypass-list=*', '--disable-web-security']
     });
     const page = await Scanner.getSession(await browser.newPage(), {
+            script: {
+                content: true,
+                coverage: true,
+            },
             network: {
                 requests: true,
                 content: true,  //headers, body
@@ -26,10 +30,6 @@ const path = require('path');
             },
             css: {
                 content: true,
-                coverage: true, //style and script coverage
-            },
-            script: {
-                content: true,  //headers, body
                 coverage: true, //style and script coverage
             },
             storage: {

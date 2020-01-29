@@ -19,11 +19,14 @@ class Client {
     async start() {
         const client = await getChromeWebSocketConnection(this.context.page);
         const {data, collect, rules} = this.context;
-
         await setRules(client, rules);
-        await startMonitoring(this.monitors, new NetworkMonitor(client, data, collect, rules));
-        await startMonitoring(this.monitors, new IFrameMonitor(client, data, collect, rules));
+
+        //collect.scripts
         await startMonitoring(this.monitors, new ScriptMonitor(client, data, collect, rules));
+        //collect.network
+        await startMonitoring(this.monitors, new NetworkMonitor(client, data, collect, rules));
+        //collect.frames
+        await startMonitoring(this.monitors, new IFrameMonitor(client, data, collect, rules));
     }
 
     async getData() {
@@ -86,8 +89,6 @@ async function setRules(client, rules) {
     if (blockedUrls.length) {
         await client.Network.setBlockedURLs({urls: blockedUrls});
     }
-
-
 }
 
 async function startMonitoring(monitors, monitor) {
