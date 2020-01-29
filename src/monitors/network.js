@@ -1,50 +1,50 @@
 const geoIP = require('geoIP-lite');
-const LOG = require('../../utils/logger');
-const Monitor = require('../monitor');
-const {getScriptIdFromInitiator, getHash} = require('../../utils/clientHelper');
+const LOG = require('../utils/logger');
+const IMonitor = require('./IMonitor');
+const {getScriptIdFromInitiator, getHash, enrichURLDetails} = require('../utils/clientHelper');
 const DARA_URI_REGEX = /^data:/;
 
-class NetworkMonitor extends Monitor {
+class NetworkMonitor extends IMonitor {
     constructor(client, data, collect, rules) {
-        super(client, data, collect, rules);
+        super(data, collect, rules);
+        this.client = client;
         this.data.requests = {};
         this.sequenceIndex = 0;
     }
 
     monitor() {
-        monitorRequests.call(this);
-        monitorResponses.call(this);
+        monitorRequests(this.client, this.collect, this.data);
+        monitorResponses(this.client, this.collect, this.data);
+
+        //TODO:impl
+/*        if (this.collect.websocket) {
+            await _registerWebsocket(client, data.websockets);
+        }*/
     }
 
     getData() {
-        const data = processData(this.data);
+        const requests = this.data.requests;
+        const frames = this.data.frames;
+        const res = [];
+
+        //eslint-disable-next-line
+        for (const requestId in requests) {
+            const request = requests[requestId];
+            const frame = (frames && frames[request.frameId]) || {};
+
+            request.requestId = requestId;
+            request.frameURL = frame.url;
+            res.push(request);
+        }
         //TODO: parse response
         return {
             name: 'network',
-            data
+            data: res.sort((a, b) => a.sequence > b.sequence ? 1 : -1)
         };
     }
 }
 
-function processData(data) {
-    const requests = data.requests;
-    const frames = data.frames;
-    const res = [];
-
-    //eslint-disable-next-line
-    for (const requestId in requests) {
-        const request = requests[requestId];
-        const frame = (frames && frames[request.frameId]) || {};
-
-        request.requestId = requestId;
-        request.frameURL = frame.url;
-        res.push(request);
-    }
-    return res.sort((a, b) => a.sequence > b.sequence ? 1 : -1);
-}
-
-function monitorRequests() {
-    const {client, collect, data} = this;
+function monitorRequests(client, collect, data) {
     const requests = data.requests;
 
     client.Network.requestWillBeSent(async (requestObj) => {
@@ -56,9 +56,9 @@ function monitorRequests() {
         requestObj.sequence = this.sequenceIndex++;
         const {url, requestId} = requestObj;
 
-        _enrichURLDetails(requestObj, requestObj.url);
+        enrichURLDetails(requestObj, requestObj.url);
         requestObj.initiator.scriptId = getScriptIdFromInitiator(requestObj.initiator);
-        if (_isDataURI(url)) {
+        if (isDataURI(url)) {
             requestObj.type = 'dataURI';
             const split = url.split(';');
             const protocol = split[0];
@@ -82,20 +82,19 @@ function monitorRequests() {
     });
 }
 
-function monitorResponses() {
-    const {client, collect, data} = this;
+function monitorResponses(client, collect, data) {
     const requests = data.requests;
 
-    client.Network.dataReceived(_getResponseEventCallback(requests, 'dataReceived'));
-    client.Network.loadingFinished(_getResponseEventCallback(requests, 'loadingFinished'));
-    client.Network.loadingFailed(_getResponseEventCallback(requests, 'loadingFailed'));
-    client.Network.signedExchangeReceived(_getResponseEventCallback(requests, 'signedExchangeReceived'));
-    client.Network.resourceChangedPriority(_getResponseEventCallback(requests, 'resourceChangedPriority'));
-    client.Network.responseReceivedExtraInfo(_getResponseEventCallback(requests, 'responseReceivedExtraInfo'));
-    client.Network.requestServedFromCache(_getResponseEventCallback(requests, 'requestServedFromCache'));
+    client.Network.dataReceived(getResponseEventCallback(requests, 'dataReceived'));
+    client.Network.loadingFinished(getResponseEventCallback(requests, 'loadingFinished'));
+    client.Network.loadingFailed(getResponseEventCallback(requests, 'loadingFailed'));
+    client.Network.signedExchangeReceived(getResponseEventCallback(requests, 'signedExchangeReceived'));
+    client.Network.resourceChangedPriority(getResponseEventCallback(requests, 'resourceChangedPriority'));
+    client.Network.responseReceivedExtraInfo(getResponseEventCallback(requests, 'responseReceivedExtraInfo'));
+    client.Network.requestServedFromCache(getResponseEventCallback(requests, 'requestServedFromCache'));
 
     client.Network.responseReceived(async (response) => {
-        if (_isDataURI(response.url)) {
+        if (isDataURI(response.url)) {
             return;
         }
         const requestId = response.requestId;
@@ -104,7 +103,7 @@ function monitorResponses() {
         delete response.requestId;
         delete response.response;
         response = {...response, ...responseObj};
-        _enrichIPDetails(response, response.remoteIPAddress);
+        enrichIPDetails(response, response.remoteIPAddress);
         if (collect.network.content) {
             try {
                 const obj = await client.Network.getResponseBody({requestId});
@@ -118,6 +117,7 @@ function monitorResponses() {
         requests[requestId].response = requests[requestId].response || {};
         requests[requestId].response = {...requests[requestId].response, ...response};
     });
+
     //TODO:Implement
     /*
      client.Network.requestIntercepted(response => {
@@ -143,7 +143,7 @@ function monitorResponses() {
  * @param obj {obj}
  * @param ip {string}
  */
-function _enrichIPDetails(obj, ip) {
+function enrichIPDetails(obj, ip) {
     if (!obj || !ip) {
         return;
     }
@@ -161,28 +161,11 @@ function _enrichIPDetails(obj, ip) {
     }
 }
 
-function _isDataURI(url) {
+function isDataURI(url) {
     return DARA_URI_REGEX.test(url);
 }
 
-function _enrichURLDetails(obj, url) {
-    if (!obj || !url) {
-        return;
-    }
-
-    try {
-        const urlObj = new URL(url);
-        obj.host = urlObj.host || undefined;
-        obj.pathname = urlObj.pathname || undefined;
-        obj.port = urlObj.port || undefined;
-        obj.path = urlObj.path || undefined;
-        obj.query = urlObj.query || undefined;
-    } catch (e) {
-        //ignore
-    }
-}
-
-function _getResponseEventCallback(requests, propName) {
+function getResponseEventCallback(requests, propName) {
     return function (networkObj) {
         const requestId = networkObj.requestId;
         delete networkObj.requestId;

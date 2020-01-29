@@ -1,4 +1,4 @@
-class Monitor {
+class IMonitor {
     /**
      *
      * @param client {object} an object with interface to  a real browsing endpoint
@@ -6,20 +6,19 @@ class Monitor {
      * @param collect {object} collect rules
      * @param rules {object} scanning rules
      */
-    constructor(client, data, collect, rules) {
-        this.client = client;
+    constructor(data, collect, rules) {
         this.data = data;
         this.collect = collect;
         this.rules = rules;
     }
 
     monitor() {
-        //Implementation
+        //Impl
     }
 
     getData() {
-        //Implementation
+        //Impl
     }
 }
 
-module.exports = Monitor;
+module.exports = IMonitor;

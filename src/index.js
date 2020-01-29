@@ -2,6 +2,7 @@ const PuppeteerSession = require('./session.js');
 const LOG = require('./utils/logger.js');
 const {createContext} = require('./context.js');
 
+//TODO:Remove close
 const API_EXTENSION = {
     getData: 'getData',
     close: 'close'
