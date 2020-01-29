@@ -3,8 +3,7 @@ const {enrichURLDetails} = require('../utils/clientHelper');
 
 class IFrameMonitor extends IMonitor {
     constructor(client, data, collect, rules) {
-        super(data, collect, rules);
-        this.client = client;
+        super(client, data, collect, rules);
         this.data.frames = {};
     }
 

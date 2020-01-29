@@ -1,13 +1,13 @@
 const IMonitor = require('./IMonitor');
 
 class ScriptMonitor extends IMonitor {
-    constructor(data, collect, rules) {
-        super(data, collect, rules);
+    constructor(client, data, collect, rules) {
+        super(client, data, collect, rules);
         this.data.scripts = {};
     }
 
-    monitor(client) {
-        registerScriptExecution(client, this.collect.scriptSource, this.data.scripts);
+    monitor() {
+        registerScriptExecution(this.client, this.collect.scriptSource, this.data.scripts);
     }
 
     async getData() {

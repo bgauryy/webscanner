@@ -23,7 +23,7 @@ class Client {
         await setRules(client, rules);
         await startMonitoring(this.monitors, new NetworkMonitor(client, data, collect, rules));
         await startMonitoring(this.monitors, new IFrameMonitor(client, data, collect, rules));
-        //await startMonitoring(this.monitors, new ScriptMonitor(client, data, collect, rules));
+        await startMonitoring(this.monitors, new ScriptMonitor(client, data, collect, rules));
     }
 
     async getData() {

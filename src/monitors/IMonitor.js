@@ -6,7 +6,8 @@ class IMonitor {
      * @param collect {object} collect rules
      * @param rules {object} scanning rules
      */
-    constructor(data, collect, rules) {
+    constructor(client, data, collect, rules) {
+        this.client = client;
         this.data = data;
         this.collect = collect;
         this.rules = rules;

@@ -6,8 +6,7 @@ const DARA_URI_REGEX = /^data:/;
 
 class NetworkMonitor extends IMonitor {
     constructor(client, data, collect, rules) {
-        super(data, collect, rules);
-        this.client = client;
+        super(client, data, collect, rules);
         this.data.requests = {};
         this.sequenceIndex = 0;
     }
