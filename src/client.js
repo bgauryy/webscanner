@@ -265,40 +265,27 @@ function handleResponse(client, collect, requests, scripts) {
 }
 
 function registerScriptExecution(client, getScriptSource, scripts) {
-    client.Debugger.scriptParsed(async function ({scriptId, url, executionContextId, hash, executionContextAuxData: {frameId}, sourceMapURL, hasSourceURL, isModule, length, stackTrace}) {
-        if (url === '__puppeteer_evaluation_script__' || url === '') {
+    client.Debugger.scriptParsed(async function (scriptObj) {
+        if (scriptObj.url === '__puppeteer_evaluation_script__' || scriptObj.url === '') {
             return;
         }
-        let source;
-
+        scriptObj = {...scriptObj, ...scriptObj.executionContextAuxData};
+        delete scriptObj.executionContextAuxData;
         if (getScriptSource) {
             try {
-                const {scriptSource} = await client.Debugger.getScriptSource({scriptId});
-                source = scriptSource;
+                const {scriptSource} = await client.Debugger.getScriptSource({scriptId: scriptObj.scriptId});
+                scriptObj.source = scriptSource;
             } catch (e) {
                 //ignore
             }
         }
-
-        scripts[scriptId] = {
-            frameId,
-            url,
-            executionContextId,
-            hash,
-            sourceMapURL,
-            hasSourceURL,
-            isModule,
-            length,
-            source,
-            stackTrace
-        };
+        scripts[scriptObj.scriptId] = scriptObj;
     });
-
-    client.Debugger.scriptFailedToParse(({scriptId, url, executionContextId, executionContextAuxData: {frameId}, stackTrace}) => {
-        scripts[scriptId] = scripts[scriptId] || {
-            url, stackTrace, executionContextId, frameId
-        };
-        scripts[scriptId].parseError = true;
+    client.Debugger.scriptFailedToParse((scriptObj) => {
+        scriptObj = {...scriptObj, ...scriptObj.executionContextAuxData};
+        delete scriptObj.executionContextAuxData;
+        scripts[scriptObj.scriptId] = scripts[scriptObj.scriptId] || scriptObj;
+        scripts[scriptObj.scriptId].parseError = true;
     });
 }
 
