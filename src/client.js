@@ -141,15 +141,12 @@ function registerFrameEvents(client, frames) {
     client.Page.frameStartedLoading((frame) => {
         handler(frame, 'loading');
     });
-
     client.Page.frameNavigated(({frame}) => {
         handler(frame, 'navigated');
     });
-
     client.Page.frameStoppedLoading((frame) => {
         handler(frame, 'stopped');
     });
-
     client.Page.frameAttached((frame) => {
         handler(frame, 'attached');
     });
@@ -157,11 +154,9 @@ function registerFrameEvents(client, frames) {
     client.Page.frameDetached((frame) => {
         handler(frame, 'detached');
     });
-
     client.Page.frameResized((frame) => {
         handler(frame, 'resized');
     });
-
     try {
         client.Page.frameRequestedNavigation((frame) => {
             handler(frame, 'requestNavigation');
@@ -174,21 +169,14 @@ function registerFrameEvents(client, frames) {
         //ignore
     }
 
-    function handler(frame, state) {
-        const {frameId, id, parentFrameId, loaderId, url, securityOrigin, mimeType, stack, name} = frame;
-        const _id = frameId || id;
+    function handler(frameObj, state) {
+        const oldFrame = frames[frameObj.id] || {};
 
-        frames[_id] = frames[_id] || {};
-        frames[_id].url = frames[_id].url || url;
-        frames[_id].parentFrameId = frames[_id].parentFrameId || parentFrameId;
-        frames[_id].loaderId = frames[_id].loaderId || loaderId;
-        frames[_id].securityOrigin = frames[_id].securityOrigin || securityOrigin;
-        frames[_id].mimeType = frames[_id].mimeType || mimeType;
-        frames[_id].stack = frames[_id].stack || stack; //TODO: get script!
-        frames[_id].name = frames[_id].name || name;
-        frames[_id].state = frames[_id].state || [];
-        enrichURLDetails(frames[_id], 'url');
-        frames[_id].state.push(state);
+        frameObj = {...frameObj, ...oldFrame};
+        enrichURLDetails(frameObj, 'url');
+        frameObj.state = frameObj.state || [];
+        frameObj.state.push(state);
+        frames[frameObj.frameId] = frameObj;
     }
 }
 
@@ -340,28 +328,19 @@ async function registerWebsocket(client, websockets) {
 }
 
 function registerStyleEvents(client, getContent, styles) {
-    client.CSS.styleSheetAdded(async function ({header: {styleSheetId, frameId, sourceURL, origin, ownerNode, isInline, length}}) {
-        const style = {
-            frameId,
-            url: sourceURL,
-            origin,
-            ownerNode,
-            isInline,
-            length
-        };
-        enrichURLDetails(style, 'url');
-
+    client.CSS.styleSheetAdded(async function (styleObj) {
+        styleObj = {...styleObj.header};
+        enrichURLDetails(styleObj, 'url');
         if (getContent) {
             try {
-                const {scriptSource} = await client.CSS.getStyleSheetText({styleSheetId});
-                style.source = scriptSource;
+                //TODO: get content from inline scripts/nodes
+                const {scriptSource} = await client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
+                styleObj.source = scriptSource;
             } catch (e) {
-                LOG.error(e);
-                style.source = '';
+                //ignore
             }
         }
-
-        styles[styleSheetId] = style;
+        styles[styleObj.styleSheetId] = styleObj;
     });
 }
 
@@ -423,21 +402,12 @@ async function setConsole(client, console) {
 }
 
 async function setErrors(client, errors) {
-
-
-    /*    client.Runtime.exceptionRevoked(obj => {
-            debugger;
-        });*/
-
-
-    client.Runtime.exceptionThrown(({timestamp, exceptionDetails: {url, executionContextId, stackTrace, exception: {description}}}) => {
-        errors.push({
-            url,
-            description,
-            executionContextId,
-            timestamp,
-            stackTrace
-        });
+    client.Runtime.exceptionThrown((errorObj) => {
+        errorObj = {...errorObj, ...errorObj.exceptionDetails};
+        delete errorObj.exceptionDetails;
+        delete errorObj.exception.preview;
+        //TODO: get objectId
+        errors.push(errorObj);
     });
 }
 
