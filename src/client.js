@@ -203,141 +203,64 @@ function registerNetworkEvents(client, rules, collect, requests, scripts, dataUR
 }
 
 function handleRequests(client, rules, collect, requests, dataURIs) {
-    client.Network.requestWillBeSent(async ({requestId, loaderId, documentURL, timestamp, wallTime, initiator, type, frameId, request: {url, method, headers, initialPriority}}) => {
-        const request = {
-            url,
-            method,
-            initialPriority,
-            loaderId,
-            documentURL,
-            timestamp,
-            wallTime,
-            initiator,
-            type,
-            frameId
-        };
+    client.Network.requestWillBeSent(async (requestObj) => {
+        requestObj = {...requestObj, ...requestObj.request};
+        delete requestObj.request;
 
-        request.headers = getHeaders(headers);
-
-        if (isDataURI(url)) {
-            const split = url.split(';');
+        requestObj.headers = getHeaders(requestObj.headers);
+        if (isDataURI(requestObj.url)) {
+            const split = requestObj.url.split(';');
             const protocol = split[0];
             dataURIs[protocol] = dataURIs[protocol] || {};
-            request.hash = getHash(url);
-            request.length = (split[1] && split[1].length) || 0;
-            delete request.url;
-            delete request.headers;
-            dataURIs[protocol][requestId] = request;
-            return;
+            requestObj.hash = getHash(requestObj.url);
+            requestObj.length = (split[1] && split[1].length) || 0;
+            delete requestObj.url;
+            delete requestObj.headers;
+            dataURIs[protocol][requestObj.requestId] = requestObj;
+        } else {
+            try {
+                requestObj.postData = await client.Network.getRequestPostData({requestId: requestObj.requestId});
+            } catch (e) {
+                //ignore
+            }
+            enrichURLDetails(requestObj, 'url');
+            requestObj.initiator.scriptId = getInitiator(requestObj.initiator);
+            requests[requestObj.requestId] = requestObj;
         }
-
-        //TODO - add post data by regex/config
-        try {
-            request.postData = await client.Network.getRequestPostData({requestId});
-        } catch (e) {
-            //ignore
-        }
-
-        enrichURLDetails(request, 'url');
-        request.initiator.scriptId = getInitiator(request.initiator);
-        requests[requestId] = request;
     });
 }
 
 function handleResponse(client, collect, requests, scripts) {
-    const getBodyResponseRegex = new RegExp(collect.bodyResponse.join('|'), 'gi');
+    const shouldGetBodyResponseRegex = new RegExp(collect.bodyResponse.join('|'), 'gi');
+    client.Network.responseReceived(async (responseObj) => {
+        const response = {...responseObj, ...responseObj.response};
+        const request = requests[response.requestId] || {requestId: response.requestId, type: response.type};
+        let initiatorOrigin;
 
-    client.Network.responseReceived(async (response) => {
-        const {
-            requestId,
-            timestamp,
-            type,
-            response: {
-                url,
-                status,
-                headers,
-                mimeType,
-                connectionReused,
-                remoteIPAddress,
-                remotePort,
-                fromDiskCache,
-                fromServiceWorker,
-                fromPrefetchCache,
-                encodedDataLength,
-                timing,
-                protocol,
-                securityState: {
-                    protocol: securityProtocol,
-                    keyExchangeGroup,
-                    cipher,
-                    certificateId,
-                    subjectName,
-                    sanList,
-                    issuer
-                }
-            }
-        } = response;
-
-        if (isDataURI(url)) {
+        delete response.response;
+        if (isDataURI(response.url)) {
             LOG.debug('Ignoring data URI response');
             return;
         }
-
-        const request = requests[requestId];
-        let initiatorOrigin;
-
-        if (!request) {
-            return;
-        }
-
-        try {
+        if (request && request.initiator) {
             const initiatorId = request.initiator.scriptId;
             if (typeof parseInt(initiatorId) === 'number' && !Number.isNaN(parseInt(initiatorId))) {
                 const initiator = scripts[request.initiator.scriptId];
                 initiatorOrigin = initiator && new URL(initiator.url).origin;
             }
-        } catch (e) {
-            //ignore
         }
-
-        const _response = {
-            timestamp,
-            status,
-            type,
-            content: {
-                encodedDataLength,
-            },
-            headers,
-            mimeType,
-            connectionReused,
-            ip: remoteIPAddress,
-            port: remotePort,
-            fromDiskCache: fromDiskCache || undefined,
-            fromServiceWorker: fromServiceWorker || undefined,
-            fromPrefetchCache: fromPrefetchCache || undefined,
-            timing,
-            protocol,
-            security: {
-                securityProtocol,
-                keyExchangeGroup,
-                cipher,
-                certificateId,
-                subjectName,
-                sanList,
-                issuer
-            }
-        };
-        enrichIPDetails(_response, 'ip');
-        if (getBodyResponseRegex.test(url) || getBodyResponseRegex.test(initiatorOrigin)) {
+        enrichIPDetails(response, 'remoteIPAddress');
+        const shouldGetBodyResponse = shouldGetBodyResponseRegex.test(response.url) || shouldGetBodyResponseRegex.test(initiatorOrigin);
+        if (shouldGetBodyResponse) {
             try {
-                const obj = await client.Network.getResponseBody({requestId});
-                _response.content.body = obj.body;
-                _response.content.base64Encoded = obj.base64Encoded;
+                const obj = await client.Network.getResponseBody({requestId: response.requestId});
+                response.content.body = obj.body;
+                response.content.base64Encoded = obj.base64Encoded;
             } catch (e) {
                 //ignore
             }
         }
-        request.response = _response;
+        request.response = response;
     });
 }
 
@@ -515,9 +438,9 @@ async function setConsole(client, console) {
 async function setErrors(client, errors) {
 
 
-/*    client.Runtime.exceptionRevoked(obj => {
-        debugger;
-    });*/
+    /*    client.Runtime.exceptionRevoked(obj => {
+            debugger;
+        });*/
 
 
     client.Runtime.exceptionThrown(({timestamp, exceptionDetails: {url, executionContextId, stackTrace, exception: {description}}}) => {
