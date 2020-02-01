@@ -1,7 +1,8 @@
-const {reduceDeepObject, enrichURLDetails, enrichIPDetails, getInitiator, isDataURI, getHash, getHeaders, getResourcesFromFrameTree} = require('../src/utils/clientHelper.js');
+const {enrichURLDetails, getInitiator, getResourcesFromFrameTree} = require('../src/utils/clientHelper.js');
+const {handleRequests, handleResponse} = require('./monitor/network');
+const {handleIframeEvent} = require('./monitor/iframe');
 const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
 const fs = require('fs');
-const atob = require('atob');
 const path = require('path');
 const LOG = require('./utils/logger.js');
 const ignoredScripts = {};
@@ -67,6 +68,43 @@ async function initScan(client, collect, rules) {
             LOG.error(e);
         }
     }
+}
+
+function registerFrameEvents(client, frames) {
+    client.Page.frameStartedLoading((frame) => {
+        handleIframeEvent(frame, 'loading', frames);
+    });
+    client.Page.frameNavigated(({frame}) => {
+        handleIframeEvent(frame, 'navigated', frames);
+    });
+    client.Page.frameStoppedLoading((frame) => {
+        handleIframeEvent(frame, 'stopped', frames);
+    });
+    client.Page.frameAttached((frame) => {
+        handleIframeEvent(frame, 'attached', frames);
+    });
+    client.Page.frameDetached((frame) => {
+        handleIframeEvent(frame, 'detached', frames);
+
+    });
+    client.Page.frameResized((frame) => {
+        handleIframeEvent(frame, 'resized', frames);
+    });
+    try {
+        client.Page.frameRequestedNavigation((frame) => {
+            handleIframeEvent(frame, 'requestNavigation', frames);
+        });
+        client.Page.navigatedWithinDocument((frame) => {
+            handleIframeEvent(frame, 'navigatedWithinDocument', frames);
+        });
+    } catch (e) {
+        //ignore
+    }
+}
+
+function registerNetworkEvents(client, rules, collect, requests, responses) {
+    handleRequests(client, rules, collect, requests);
+    handleResponse(client, rules, collect, responses);
 }
 
 async function registerServiceWorkerEvents(client, content, serviceWorkers) {
@@ -141,136 +179,6 @@ async function getAllDOMEvents(client) {
     }
 
     return DOMEvents;
-}
-
-function registerFrameEvents(client, frames) {
-    client.Page.frameStartedLoading((frame) => {
-        handler(frame, 'loading');
-    });
-    client.Page.frameNavigated(({frame}) => {
-        handler(frame, 'navigated');
-    });
-    client.Page.frameStoppedLoading((frame) => {
-        handler(frame, 'stopped');
-    });
-    client.Page.frameAttached((frame) => {
-        handler(frame, 'attached');
-    });
-
-    client.Page.frameDetached((frame) => {
-        handler(frame, 'detached');
-    });
-    client.Page.frameResized((frame) => {
-        handler(frame, 'resized');
-    });
-    try {
-        client.Page.frameRequestedNavigation((frame) => {
-            handler(frame, 'requestNavigation');
-        });
-        //eslint-disable-next-line
-        client.Page.navigatedWithinDocument((frame) => {
-            handler(frame, 'navigatedWithinDocument');
-        });
-    } catch (e) {
-        //ignore
-    }
-
-    function handler(frameObj, state) {
-        const oldFrame = frames[frameObj.id] || {};
-
-        frameObj = {...frameObj, ...oldFrame};
-        enrichURLDetails(frameObj, 'url');
-        frameObj.state = frameObj.state || [];
-        frameObj.state.push(state);
-        frames[frameObj.frameId] = frameObj;
-    }
-}
-
-function registerNetworkEvents(client, rules, collect, requests, scripts, dataURIs) {
-    if (collect.requests) {
-        handleRequests(client, rules, collect, requests, dataURIs);
-    }
-
-    if (collect.requests && collect.responses) {
-        handleResponse(client, collect, requests, scripts);
-    }
-}
-
-function handleRequests(client, rules, collect, requests, dataURIs) {
-    client.Network.requestWillBeSent(async (requestObj) => {
-        requestObj = {...requestObj, ...requestObj.request};
-        delete requestObj.request;
-
-        if (isDataURI(requestObj.url)) {
-            const split = requestObj.url.split(';');
-            const protocol = split[0];
-            dataURIs[protocol] = dataURIs[protocol] || {};
-            requestObj.hash = getHash(requestObj.url);
-            requestObj.length = (split[1] && split[1].length) || 0;
-            delete requestObj.url;
-            delete requestObj.headers;
-            dataURIs[protocol][requestObj.requestId] = requestObj;
-        } else {
-            if (requestObj.method.toLowerCase() === 'post') {
-                requestObj.postData = await client.Network.getRequestPostData({requestId: requestObj.requestId});
-            }
-            enrichURLDetails(requestObj, 'url');
-            reduceDeepObject(requestObj, 'headers', 'header');
-            //TODO:handle initiator
-            requestObj.initiator.scriptId = getInitiator(requestObj.initiator);
-            requests[requestObj.requestId] = requestObj;
-        }
-    });
-}
-
-function handleResponse(client, collect, requests) {
-    client.Network.responseReceived(handleResponse);
-    client.Network.eventSourceMessageReceived(handleResponse);
-
-    async function handleResponse(responseObj) {
-        const response = {...responseObj, ...responseObj.response};
-        const request = requests[response.requestId] || {requestId: response.requestId, type: response.type};
-        //TODO: handle initiator
-
-        delete response.response;
-        if (isDataURI(response.url)) {
-            return;
-        }
-        reduceDeepObject(response, 'headers', 'header');
-        reduceDeepObject(response, 'securityDetails', 'certificate');
-        enrichIPDetails(response, 'remoteIPAddress');
-        //Handle content
-        const content = await client.Network.getResponseBody({requestId: response.requestId});
-        if (content.base64Encoded) {
-            content.body = atob(content.body);
-        }
-        response.content_body = content.body;
-        response.content_bse64Encoded = content.base64Encoded;
-
-        //Handle certificate
-        let date = new Date(0);
-        date.setUTCSeconds(response.certificate_validFrom);
-        delete response.certificate_validFrom;
-        const validFrom = date;
-        date = new Date(0);
-        date.setUTCSeconds(response.certificate_validTo);
-        delete response.certificate_validTo;
-        const validTo = date;
-        response.certificate_age_days = Math.round((new Date() - validFrom) / 86400000);
-        response.certificate_expiration_days = Math.round((validTo - new Date()) / 86400000);
-
-        //handle timing
-        response.timing_start = response.timing.requestTime;
-        response.timing_receiveHeadersEnd = response.timing.receiveHeadersEnd;
-        response.timing_proxy = Math.round(response.timing.proxyEnd - response.timing.proxyStart);
-        response.timing_dns = Math.round(response.timing.dnsEnd - response.timing.dnsStart);
-        response.timing_connection = Math.round(response.timing.connectEnd - response.timing.connectStart);
-        response.timing_ssl = Math.round(response.timing.sslEnd - response.timing.sslStart);
-        response.timing_send = Math.round(response.timing.sendEnd - response.timing.sendStart);
-        response.timing_send = Math.round(response.timing.pushEnd - response.timing.pushStart);
-        delete response.timing;
-        request.response = response;
-    }
 }
 
 function registerScriptExecution(client, getScriptSource, scripts) {

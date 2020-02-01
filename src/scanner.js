@@ -41,7 +41,9 @@ function getCleanDataObject() {
     return {
         scripts: {},
         serviceWorker: {},
-        requests: {},
+        requests: [],
+        responses: [],
+        ///////////////////////////////
         websockets: {},
         dataURI: {},
         events: [],
@@ -60,41 +62,10 @@ function getCleanDataObject() {
 
 async function init() {
     LOG.debug('Initiating Scanner');
-    const collect = this.context.collect;
     this.client = await getChromeClient(this.context.page);
-
-    if (!this.client) {
-        LOG.error('Client is missing');
-    }
-
     await chromeClient.initScan(this.client, this.context.collect, this.context.rules);
-
-    chromeClient.registerScriptExecution(this.client, collect.scriptSource, this.data.scripts);
     chromeClient.registerFrameEvents(this.client, this.data.frames);
-    chromeClient.setContext(this.client, this.data.contexts);
-    chromeClient.registerNetworkEvents(this.client, this.context.rules, this.context.collect, this.data.requests, this.data.scripts, this.data.dataURI);
-
-    if (collect.websocket) {
-        await chromeClient.registerWebsocket(this.client, this.data.websockets);
-    }
-    if (collect.styles) {
-        chromeClient.registerStyleEvents(this.client, collect.content, this.data.styles);
-    }
-    if (collect.serviceWorker) {
-        await setSWListener(this.client, collect.content, this.data.serviceWorker);
-    }
-    if (collect.logs) {
-        await chromeClient.setLogs(this.client, this.data.logs, this.context.rules.logsThreshold);
-    }
-    if (collect.console) {
-        await chromeClient.setConsole(this.client, this.data.console);
-    }
-    if (collect.errors) {
-        await chromeClient.setErrors(this.client, this.data.errors);
-    }
-    if (collect.storage) {
-        await chromeClient.setStorage(this.client, this.data.storage);
-    }
+    chromeClient.registerNetworkEvents(this.client, this.context.rules, this.context.collect, this.data.requests, this.data.responses);
 }
 
 async function close() {

@@ -5,17 +5,15 @@ function processData(data, context) {
     if (!data || !context) {
         return;
     }
-
     const collect = context.collect || {};
     const responseData = {};
-    //TODO: remove URL for none-frame resources. move frames to default ?
-    if (collect.frames) {
-        responseData.frames = processFrames(data.frames, data.resources);
-    }
-    if (collect.requests) {
-        responseData.requests = processRequests(data.requests, responseData.frames);
-    }
-    if (collect.scripts) {
+
+    responseData.frames = processFrames(data.frames, data.resources); //map if-<frame
+    responseData.requests = data.requests;//array
+    responseData.responses = data.responses;
+
+
+/*    if (collect.scripts) {
         responseData.scripts = processScripts(data.scripts, data.domEvents, data.scriptCoverage, responseData.frames);
     }
     if (collect.JSMetrics) {
@@ -47,7 +45,7 @@ function processData(data, context) {
     }
     if (!isEmptyObject(data.cookies)) {
         responseData.cookies = data.cookies;
-    }
+    }*/
     //Remove undefined values
     return JSON.parse(JSON.stringify(responseData));
 }
@@ -258,23 +256,6 @@ function processScripts(scripts, domEvents, scriptCoverage, frames) {
     return scripts;
 }
 
-function processRequests(requests, frames) {
-    requests = requests || {};
-    frames = frames || {};
-    const _requests = [];
-
-    //eslint-disable-next-line
-    for (const requestId in requests) {
-        const request = requests[requestId];
-        const frame = frames[request.frameId] || {};
-
-        request.requestId = requestId;
-        request.frameURL = frame.url;
-        _requests.push(request);
-    }
-    return _requests;
-}
-
 function processMetadata(metadata) {
     metadata = metadata || {};
 
@@ -298,19 +279,16 @@ function processScriptCoverage(scripts, scriptCoverage) {
 
     for (let i = 0; i < coverage.length; i++) {
         const {scriptId, functions, url} = coverage[i];
-
         if (url === '__puppeteer_evaluation_script__') {
             continue;
         }
         const script = scripts[scriptId];
+        if (!script) {
+            continue;
+        }
         const usedFunctions = new Set();
         const unusedFunctionsNames = new Set();
         const ranges = [];
-
-        if (!script) {
-            LOG.debug(`Script ${scriptId} is missing`);
-            continue;
-        }
 
         for (let i = 0; i < functions.length; i++) {
             const funcObj = functions[i];
@@ -341,19 +319,15 @@ function processScriptCoverage(scripts, scriptCoverage) {
                     break;
                 }
             }
-
             if (!merged) {
                 ranges.push(coverageCandidate);
             }
         }
-
         let usedBytes = 0;
-
         for (let i = 0; i < ranges.length; i++) {
             const {startOffset, endOffset} = ranges[i];
             usedBytes += endOffset - startOffset;
         }
-
         script.functionCoverage = {
             usedBytes,
             usage: usedBytes / script.length,
