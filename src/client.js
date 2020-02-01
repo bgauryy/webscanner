@@ -1,6 +1,7 @@
-const {enrichURLDetails, enrichIPDetails, getInitiator, isDataURI, getHash, getHeaders, getResourcesFromFrameTree} = require('../src/utils/clientHelper.js');
+const {reduceDeepObject, enrichURLDetails, enrichIPDetails, getInitiator, isDataURI, getHash, getHeaders, getResourcesFromFrameTree} = require('../src/utils/clientHelper.js');
 const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
 const fs = require('fs');
+const atob = require('atob');
 const path = require('path');
 const LOG = require('./utils/logger.js');
 const ignoredScripts = {};
@@ -68,26 +69,31 @@ async function initScan(client, collect, rules) {
     }
 }
 
-async function registerServiceWorkerEvents(client, getContent, registrationHandler, versionHandler, errorHandler) {
+async function registerServiceWorkerEvents(client, content, serviceWorkers) {
     await client.ServiceWorker.enable();
 
-    client.ServiceWorker.workerRegistrationUpdated(({registrations}) => {
-        const sw = registrations && registrations[0];
-        if (sw) {
-            registrationHandler(sw);
+    client.ServiceWorker.workerRegistrationUpdated(async (res) => {
+        res = {...res, ...res.registrations};
+        const serviceWorkerObj = res.registrations && res.registrations[0];
+        if (serviceWorkerObj) {
+            serviceWorkers[serviceWorkerObj.registrationId] = serviceWorkerObj;
         }
     });
-    client.ServiceWorker.workerErrorReported(obj => {
-        errorHandler(obj);
-    });
-    client.ServiceWorker.workerVersionUpdated(({versions}) => {
-        const sw = versions && versions[0]; //registrationId, scriptURL, runningStatus, status, scriptLastModified, scriptResponseTime,controlledClients
-        if (sw) {
-            versionHandler(sw);
-        }
-    });
-    //ServiceWorker.inspectWorker
 
+    client.ServiceWorker.workerErrorReported(serviceWorkerObj => {
+        debugger;
+    });
+
+    client.ServiceWorker.workerVersionUpdated(async (res) => {
+        res = {...res, ...res.versions};
+        let serviceWorkerObj = res.versions && res.versions[0];
+        if (serviceWorkerObj) {
+            //TODO: change code to handle status changes
+            const serviceWorkerObjOld = serviceWorkers[serviceWorkerObj.registrationId] || {};
+            serviceWorkerObj = {...serviceWorkerObjOld, ...serviceWorkerObj};
+            serviceWorkers[serviceWorkerObj.registrationId] = serviceWorkerObj;
+        }
+    });
 }
 
 async function startCSSCoverageTracking(client) {
@@ -195,7 +201,6 @@ function handleRequests(client, rules, collect, requests, dataURIs) {
         requestObj = {...requestObj, ...requestObj.request};
         delete requestObj.request;
 
-        requestObj.headers = getHeaders(requestObj.headers);
         if (isDataURI(requestObj.url)) {
             const split = requestObj.url.split(';');
             const protocol = split[0];
@@ -206,50 +211,66 @@ function handleRequests(client, rules, collect, requests, dataURIs) {
             delete requestObj.headers;
             dataURIs[protocol][requestObj.requestId] = requestObj;
         } else {
-            try {
+            if (requestObj.method.toLowerCase() === 'post') {
                 requestObj.postData = await client.Network.getRequestPostData({requestId: requestObj.requestId});
-            } catch (e) {
-                //ignore
             }
             enrichURLDetails(requestObj, 'url');
+            reduceDeepObject(requestObj, 'headers', 'header');
+            //TODO:handle initiator
             requestObj.initiator.scriptId = getInitiator(requestObj.initiator);
             requests[requestObj.requestId] = requestObj;
         }
     });
 }
 
-function handleResponse(client, collect, requests, scripts) {
-    const shouldGetBodyResponseRegex = new RegExp(collect.bodyResponse.join('|'), 'gi');
-    client.Network.responseReceived(async (responseObj) => {
+function handleResponse(client, collect, requests) {
+    client.Network.responseReceived(handleResponse);
+    client.Network.eventSourceMessageReceived(handleResponse);
+
+    async function handleResponse(responseObj) {
         const response = {...responseObj, ...responseObj.response};
         const request = requests[response.requestId] || {requestId: response.requestId, type: response.type};
-        let initiatorOrigin;
+        //TODO: handle initiator
 
         delete response.response;
         if (isDataURI(response.url)) {
-            LOG.debug('Ignoring data URI response');
             return;
         }
-        if (request && request.initiator) {
-            const initiatorId = request.initiator.scriptId;
-            if (typeof parseInt(initiatorId) === 'number' && !Number.isNaN(parseInt(initiatorId))) {
-                const initiator = scripts[request.initiator.scriptId];
-                initiatorOrigin = initiator && new URL(initiator.url).origin;
-            }
-        }
+        reduceDeepObject(response, 'headers', 'header');
+        reduceDeepObject(response, 'securityDetails', 'certificate');
         enrichIPDetails(response, 'remoteIPAddress');
-        const shouldGetBodyResponse = shouldGetBodyResponseRegex.test(response.url) || shouldGetBodyResponseRegex.test(initiatorOrigin);
-        if (shouldGetBodyResponse) {
-            try {
-                const obj = await client.Network.getResponseBody({requestId: response.requestId});
-                response.content.body = obj.body;
-                response.content.base64Encoded = obj.base64Encoded;
-            } catch (e) {
-                //ignore
-            }
+        //Handle content
+        const content = await client.Network.getResponseBody({requestId: response.requestId});
+        if (content.base64Encoded) {
+            content.body = atob(content.body);
         }
+        response.content_body = content.body;
+        response.content_bse64Encoded = content.base64Encoded;
+
+        //Handle certificate
+        let date = new Date(0);
+        date.setUTCSeconds(response.certificate_validFrom);
+        delete response.certificate_validFrom;
+        const validFrom = date;
+        date = new Date(0);
+        date.setUTCSeconds(response.certificate_validTo);
+        delete response.certificate_validTo;
+        const validTo = date;
+        response.certificate_age_days = Math.round((new Date() - validFrom) / 86400000);
+        response.certificate_expiration_days = Math.round((validTo - new Date()) / 86400000);
+
+        //handle timing
+        response.timing_start = response.timing.requestTime;
+        response.timing_receiveHeadersEnd = response.timing.receiveHeadersEnd;
+        response.timing_proxy = Math.round(response.timing.proxyEnd - response.timing.proxyStart);
+        response.timing_dns = Math.round(response.timing.dnsEnd - response.timing.dnsStart);
+        response.timing_connection = Math.round(response.timing.connectEnd - response.timing.connectStart);
+        response.timing_ssl = Math.round(response.timing.sslEnd - response.timing.sslStart);
+        response.timing_send = Math.round(response.timing.sendEnd - response.timing.sendStart);
+        response.timing_send = Math.round(response.timing.pushEnd - response.timing.pushStart);
+        delete response.timing;
         request.response = response;
-    });
+    }
 }
 
 function registerScriptExecution(client, getScriptSource, scripts) {
@@ -259,16 +280,11 @@ function registerScriptExecution(client, getScriptSource, scripts) {
         }
         scriptObj = {...scriptObj, ...scriptObj.executionContextAuxData};
         delete scriptObj.executionContextAuxData;
-        if (getScriptSource) {
-            try {
-                const {scriptSource} = await client.Debugger.getScriptSource({scriptId: scriptObj.scriptId});
-                scriptObj.source = scriptSource;
-            } catch (e) {
-                //ignore
-            }
-        }
+        const {scriptSource} = await client.Debugger.getScriptSource({scriptId: scriptObj.scriptId});
+        scriptObj.source = scriptSource;
         scripts[scriptObj.scriptId] = scriptObj;
     });
+
     client.Debugger.scriptFailedToParse((scriptObj) => {
         scriptObj = {...scriptObj, ...scriptObj.executionContextAuxData};
         delete scriptObj.executionContextAuxData;
@@ -277,7 +293,6 @@ function registerScriptExecution(client, getScriptSource, scripts) {
     });
 }
 
-//TODO: fix duplicated code
 async function registerWebsocket(client, websockets) {
     client.Network.webSocketCreated(({requestId, url, initiator}) => {
         const wsObj = {url, initiator};
@@ -331,15 +346,12 @@ function registerStyleEvents(client, getContent, styles) {
     client.CSS.styleSheetAdded(async function (styleObj) {
         styleObj = {...styleObj.header};
         enrichURLDetails(styleObj, 'url');
-        if (getContent) {
-            try {
-                //TODO: get content from inline scripts/nodes
-                const {scriptSource} = await client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
-                styleObj.source = scriptSource;
-            } catch (e) {
-                //ignore
-            }
+        if (styleObj.ownerNode) {
+            //TODO: get content from inline scripts/nodes
+            const {node} = await client.DOM.describeNode({backendNodeId: styleObj.ownerNode});
         }
+        const {scriptSource} = await client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
+        styleObj.source = scriptSource;
         styles[styleObj.styleSheetId] = styleObj;
     });
 }
@@ -355,17 +367,19 @@ async function setStorage(client, storage) {
 }
 
 function setContext(client, contexts) {
-    client.Runtime.executionContextCreated(({context: {id, origin, name, auxData}}) => {
-        if (name !== '__puppeteer_utility_world__') {
-            contexts[id] = {origin, name, auxData};
+    client.Runtime.executionContextCreated(({context}) => {
+        const contextObj = {...context, ...context.auxData};
+        delete contextObj.auxData;
+        if (contextObj.name === '__puppeteer_utility_world__') {
+            return;
         }
+        contexts[contextObj.id] = contextObj;
     });
 
-    client.Runtime.executionContextDestroyed(({executionContextId}) => {
-        const context = contexts[executionContextId];
-        if (context) {
-            context.destroyed = true;
-        }
+    client.Runtime.executionContextDestroyed((executionObj) => {
+        const context = contexts[executionObj.executionContextId] || {executionContextId: executionObj.executionContextId};
+        context.destroyed = true;
+        contexts[executionObj.executionContextId] = context;
     });
 }
 

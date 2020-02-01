@@ -35,17 +35,15 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn clean && yarn lint"
+      "pre-commit": ""
     }
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.6.2",
+    "atob": "^2.1.2",
     "eslint": "^6.5.1",
     "husky": "^3.0.5",
     "jest": "^24.9.0",
-    "rimraf": "^3.0.0",
-    "rollup": "^1.23.1",
-    "rollup-plugin-babel": "^4.3.3"
+    "rimraf": "^3.0.0"
   },
   "dependencies": {
     "chrome-remote-interface": "^0.27.1",

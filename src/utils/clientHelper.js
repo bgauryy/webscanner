@@ -57,6 +57,17 @@ function enrichURLDetails(obj, urlProp) {
     }
 }
 
+function reduceDeepObject(obj, headersProp, prefix) {
+    const headers = obj && obj[headersProp];
+    if (!headers) {
+        return;
+    }
+    for (const prop in headers) {
+        obj[`${prefix}_${prop}`] = headers[prop];
+    }
+    delete obj[headersProp];
+}
+
 function enrichIPDetails(obj, IPProp) {
     if (!obj || !obj[IPProp]) {
         return;
@@ -146,7 +157,8 @@ module.exports = {
     getHash,
     getHeaders,
     getResourcesFromFrameTree,
-    isEmptyObject
+    isEmptyObject,
+    reduceDeepObject
 };
 
 
