@@ -62,6 +62,7 @@ function reduceDeepObject(obj, headersProp, prefix) {
     if (!headers) {
         return;
     }
+    //eslint-disable-next-line
     for (const prop in headers) {
         obj[`${prefix}_${prop}`] = headers[prop];
     }
@@ -109,7 +110,6 @@ function getHeaders(headers) {
 }
 
 
-
 function isEmptyObject(obj) {
     if (Array.isArray(obj)) {
         return obj.length === 0;
@@ -122,11 +122,10 @@ module.exports = {
     enrichURLDetails,
     enrichIPDetails,
     isDataURI,
-    getHash,
-    getHeaders,
-    getResourcesFromFrameTree,
     isEmptyObject,
-    reduceDeepObject
+    reduceDeepObject,
+    getHash,
+    getHeaders
 };
 
 

@@ -6,7 +6,7 @@ function registerStyleEvents(client, styles) {
         enrichURLDetails(styleObj, 'url');
         if (styleObj.ownerNode) {
             //TODO: get content from inline scripts/nodes
-            const {node} = await client.DOM.describeNode({backendNodeId: styleObj.ownerNode});
+            //const {node} = await client.DOM.describeNode({backendNodeId: styleObj.ownerNode});
         }
         const {scriptSource} = await client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
         styleObj.source = scriptSource;

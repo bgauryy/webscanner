@@ -16,7 +16,7 @@ async function _getMetrics(client) {
         const metricsObj = await client.Performance.getMetrics();
         return metricsObj && metricsObj.metrics;
     } catch (e) {
-        LOG.error(e);
+        //ignore
     }
 }
 
@@ -36,7 +36,7 @@ async function _getSystemInfo(client) {
             process
         };
     } catch (e) {
-        LOG.error(e);
+        //ignore
     }
 }
 

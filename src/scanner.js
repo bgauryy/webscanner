@@ -9,7 +9,7 @@ const {registerScriptExecution, getScriptCoverage} = require('./monitor/scripts.
 const {registerServiceWorkerEvents} = require('./monitor/serviceWorker.js');
 const {registerWebsocket} = require('./monitor/websocket.js');
 const {registerStorage, getCookies} = require('./monitor/storage.js');
-const {registerStyleEvents, getStyleCoverage} = require('./monitor/style.js');
+const {startCSSCoverageTracking, registerStyleEvents, getStyleCoverage} = require('./monitor/style.js');
 const {registerLogs, registerConsole, registerErrors} = require('./monitor/monitoring.js');
 const {getMetadata} = require('./monitor/metadata.js');
 const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
@@ -17,75 +17,33 @@ const fs = require('fs');
 const path = require('path');
 const ignoredScripts = {};
 
-async function getPuppeteerSession(context) {
-    const scanner = new Scanner(context);
-    await scanner.init();
+async function getSession(context) {
+    context.client = await getChromeClient(this.context.page);
+    context.data = getDataObj();
+    await init(context);
     return new Proxy(context.page, {
         get: function (page, prop) {
-            switch (prop) {
-                case 'getData':
-                    return async function () {
-                        return await scanner.getData();
-                    };
-                case 'close':
-                    return async function () {
-                        return await scanner.close();
-                    };
-                default:
-                    return page[prop];
+            if (prop === 'getData') {
+                return getData.bind(context);
+            } else {
+                return page[prop];
             }
         }
     });
 }
 
-class Scanner {
-    constructor(context) {
-        this.client = null;
-        this.context = context;
-        this.data = getCleanDataObject();
-    }
-}
-
-Scanner.prototype.init = init;
-Scanner.prototype.close = close;
-Scanner.prototype.getData = getData;
-
-function getCleanDataObject() {
-    return {
-        scripts: [],
-        requests: [],
-        responses: [],
-        frames: [],
-        serviceWorker: {},
-        webSockets: {},
-        storage: {},
-        styles: {},
-        logs: {},
-        console: {},
-        errors: [],
-        ///////////////////////////////
-        events: [],
-        research: {},
-        metrics: null,
-        coverage: null,
-        contexts: {},
-    };
-}
-
-async function init() {
-    this.client = await getChromeClient(this.context.page);
-    await initClient(this.client, this.context.collect, this.context.rules);
-
-    await registerFrameEvents(this.client, this.data.frames);
-    await registerNetworkEvents(this.client, this.context.rules, this.context.collect, this.data.requests, this.data.responses);
-    await registerScriptExecution(this.client, this.data.scripts);
-    await registerServiceWorkerEvents(this.client, this.data.serviceWorker);
-    await registerWebsocket(this.client, this.data.webSockets);
-    await registerStorage(this.client, this.data.webSockets);
-    await registerStyleEvents(this.client, this.data.styles);
-    await registerLogs(this.client, this.data.logs);
-    await registerConsole(this.client, this.data.console);
-    await registerErrors(this.client, this.data.errors);
+async function init(context) {
+    await initClient(context.client, context.collect, context.rules);
+    await registerFrameEvents(context.client, context.data.frames);
+    await registerNetworkEvents(context.client, context.rules, context.collect, context.data.requests, context.data.responses);
+    await registerScriptExecution(context.client, context.data.scripts);
+    await registerServiceWorkerEvents(context.client, context.data.serviceWorker);
+    await registerWebsocket(context.client, context.data.webSockets);
+    await registerStorage(context.client, context.data.webSockets);
+    await registerStyleEvents(context.client, context.data.styles);
+    await registerLogs(context.client, context.data.logs);
+    await registerConsole(context.client, context.data.console);
+    await registerErrors(context.client, context.data.errors);
 }
 
 async function initClient(client, collect, rules) {
@@ -157,34 +115,43 @@ async function getChromeClient(page) {
     return await CRI({host: hostname, port});
 }
 
-async function close() {
-    LOG.debug('Closing Scanner');
-
-    try {
-        await this.client.close();
-    } catch (e) {
-        LOG.error(e);
-    }
-}
-
-async function getData() {
+async function getData(context) {
     LOG.debug('Preparing data...');
-    const collect = this.context.collect;
-
-    this.data.cookies = await getCookies(this.client);
-    this.data.resources = await getResources(this.client);
-    this.data.scriptCoverage = await getScriptCoverage(this.client);
-    this.data.styleCoverage = await getStyleCoverage(this.client);
-    this.data.metadata = await getMetadata(this.client);
+    context.data.cookies = await getCookies(context.client);
+    context.data.resources = await getResources(context.client);
+    context.data.scriptCoverage = await getScriptCoverage(context.client);
+    context.data.styleCoverage = await getStyleCoverage(context.client);
+    context.data.metadata = await getMetadata(context.client);
     /////////////////////////////////////////////////////////////////
-    this.data.domEvents = await chromeClient.getAllDOMEvents(this.client);
-    this.data.JSMetrics = await chromeClient.getExecutionMetrics(this.client);
-
+    context.data.domEvents = await chromeClient.getAllDOMEvents(context.client);
+    context.data.JSMetrics = await chromeClient.getExecutionMetrics(context.client);
     const data = await processData(this.data, this.context);
-    this.data = getCleanDataObject();
+    context.data = getDataObj();
     return data;
 }
 
+function getDataObj() {
+    return {
+        scripts: [],
+        requests: [],
+        responses: [],
+        frames: [],
+        serviceWorker: {},
+        webSockets: {},
+        storage: {},
+        styles: {},
+        logs: {},
+        console: {},
+        errors: [],
+        ///////////////////////////////
+        events: [],
+        research: {},
+        metrics: null,
+        coverage: null,
+        contexts: {},
+    };
+}
+
 module.exports = {
-    getPuppeteerSession
+    getSession
 };
