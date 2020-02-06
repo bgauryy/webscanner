@@ -1,4 +1,6 @@
 const url = require('url');
+const fs = require('fs');
+const path = require('path');
 const CRI = require('chrome-remote-interface');
 const LOG = require('./utils/logger.js');
 const {processData} = require('./dataProcessor.js');
@@ -13,8 +15,6 @@ const {startCSSCoverageTracking, registerStyleEvents, getStyleCoverage} = requir
 const {registerLogs, registerConsole, registerErrors} = require('./monitor/monitoring.js');
 const {getMetadata} = require('./monitor/metadata.js');
 const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
-const fs = require('fs');
-const path = require('path');
 const ignoredScripts = {};
 
 async function getSession(context) {
