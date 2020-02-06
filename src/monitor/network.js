@@ -1,6 +1,11 @@
 const {isDataURI, enrichURLDetails, reduceDeepObject, getInitiator, enrichIPDetails} = require('../utils/clientHelper');
 const atob = require('atob');
 
+function registerNetworkEvents(client, rules, collect, requests, responses) {
+    handleRequests(client, rules, collect, requests);
+    handleResponse(client, rules, collect, responses);
+}
+
 function handleRequests(client, rules, collect, requests) {
     client.Network.requestWillBeSent(async (requestObj) => {
         requestObj = {...requestObj, ...requestObj.request};
@@ -78,6 +83,5 @@ function handleResponse(client, rules, collect, responses) {
 }
 
 module.exports = {
-    handleRequests,
-    handleResponse
+    registerNetworkEvents
 };

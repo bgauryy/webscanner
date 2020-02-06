@@ -108,39 +108,7 @@ function getHeaders(headers) {
     return res;
 }
 
-function getResourcesFromFrameTree(frameTree) {
-    const resources = {};
 
-    _getResources(frameTree);
-    return resources;
-
-    function _getResources(frameTree) {
-        const frame = frameTree.frame;
-        const frameObj = resources[frame.id] = {};
-
-        frameObj.url = frame.url;
-        frameObj.name = frame.name;
-        frameObj.resources = frameTree.resources;
-        frameObj.contentSize = {};
-
-        if (frameObj.resources) {
-            for (let i = 0; i < frameObj.resources.length; i++) {
-                const resource = frameObj.resources[i];
-                frameObj.contentSize[resource.type] = frameObj.contentSize[resource.type] || 0;
-                frameObj.contentSize[resource.type] += resource.contentSize;
-            }
-        }
-
-        if (frameTree.childFrames) {
-            for (let i = 0; i < frameTree.childFrames.length; i++) {
-                frameObj.children = frameObj.children || [];
-                const childFrame = frameTree.childFrames[i];
-                frameObj.children.push(childFrame.frame.id);
-                _getResources(childFrame);
-            }
-        }
-    }
-}
 
 function isEmptyObject(obj) {
     if (Array.isArray(obj)) {

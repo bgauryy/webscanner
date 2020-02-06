@@ -42,8 +42,8 @@ const path = require('path');
         }
     });
 
-    await page.goto('https://example.com', {waitUntil: 'load'});
-    await sleep(10);
+    await page.goto('https://perimeterx.com', {waitUntil: 'load'});
+    await sleep(5);
     const data = await page.getData();
     await browser.close();
     await saveData(data, path.resolve('result.json'));

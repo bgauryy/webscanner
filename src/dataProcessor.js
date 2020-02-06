@@ -8,9 +8,9 @@ function processData(data, context) {
     const collect = context.collect || {};
     const responseData = {};
 
-    responseData.frames = processFrames(data.frames, data.resources); //map if-<frame
-    responseData.requests = data.requests;//array
-    responseData.responses = data.responses;
+    responseData.frames = processFrames(data.frames, data.resources); //map iframeId -> frame
+    responseData.requests = data.requests; //array
+    responseData.responses = data.responses; //array
 
 
 /*    if (collect.scripts) {
