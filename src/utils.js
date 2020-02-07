@@ -1,8 +1,6 @@
 const geoip = require('geoip-lite');
-const crypto = require('crypto');
 const LOG = require('./logger');
 
-const FILTERED_REQUESTS_HEADERS = ['Upgrade-Insecure-Requests', 'User-Agent', 'Sec-Fetch-Mode', 'Sec-Fetch-User', 'Accept-Encoding', 'Accept-Language', 'Cache-Control', 'Connection', 'Referer', 'Origin'];
 const dataURIRegex = /^data:/;
 
 function getInitiator(initiator) {
@@ -93,28 +91,30 @@ function isDataURI(url) {
     return dataURIRegex.test(url);
 }
 
-function getHash(str) {
-    return crypto.createHash('md5').update(str).digest('hex');
-}
-
-function getHeaders(headers) {
-    let res;
-
-    for (const header in headers) {
-        if (!FILTERED_REQUESTS_HEADERS.includes(header)) {
-            res = res || {};
-            res[header] = headers[header];
-        }
-    }
-    return res;
-}
-
-
 function isEmptyObject(obj) {
-    if (Array.isArray(obj)) {
+    if (!obj) {
+        return true;
+    } else if (Array.isArray(obj)) {
         return obj.length === 0;
+    } else if (typeof obj === 'object') {
+        return Object.keys(obj).length === 0;
     }
-    return !obj || Object.keys(obj).length === 0;
+}
+
+function isRangeContains(p1, p2) {
+    const isStartUnion = p1.startOffset <= p2.startOffset && p1.endOffset <= p2.endOffset && p1.endOffset >= p2.startOffset;
+    const isEndUnion = p1.endOffset >= p2.endOffset && p1.startOffset >= p2.startOffset && p1.startOffset <= p2.endOffset;
+    const isUnion = (p1.startOffset > p2.startOffset && p1.endOffset < p2.endOffset) || (p1.startOffset < p2.startOffset && p1.endOffset > p2.endOffset);
+    return isStartUnion || isEndUnion || isUnion;
+}
+
+function getRandomString() {
+    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let rand = '';
+    for (let i = 0; i < 16; i++) {
+        rand += CHARS.charAt(Math.floor(Math.random() * CHARS.length));
+    }
+    return rand;
 }
 
 module.exports = {
@@ -124,8 +124,8 @@ module.exports = {
     isDataURI,
     isEmptyObject,
     reduceDeepObject,
-    getHash,
-    getHeaders
+    isRangeContains,
+    getRandomString
 };
 
 

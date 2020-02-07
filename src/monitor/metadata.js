@@ -10,7 +10,7 @@ async function getMetadata(client) {
     return data;
 }
 
-async function _getMetrics(client) {
+async function _getMetrics({client}) {
     try {
         await client.Performance.enable();
         const metricsObj = await client.Performance.getMetrics();
@@ -40,6 +40,22 @@ async function _getSystemInfo(client) {
     }
 }
 
+function processMetadata(metadata) {
+    metadata = metadata || {};
+
+    if (metadata.metrics) {
+        const metrics = metadata.metrics;
+        delete metadata.metrics;
+        metadata.metrics = {};
+
+        for (let i = 0; i < metrics.length; i++) {
+            const metric = metrics[i];
+            metadata.metrics[metric.name] = metric.value;
+        }
+    }
+    return metadata;
+}
+
 module.exports = {
-    getMetadata
+    getMetadata,
 };

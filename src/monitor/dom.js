@@ -1,3 +1,7 @@
+async function start() {
+    //await client.DOM.enable();
+}
+
 async function getAllDOMEvents(client) {
     const DOMEvents = [];
 

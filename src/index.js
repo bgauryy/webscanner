@@ -1,5 +1,5 @@
 const Scanner = require('./scanner.js');
-const LOG = require('./utils/logger.js');
+const LOG = require('./logger.js');
 
 /**
  *

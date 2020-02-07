@@ -8,7 +8,7 @@ async function registerStorage(client, storage) {
     });
 }
 
-async function getCookies(client) {
+async function getCookies({client}) {
     return await client.Page.getCookies();
 }
 

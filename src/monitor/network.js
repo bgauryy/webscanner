@@ -1,9 +1,28 @@
-const {isDataURI, enrichURLDetails, reduceDeepObject, getInitiator, enrichIPDetails} = require('../utils/clientHelper');
+const {isDataURI, enrichURLDetails, reduceDeepObject, getInitiator, enrichIPDetails} = require('../utils');
 const atob = require('atob');
 
-function registerNetworkEvents(client, rules, collect, requests, responses) {
+async function start(context) {
+    const {client, rules, collect, data: {requests, responses, webSockets, serviceWorker}} = context;
+    await client.Network.enable();
+
     handleRequests(client, rules, collect, requests);
     handleResponse(client, rules, collect, responses);
+    registerWebsocket(client, webSockets);
+    await registerServiceWorkerEvents(client, serviceWorker);
+}
+
+function stop(context) {
+    const serviceWorker = context.data.serviceWorker;
+    const webSockets = context.data.webSockets;
+    //TODO: add indication to redirected request
+    const requests = context.data.requests;
+    const responses = context.data.responses;
+    return {
+        requests,
+        responses,
+        serviceWorker,
+        webSockets
+    };
 }
 
 function handleRequests(client, rules, collect, requests) {
@@ -82,6 +101,71 @@ function handleResponse(client, rules, collect, responses) {
     }
 }
 
+function registerWebsocket(client, websockets) {
+    client.Network.webSocketCreated(({requestId, url, initiator}) => {
+        const wsObj = {url, initiator};
+        wsObj.Initiatorscript = getInitiator(initiator);
+        websockets[requestId] = wsObj;
+    });
+    client.Network.webSocketFrameSent(({requestId, timestamp, response}) => {
+        const ws = websockets[requestId];
+        if (!ws) {
+            return;
+        }
+        ws.frames = ws.frames || [];
+        ws.frames.push({
+            ...response,
+            timestamp,
+            type: 'sent'
+        });
+    });
+    client.Network.webSocketFrameReceived(({requestId, timestamp, response}) => {
+        const ws = websockets[requestId];
+        if (!ws) {
+            return;
+        }
+        ws.frames = ws.frames || [];
+        ws.frames.push({
+            ...response,
+            timestamp,
+            type: 'received'
+        });
+    });
+    client.Network.webSocketClosed(({requestId, timestamp}) => {
+        const ws = websockets[requestId];
+        ws.closed = timestamp;
+    });
+    client.Network.webSocketFrameError(({requestId, timestamp, errorMessage}) => {
+        const ws = websockets[requestId];
+        ws.errors = ws.errors || [];
+        ws.errors.push({timestamp, errorMessage});
+    });
+}
+
+async function registerServiceWorkerEvents(client, serviceWorkers) {
+    await client.ServiceWorker.enable();
+
+    client.ServiceWorker.workerRegistrationUpdated(async (res) => {
+        res = {...res, ...res.registrations};
+        const serviceWorkerObj = res.registrations && res.registrations[0];
+        if (serviceWorkerObj) {
+            serviceWorkers[serviceWorkerObj.registrationId] = serviceWorkerObj;
+        }
+    });
+
+    client.ServiceWorker.workerVersionUpdated(async (res) => {
+        res = {...res, ...res.versions};
+        let serviceWorkerObj = res.versions && res.versions[0];
+        if (serviceWorkerObj) {
+            //TODO: change code to handle status changes
+            const serviceWorkerObjOld = serviceWorkers[serviceWorkerObj.registrationId] || {};
+            serviceWorkerObj = {...serviceWorkerObjOld, ...serviceWorkerObj};
+            serviceWorkers[serviceWorkerObj.registrationId] = serviceWorkerObj;
+        }
+    });
+}
+
 module.exports = {
-    registerNetworkEvents
+    start,
+    stop
 };

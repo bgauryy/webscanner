@@ -1,30 +1,29 @@
-const url = require('url');
 const fs = require('fs');
 const path = require('path');
-const CRI = require('chrome-remote-interface');
-const LOG = require('./utils/logger.js');
-const {processData} = require('./dataProcessor.js');
-const chromeClient = require('./client.js');
-const {registerFrameEvents, getResources} = require('./monitor/iframe.js');
-const {registerNetworkEvents} = require('./monitor/network.js');
+const LOG = require('./logger.js');
+const {getChromeClient} = require('./bridge');
+const {isEmptyObject, getRandomString} = require('./utils');
+const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
+const frame = require('./monitor/iframe.js');
+const {getResources} = require('./monitor/resources.js');
+const network = require('./monitor/network.js');
+const style = require('./monitor/style.js');
+//////////////////////////////
 const {registerScriptExecution, getScriptCoverage} = require('./monitor/scripts.js');
-const {registerServiceWorkerEvents} = require('./monitor/serviceWorker.js');
-const {registerWebsocket} = require('./monitor/websocket.js');
 const {registerStorage, getCookies} = require('./monitor/storage.js');
-const {startCSSCoverageTracking, registerStyleEvents, getStyleCoverage} = require('./monitor/style.js');
 const {registerLogs, registerConsole, registerErrors} = require('./monitor/monitoring.js');
 const {getMetadata} = require('./monitor/metadata.js');
-const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
-const ignoredScripts = {};
 
 async function getSession(context) {
-    context.client = await getChromeClient(this.context.page);
-    context.data = getDataObj();
+    context.client = await getChromeClient(context.page);
+    context.data = getDataObject();
     await init(context);
     return new Proxy(context.page, {
         get: function (page, prop) {
-            if (prop === 'getData') {
-                return getData.bind(context);
+            if (prop === 'getSessionData') {
+                return getData.bind(this, context);
+            } else if (prop === 'stop') {
+                return stop.bind(this, context);
             } else {
                 return page[prop];
             }
@@ -33,109 +32,117 @@ async function getSession(context) {
 }
 
 async function init(context) {
-    await initClient(context.client, context.collect, context.rules);
-    await registerFrameEvents(context.client, context.data.frames);
-    await registerNetworkEvents(context.client, context.rules, context.collect, context.data.requests, context.data.responses);
-    await registerScriptExecution(context.client, context.data.scripts);
-    await registerServiceWorkerEvents(context.client, context.data.serviceWorker);
-    await registerWebsocket(context.client, context.data.webSockets);
-    await registerStorage(context.client, context.data.webSockets);
-    await registerStyleEvents(context.client, context.data.styles);
-    await registerLogs(context.client, context.data.logs);
-    await registerConsole(context.client, context.data.console);
-    await registerErrors(context.client, context.data.errors);
+    //Scripts Id's to ignore
+    context.ignoredScripts = {};
+
+    await initClient(context);
+    await frame.start(context);
+    await network.start(context);
+    await style.start(context);
+    /*
+        await registerScriptExecution(context.client, context.data.scripts);
+        await registerStorage(context.client, context.data.webSockets);
+        await registerLogs(context.client, context.data.logs);
+        await registerConsole(context.client, context.data.console);
+        await registerErrors(context.client, context.data.errors);*/
 }
 
-async function initClient(client, collect, rules) {
-    const {Profiler, CSS, Debugger, Network, Page, Runtime, DOM} = client;
+async function initClient(context) {
+    const {client, rules} = context;
+    const {Debugger, Network, Page, Runtime, Emulation} = client;
 
-    await Page.enable();
-    await DOM.enable();
-    await CSS.enable();
+    await Network.enable();
     await Debugger.enable();
     await Runtime.enable();
-    await Network.enable();
+    await Page.enable();
+
     await Network.clearBrowserCache();
     await Network.clearBrowserCookies();
-    await client.Debugger.setAsyncCallStackDepth({maxDepth: 1000});
-    await client.Runtime.setMaxCallStackSizeToCapture({size: 1000});
-    await client.Page.setDownloadBehavior({behavior: 'deny'});
-    await client.Page.setAdBlockingEnabled({enabled: Boolean(rules.adBlocking)});
-    await client.Page.setBypassCSP({enabled: Boolean(rules.disableCSP)});
-
-    if (collect.styleCoverage) {
-        await startCSSCoverageTracking(client);
-    }
-
-    if (collect.JSMetrics || collect.scriptCoverage) {
-        await Profiler.enable();
-        await Profiler.setSamplingInterval({interval: 1000});
-        await Profiler.start();
-    }
+    await Debugger.setAsyncCallStackDepth({maxDepth: 1000});
+    await Runtime.setMaxCallStackSizeToCapture({size: 1000});
+    await Page.setDownloadBehavior({behavior: 'deny'});
+    await Page.setAdBlockingEnabled({enabled: Boolean(rules.adBlocking)});
+    await Page.setBypassCSP({enabled: Boolean(rules.disableCSP)});
 
     if (rules.userAgent) {
-        await client.Emulation.setUserAgentOverride({userAgent: rules.userAgent});
+        await Emulation.setUserAgentOverride({userAgent: rules.userAgent});
     }
-
-    let blockedUrls = rules.blockedUrls;
+    let blockedUrls = rules.blockedUrls || [];
     if (rules.disableServices) {
         const services = getBlockedDomains().map(domain => `*${domain}*`);
         blockedUrls = rules.blockedUrls.concat(services);
     }
-
     if (blockedUrls.length) {
-        await client.Network.setBlockedURLs({urls: blockedUrls});
+        await Network.setBlockedURLs({urls: blockedUrls});
     }
     if (rules.stealth) {
         try {
             const stealthUA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36';
             const {identifier} = await client.Page.addScriptToEvaluateOnNewDocument({source: fs.readFileSync(path.resolve(__dirname, 'plugins', 'stealth.js'), {encoding: 'UTF-8'})});
-            ignoredScripts[identifier] = 1;
+            context.ignoredScripts[identifier] = 1;
             if (!rules.userAgent) {
                 await client.Emulation.setUserAgentOverride({userAgent: stealthUA});
             }
-            await client.Network.setExtraHTTPHeaders({
-                headers: {
-                    'Accept-Encoding': 'gzip, deflate',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'Cache-Control': 'no-cache',
-                    'Connection': 'keep-alive',
-                    'User-Agent': rules.userAgent ? rules.userAgent : stealthUA
-                }
-            });
+            const randomHeader = getRandomString();
+            const addedHeaders = {
+                'Accept-Encoding': 'gzip, deflate',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'User-Agent': rules.userAgent ? rules.userAgent : stealthUA,
+            };
+            addedHeaders[randomHeader] = getRandomString();
+            await client.Network.setExtraHTTPHeaders({headers: addedHeaders});
         } catch (e) {
             LOG.error(e);
         }
     }
 }
 
-async function getChromeClient(page) {
-    const connection = page._client._connection._url;
-    const {hostname, port} = url.parse(connection, true);
-    return await CRI({host: hostname, port});
-}
-
 async function getData(context) {
     LOG.debug('Preparing data...');
-    context.data.cookies = await getCookies(context.client);
-    context.data.resources = await getResources(context.client);
-    context.data.scriptCoverage = await getScriptCoverage(context.client);
-    context.data.styleCoverage = await getStyleCoverage(context.client);
-    context.data.metadata = await getMetadata(context.client);
-    /////////////////////////////////////////////////////////////////
-    context.data.domEvents = await chromeClient.getAllDOMEvents(context.client);
-    context.data.JSMetrics = await chromeClient.getExecutionMetrics(context.client);
-    const data = await processData(this.data, this.context);
-    context.data = getDataObj();
+    const data = {};
+
+    const resources = await getResources(context);
+    data.iframes = await frame.stop(context, resources);
+    data.network = await network.stop(context);
+    data.styles = await style.stop(context);
+
+    context.data = getDataObject();
+    /*
+        context.data.cookies = await getCookies(context);
+        context.data.scriptCoverage = await getScriptCoverage(context);
+        context.data.styleCoverage = await getStyleCoverage(context);
+        context.data.metadata = await getMetadata(context);
+        /////////////////////////////////////////////////////////////////
+        context.data.domEvents = await chromeClient.getAllDOMEvents(context.client);
+        context.data.JSMetrics = await chromeClient.getExecutionMetrics(context.client);
+        */
+
+    for (const prop in data) {
+        if (isEmptyObject(data[prop])) {
+            delete data[prop];
+        }
+    }
+    return JSON.parse(JSON.stringify(data));
+}
+
+async function stop(context) {
+    const data = await getData(context);
+    //eslint-disable-next-line
+    for (const prop in context) {
+        //Avoid memory leaks
+        context[prop] = null;
+    }
     return data;
 }
 
-function getDataObj() {
+function getDataObject() {
     return {
         scripts: [],
         requests: [],
         responses: [],
-        frames: [],
+        frames: {},
         serviceWorker: {},
         webSockets: {},
         storage: {},

@@ -1,4 +1,9 @@
-const {enrichURLDetails} = require('../utils/clientHelper');
+const {enrichURLDetails} = require('../utils');
+
+async function start(context) {
+    await context.client.Page.enable();
+    registerFrameEvents(context.client, context.data.frames);
+}
 
 function registerFrameEvents(client, frames) {
     client.Page.frameStartedLoading((frame) => {
@@ -33,55 +38,38 @@ function registerFrameEvents(client, frames) {
 }
 
 function handleIframeEvent(frameObj, state, frames) {
-    const oldFrame = frames[frameObj.id] || {};
+    const id = frameObj.frameId || frameObj.id;
+    let frame = frames[id];
 
-    frameObj = {...frameObj, ...oldFrame};
-    enrichURLDetails(frameObj, 'url');
-    frameObj.state = frameObj.state || [];
-    frameObj.state.push(state);
-    frames.push(frameObj);
-}
-
-async function getResources(client) {
-    const resources = await client.Page.getResourceTree();
-    return getResourcesFromFrameTree(resources.frameTree);
-}
-
-function getResourcesFromFrameTree(frameTree) {
-    const resources = {};
-
-    _getResources(frameTree);
-    return resources;
-
-    function _getResources(frameTree) {
-        const frame = frameTree.frame;
-        const frameObj = resources[frame.id] = {};
-
-        frameObj.url = frame.url;
-        frameObj.name = frame.name;
-        frameObj.resources = frameTree.resources;
-        frameObj.contentSize = {};
-
-        if (frameObj.resources) {
-            for (let i = 0; i < frameObj.resources.length; i++) {
-                const resource = frameObj.resources[i];
-                frameObj.contentSize[resource.type] = frameObj.contentSize[resource.type] || 0;
-                frameObj.contentSize[resource.type] += resource.contentSize;
-            }
-        }
-
-        if (frameTree.childFrames) {
-            for (let i = 0; i < frameTree.childFrames.length; i++) {
-                frameObj.children = frameObj.children || [];
-                const childFrame = frameTree.childFrames[i];
-                frameObj.children.push(childFrame.frame.id);
-                _getResources(childFrame);
-            }
-        }
+    if (!frame) {
+        frame = frameObj;
+        enrichURLDetails(frameObj, 'url');
+        frame.states = [state];
+        frames[id] = frame;
+    } else {
+        delete frameObj.frameId;
+        frames[id] = {...frameObj, ...frame};
+        frames[id].states.push(state);
     }
 }
 
+function stop(context, resourcesTree) {
+    const frames = Object.keys(context.data.frames).map(id => context.data.frames[id]);
+
+    resourcesTree = resourcesTree || {};
+    for (let i = 0; i < frames.length; i++) {
+        const frame = frames[i];
+        frame.url = frame.url || 'about:blank';
+        const resourcesObj = resourcesTree[frame.frameId];
+        if (resourcesObj) {
+            frame.resources = resourcesObj.resources;
+            frame.contentSize = resourcesObj.contentSize;
+        }
+    }
+    return frames;
+}
+
 module.exports = {
-    registerFrameEvents,
-    getResources
+    start,
+    stop
 };
