@@ -1,13 +1,15 @@
 async function start(context) {
     await context.client.Profiler.enable();
-    await context.client.Profiler.setSamplingInterval({interval: 1000});
     await context.client.Profiler.start();
 }
 
 async function stop(context) {
     const {profile} = await context.client.Profiler.stop();
     profile.ignoredScripts = context.ignoredScripts;
-    return processJSMetrics(profile);
+    return {
+        ...profile,
+        ...processJSMetrics(profile)
+    };
 }
 
 function processJSMetrics(profile) {

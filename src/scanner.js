@@ -11,7 +11,7 @@ const scripts = require('./monitor/scripts.js');
 const metadata = require('./monitor/metadata.js');
 const storage = require('./monitor/storage.js');
 const monitoring = require('./monitor/monitoring.js');
-const metrics = require('./monitor/metrics.js');
+const performance = require('./monitor/performance.js');
 
 async function getSession(context) {
     context.client = await getChromeClient(context.page);
@@ -42,7 +42,7 @@ async function start(context) {
     await metadata.start(context);
     await storage.start(context);
     await monitoring.start(context);
-    await metrics.start(context);
+    await performance.start(context);
 }
 
 async function initSession(context) {
@@ -108,7 +108,7 @@ async function getData(context) {
     data.metadata = await metadata.stop(context);
     data.storage = await storage.stop(context);
     data.monitoring = await monitoring.stop(context);
-    data.metrics = await metrics.stop(context);
+    data.performance = await performance.stop(context);
     context.data = getDataObject();
 
     cleanObject(data, 1);
