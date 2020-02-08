@@ -2,54 +2,49 @@ const {isRangeContains} = require('../utils');
 const {getAllDOMEvents} = require('./dom');
 let started = false;
 
-async function start({client, data}) {
+async function start(context) {
     started = true;
-    registerScriptExecution(client, data.scripts);
+    registerScriptExecution(context);
 }
 
 async function stop(context) {
     if (!started) {
         return;
     }
-    const domEvents = await getAllDOMEvents(context.client);
-    return await processScripts(context, domEvents);
+    return await processScripts(context);
 }
 
-function registerScriptExecution(client, scripts) {
-    client.Debugger.scriptParsed(async function (scriptObj) {
+function registerScriptExecution(context) {
+    context.client.Debugger.scriptParsed(async function (scriptObj) {
         if (scriptObj.url === '__puppeteer_evaluation_script__' || scriptObj.url === '') {
             return;
         }
         scriptObj = {...scriptObj, ...scriptObj.executionContextAuxData};
         delete scriptObj.executionContextAuxData;
-        const {scriptSource} = await client.Debugger.getScriptSource({scriptId: scriptObj.scriptId});
-        scriptObj.source = scriptSource;
-        scripts.push(scriptObj);
+
+        if (context.configuration.content) {
+            const {scriptSource} = await context.client.Debugger.getScriptSource({scriptId: scriptObj.scriptId});
+            scriptObj.source = scriptSource;
+        }
+        context.data.scripts.push(scriptObj);
     });
 }
-
 
 async function getScriptCoverage({client}) {
     const {result} = await client.Profiler.getBestEffortCoverage();
     return result;
 }
 
-async function processScripts(context, domEvents) {
+async function processScripts(context) {
     const {scripts, frames} = context.data;
-    const coverage = await getScriptCoverage(context);
 
-    if (coverage) {
+    if (context.configuration.coverage) {
+        const coverage = await getScriptCoverage(context);
         processScriptCoverage(scripts, coverage);
     }
-    if (domEvents) {
-        for (let i = 0; i < domEvents.length; i++) {
-            const eventObj = domEvents[i];
-            const script = scripts.filter(s => s.scriptId === eventObj.scriptId)[0];
-            if (script) {
-                script.DOMEvents = script.DOMEvents || [];
-                script.DOMEvents.push(eventObj);
-            }
-        }
+    if (context.configuration.domEvents) {
+        const domEvents = await getAllDOMEvents(context.client);
+        processScriptEvents(scripts, domEvents);
     }
     for (let i = 0; i < scripts.length; i++) {
         const script = scripts[i];
@@ -129,6 +124,17 @@ function processScriptCoverage(scripts, scriptCoverage) {
             usedFunctions: Array.from(usedFunctions).sort(),
             unusedFunctions: Array.from(unusedFunctionsNames).sort(),
         };
+    }
+}
+
+function processScriptEvents(scripts, domEvents) {
+    for (let i = 0; i < domEvents.length; i++) {
+        const eventObj = domEvents[i];
+        const script = scripts.filter(s => s.scriptId === eventObj.scriptId)[0];
+        if (script) {
+            script.DOMEvents = script.DOMEvents || [];
+            script.DOMEvents.push(eventObj);
+        }
     }
 }
 

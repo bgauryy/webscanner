@@ -17,7 +17,7 @@ const defaultConfiguration = {
     monitoring: false,
     performance: false, //experimental
     //metadata
-    domEvents: false, //experimental
+    domEvents: false,
     content: false,
     coverage: false,
     networkContent: false,
