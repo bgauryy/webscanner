@@ -1,7 +1,10 @@
 const {enrichURLDetails} = require('../utils');
 const LOG = require('../logger');
+let started = false;
 
 async function start(context) {
+    started = true;
+
     const client = context.client;
     const styles = context.data.styles;
 
@@ -14,6 +17,9 @@ async function start(context) {
 }
 
 async function stop(context) {
+    if (!started) {
+        return;
+    }
     const client = context.client;
     const styles = context.data.styles;
     const {coverage} = await client.CSS.takeCoverageDelta();

@@ -1,7 +1,9 @@
 const {isDataURI, enrichURLDetails, reduceDeepObject, getInitiator, enrichIPDetails} = require('../utils');
 const atob = require('atob');
+let started = false;
 
 async function start(context) {
+    started = true;
     const {client, rules, collect, data: {requests, responses, webSockets, serviceWorker}} = context;
     await client.Network.enable();
 
@@ -12,6 +14,9 @@ async function start(context) {
 }
 
 async function stop(context) {
+    if (!started) {
+        return;
+    }
     const serviceWorker = context.data.serviceWorker;
     const webSockets = context.data.webSockets;
     //TODO: add indication to redirected request

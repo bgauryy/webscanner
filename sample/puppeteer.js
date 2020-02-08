@@ -1,7 +1,6 @@
 const puppeteer = require('puppeteer');
 const Scanner = require('../src/index');
-const fs = require('fs');
-const path = require('path');
+const URL = 'https://example.com';
 
 (async () => {
     const browser = await puppeteer.launch({
@@ -16,52 +15,20 @@ const path = require('path');
             adBlocking: false,
             disableServices: false,
         },
-        collect: {
-            frames: true,
-            scripts: true,
-            scriptSource: true,
-            scriptDOMEvents: true,
-            scriptCoverage: true,
-            styles: true,
-            styleSource: true,
-            styleCoverage: true,
-            requests: true,
-            responses: true,
-            bodyResponse: [],
-            dataURI: true,
-            websocket: true,
-            serviceWorker: true,
-            logs: true,
-            console: true,
-            errors: true,
-            storage: true,
-            metadata: true,
-            cookies: true,
-            resources: true,
-            JSMetrics: true
-        }
+        collect: {}
     });
 
-    await page.goto('https://perimeterx.com', {waitUntil: 'load'});
+    await page.goto(URL, {waitUntil: 'load'});
     await sleep(5);
     const data = await page.getSessionData();
     await browser.close();
-    await saveData(data, path.resolve('result.json'));
+    console.log('data', data);
+
+    async function sleep(seconds) {
+        return await new Promise(resolve => {
+            setTimeout(resolve, seconds * 1000);
+        });
+    }
 })();
 
-async function saveData(data, JSONPath) {
-    return new Promise((res) => {
-        fs.writeFile(JSONPath, JSON.stringify(data), function (err) {
-            if (err) {
-                console.log(err);
-            }
-            res();
-        });
-    });
-}
 
-async function sleep(seconds) {
-    return await new Promise(resolve => {
-        setTimeout(resolve, seconds * 1000);
-    });
-}

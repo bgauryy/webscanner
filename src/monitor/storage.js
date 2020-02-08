@@ -1,10 +1,16 @@
+let started = false;
+
 async function start(context) {
+    started = true;
     await context.client.DOMStorage.enable();
     await registerStorage(context.client, context.data.storage);
     //TODO:add indexedDB
 }
 
 function stop(context) {
+    if (!started) {
+        return;
+    }
     return context.data.storage;
 }
 

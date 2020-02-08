@@ -1,4 +1,7 @@
+let started = false;
+
 async function start(context) {
+    started = true;
     await context.client.Log.enable();
     //TODO:handle threshold
     await registerLogs(context.client, context.data.monitoring, 100);
@@ -7,6 +10,9 @@ async function start(context) {
 }
 
 async function stop(context) {
+    if (!started) {
+        return;
+    }
     return {
         logs: context.data.monitoring.logs,
         errors: context.data.monitoring.errors,

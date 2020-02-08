@@ -1,9 +1,15 @@
+let started = false;
+
 async function start(context) {
+    started = true;
     await context.client.Profiler.enable();
     await context.client.Profiler.start();
 }
 
 async function stop(context) {
+    if (!started) {
+        return;
+    }
     const {profile} = await context.client.Profiler.stop();
     profile.ignoredScripts = context.ignoredScripts;
     return {

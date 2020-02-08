@@ -1,8 +1,14 @@
+let started = false;
+
 async function start({client}) {
+    started = true;
     await client.Performance.enable();
 }
 
 async function stop({client}) {
+    if (!started) {
+        return;
+    }
     return {
         layoutMetrics: await client.Page.getLayoutMetrics(),
         heapSize: await client.Runtime.getHeapUsage(),

@@ -1,12 +1,17 @@
 const {enrichURLDetails} = require('../utils');
 const {getResources} = require('./resources.js');
+let started = false;
 
 async function start(context) {
+    started = true;
     await context.client.Page.enable();
     registerFrameEvents(context.client, context.data.frames);
 }
 
 async function stop(context) {
+    if (!started){
+        return;
+    }
     const frames = Object.keys(context.data.frames).map(id => context.data.frames[id]);
     const resourcesTree = await getResources(context) || {};
 

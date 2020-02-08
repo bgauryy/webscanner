@@ -1,11 +1,16 @@
 const {isRangeContains} = require('../utils');
 const {getAllDOMEvents} = require('./dom');
+let started = false;
 
 async function start({client, data}) {
+    started = true;
     registerScriptExecution(client, data.scripts);
 }
 
 async function stop(context) {
+    if (!started) {
+        return;
+    }
     const domEvents = await getAllDOMEvents(context.client);
     return await processScripts(context, domEvents);
 }
