@@ -1,8 +1,25 @@
 const {enrichURLDetails} = require('../utils');
+const {getResources} = require('./resources.js');
 
 async function start(context) {
     await context.client.Page.enable();
     registerFrameEvents(context.client, context.data.frames);
+}
+
+async function stop(context) {
+    const frames = Object.keys(context.data.frames).map(id => context.data.frames[id]);
+    const resourcesTree = await getResources(context) || {};
+
+    for (let i = 0; i < frames.length; i++) {
+        const frame = frames[i];
+        frame.url = frame.url || 'about:blank';
+        const resourcesObj = resourcesTree[frame.frameId];
+        if (resourcesObj) {
+            frame.resources = resourcesObj.resources;
+            frame.contentSize = resourcesObj.contentSize;
+        }
+    }
+    return frames;
 }
 
 function registerFrameEvents(client, frames) {
@@ -51,22 +68,6 @@ function handleIframeEvent(frameObj, state, frames) {
         frames[id] = {...frameObj, ...frame};
         frames[id].states.push(state);
     }
-}
-
-function stop(context, resourcesTree) {
-    const frames = Object.keys(context.data.frames).map(id => context.data.frames[id]);
-
-    resourcesTree = resourcesTree || {};
-    for (let i = 0; i < frames.length; i++) {
-        const frame = frames[i];
-        frame.url = frame.url || 'about:blank';
-        const resourcesObj = resourcesTree[frame.frameId];
-        if (resourcesObj) {
-            frame.resources = resourcesObj.resources;
-            frame.contentSize = resourcesObj.contentSize;
-        }
-    }
-    return frames;
 }
 
 module.exports = {

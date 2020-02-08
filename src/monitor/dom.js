@@ -1,7 +1,8 @@
-async function start() {
-    //await client.DOM.enable();
-}
-
+/**
+ * @expirimental
+ * @param client
+ * @return {Promise<[]>}
+ */
 async function getAllDOMEvents(client) {
     const DOMEvents = [];
 

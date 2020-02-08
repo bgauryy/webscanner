@@ -11,18 +11,24 @@ async function start(context) {
     await registerServiceWorkerEvents(client, serviceWorker);
 }
 
-function stop(context) {
+async function stop(context) {
     const serviceWorker = context.data.serviceWorker;
     const webSockets = context.data.webSockets;
     //TODO: add indication to redirected request
     const requests = context.data.requests;
     const responses = context.data.responses;
+    const cookies = await getCookies(context);
     return {
         requests,
         responses,
         serviceWorker,
-        webSockets
+        webSockets,
+        cookies
     };
+}
+
+async function getCookies({client}) {
+    return await client.Page.getCookies();
 }
 
 function handleRequests(client, rules, collect, requests) {

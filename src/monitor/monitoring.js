@@ -1,5 +1,21 @@
-async function registerLogs(client, logs, threshold) {
-    await client.Log.enable();
+async function start(context) {
+    await context.client.Log.enable();
+    //TODO:handle threshold
+    await registerLogs(context.client, context.data.monitoring, 100);
+    await registerErrors(context.client, context.data.monitoring);
+    await registerConsole(context.client, context.data.monitoring);
+}
+
+async function stop(context) {
+    return {
+        logs: context.data.monitoring.logs,
+        errors: context.data.monitoring.errors,
+        console: context.data.monitoring.console,
+    };
+}
+
+async function registerLogs(client, monitoring, threshold) {
+    monitoring.logs = {};
     await client.Log.startViolationsReport({
         config: [
             {name: 'longTask', threshold},
@@ -11,17 +27,29 @@ async function registerLogs(client, logs, threshold) {
             {name: 'recurringHandler', threshold},
         ]
     });
-
     client.Log.entryAdded(({entry: {source, level, text, timestamp, url}}) => {
-        logs[level] = logs[level] || [];
-        logs[level].push({text, source, timestamp, url});
+        monitoring.logs[level] = monitoring.logs[level] || [];
+        monitoring.logs[level].push({text, source, timestamp, url});
     });
 }
 
-async function registerConsole(client, console) {
+async function registerErrors(client, monitoring) {
+    monitoring.errors = [];
+
+    client.Runtime.exceptionThrown((errorObj) => {
+        errorObj = {...errorObj, ...errorObj.exceptionDetails};
+        delete errorObj.exceptionDetails;
+        delete errorObj.exception.preview;
+        monitoring.errors.push(errorObj);
+    });
+}
+
+async function registerConsole(client, monitoring) {
+    monitoring.console = {};
+
     client.Runtime.consoleAPICalled(({type, executionContextId, timestamp, stackTrace, args}) => {
-        console[type] = console[type] || [];
-        console[type].push({
+        monitoring.console[type] = monitoring.console[type] || [];
+        monitoring.console[type].push({
             value: args[0].value,
             executionContextId,
             timestamp,
@@ -30,17 +58,7 @@ async function registerConsole(client, console) {
     });
 }
 
-async function registerErrors(client, errors) {
-    client.Runtime.exceptionThrown((errorObj) => {
-        errorObj = {...errorObj, ...errorObj.exceptionDetails};
-        delete errorObj.exceptionDetails;
-        delete errorObj.exception.preview;
-        errors.push(errorObj);
-    });
-}
-
 module.exports = {
-    registerLogs,
-    registerConsole,
-    registerErrors
+    start,
+    stop
 };

@@ -1,5 +1,14 @@
+async function start(context) {
+    await context.client.DOMStorage.enable();
+    await registerStorage(context.client, context.data.storage);
+    //TODO:add indexedDB
+}
+
+function stop(context) {
+    return context.data.storage;
+}
+
 async function registerStorage(client, storage) {
-    await client.DOMStorage.enable();
     client.DOMStorage.domStorageItemAdded(({key, newValue: value, storageId: {securityOrigin, isLocalStorage}}) => {
         const storageType = isLocalStorage ? 'localStorage' : 'sessionStorage';
         storage[securityOrigin] = storage[securityOrigin] || {};
@@ -8,11 +17,7 @@ async function registerStorage(client, storage) {
     });
 }
 
-async function getCookies({client}) {
-    return await client.Page.getCookies();
-}
-
 module.exports = {
-    registerStorage,
-    getCookies
+    start,
+    stop
 };

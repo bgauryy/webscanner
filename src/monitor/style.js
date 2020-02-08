@@ -1,4 +1,5 @@
 const {enrichURLDetails} = require('../utils');
+const LOG = require('../logger');
 
 async function start(context) {
     const client = context.client;
@@ -29,8 +30,12 @@ function registerStyleEvents(client, styles) {
             //TODO: get content from inline scripts/nodes
             //const {node} = await client.DOM.describeNode({backendNodeId: styleObj.ownerNode});
         }
-        const {scriptSource} = await client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
-        styleObj.source = scriptSource;
+        try {
+            const {scriptSource} = await client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
+            styleObj.source = scriptSource;
+        } catch (e) {
+            LOG.error(e);
+        }
         styles[styleObj.styleSheetId] = styleObj;
     });
 }

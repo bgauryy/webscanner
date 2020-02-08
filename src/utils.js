@@ -91,13 +91,17 @@ function isDataURI(url) {
     return dataURIRegex.test(url);
 }
 
-function isEmptyObject(obj) {
-    if (!obj) {
+function isEmptyValue(value) {
+    if (typeof value === 'boolean') {
+        return false;
+    } else if (value === null || value === undefined) {
         return true;
-    } else if (Array.isArray(obj)) {
-        return obj.length === 0;
-    } else if (typeof obj === 'object') {
-        return Object.keys(obj).length === 0;
+    } else if (typeof value === 'string' && !value) {
+        return true;
+    } else if (typeof value === 'number' && !Number.isFinite(value)) {
+        return true;
+    } else if (typeof value === 'object') {
+        return Object.keys(value).length === 0;
     }
 }
 
@@ -117,15 +121,33 @@ function getRandomString() {
     return rand;
 }
 
+function cleanObject(data, depth) {
+    if (typeof depth !== 'number') {
+        depth = 0;
+    }
+    if (depth < 0) {
+        return;
+    }
+    depth--;
+    for (const prop in data) {
+        if (isEmptyValue(data[prop])) {
+            delete data[prop];
+        } else if (data[prop] && typeof data[prop] === 'object') {
+            cleanObject(data[prop], depth);
+        }
+    }
+}
+
 module.exports = {
     getInitiator,
     enrichURLDetails,
     enrichIPDetails,
     isDataURI,
-    isEmptyObject,
+    isEmptyObject: isEmptyValue,
     reduceDeepObject,
     isRangeContains,
-    getRandomString
+    getRandomString,
+    cleanObject
 };
 
 

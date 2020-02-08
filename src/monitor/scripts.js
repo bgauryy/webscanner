@@ -1,6 +1,16 @@
 const {isRangeContains} = require('../utils');
+const {getAllDOMEvents} = require('./dom');
 
-function registerScriptExecution(client, getScriptSource, scripts) {
+async function start({client, data}) {
+    registerScriptExecution(client, data.scripts);
+}
+
+async function stop(context) {
+    const domEvents = await getAllDOMEvents(context.client);
+    return await processScripts(context, domEvents);
+}
+
+function registerScriptExecution(client, scripts) {
     client.Debugger.scriptParsed(async function (scriptObj) {
         if (scriptObj.url === '__puppeteer_evaluation_script__' || scriptObj.url === '') {
             return;
@@ -13,46 +23,40 @@ function registerScriptExecution(client, getScriptSource, scripts) {
     });
 }
 
+
 async function getScriptCoverage({client}) {
     const {result} = await client.Profiler.getBestEffortCoverage();
     return result;
 }
 
-function processScripts({data}) {
-    const {scripts, domEvents, scriptCoverage, frames} = data;
+async function processScripts(context, domEvents) {
+    const {scripts, frames} = context.data;
+    const coverage = await getScriptCoverage(context);
 
-    if (scriptCoverage) {
-        processScriptCoverage(scripts, scriptCoverage);
+    if (coverage) {
+        processScriptCoverage(scripts, coverage);
     }
-
     if (domEvents) {
         for (let i = 0; i < domEvents.length; i++) {
             const eventObj = domEvents[i];
-            const script = scripts[eventObj.scriptId];
-
+            const script = scripts.filter(s => s.scriptId === eventObj.scriptId)[0];
             if (script) {
-                delete eventObj.scriptId;
-                script.events = script.events || [];
-                script.events.push(eventObj);
+                script.DOMEvents = script.DOMEvents || [];
+                script.DOMEvents.push(eventObj);
             }
         }
     }
+    for (let i = 0; i < scripts.length; i++) {
+        const script = scripts[i];
+        const frame = frames[script.frameId] || {};
 
-    //eslint-disable-next-line
-    for (const scriptId in scripts) {
-        const script = scripts[scriptId];
-
-        if (script) {
-            const frame = frames[script.frameId] || {};
-
-            script.frameURL = frame.url;
-            if (script.frameURL === script.url) {
-                script.url = 'inline';
-            }
-            //TODO - extract from function
-            if (script.stackTrace) {
-                script.parentScript = script.stackTrace.callFrames && script.stackTrace.callFrames[0];
-            }
+        script.frameURL = frame.url;
+        if (script.frameURL === script.url) {
+            script.url = 'inline';
+        }
+        //TODO - implement get script from stackTrace util function
+        if (script.stackTrace) {
+            script.parentScript = script.stackTrace.callFrames && script.stackTrace.callFrames[0];
         }
     }
     return scripts;
@@ -124,6 +128,6 @@ function processScriptCoverage(scripts, scriptCoverage) {
 }
 
 module.exports = {
-    registerScriptExecution,
-    getScriptCoverage
+    start,
+    stop
 };

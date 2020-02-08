@@ -1,61 +1,45 @@
-async function getMetadata(client) {
-    const data = {};
-
-    data.layoutMetrics = await client.Page.getLayoutMetrics();
-    data.heapSize = await client.Runtime.getHeapUsage();
-    data.metrics = await _getMetrics(client);
-    data.manifest = await _getManifest(client);
-    data.systemInfo = await _getSystemInfo(client);
-
-    return data;
+async function start({client}) {
+    await client.Performance.enable();
 }
 
-async function _getMetrics({client}) {
+async function stop({client}) {
+    return {
+        layoutMetrics: await client.Page.getLayoutMetrics(),
+        heapSize: await client.Runtime.getHeapUsage(),
+        metrics: await getMetrics(client),
+        manifest: await getManifest(client),
+    };
+}
+
+async function getMetrics(client) {
     try {
-        await client.Performance.enable();
-        const metricsObj = await client.Performance.getMetrics();
-        return metricsObj && metricsObj.metrics;
-    } catch (e) {
-        //ignore
-    }
-}
+        const {metrics} = await client.Performance.getMetrics();
+        const res = {};
 
-async function _getManifest(client) {
-    const manifest = await client.Page.getAppManifest();
-    if (manifest && manifest.url) {
-        return manifest;
-    }
-}
-
-async function _getSystemInfo(client) {
-    try {
-        const info = await client.SystemInfo.getInfo();
-        const process = await client.SystemInfo.getProcessInfo();
-        return {
-            info,
-            process
-        };
-    } catch (e) {
-        //ignore
-    }
-}
-
-function processMetadata(metadata) {
-    metadata = metadata || {};
-
-    if (metadata.metrics) {
-        const metrics = metadata.metrics;
-        delete metadata.metrics;
-        metadata.metrics = {};
-
-        for (let i = 0; i < metrics.length; i++) {
-            const metric = metrics[i];
-            metadata.metrics[metric.name] = metric.value;
+        if (metrics) {
+            for (let i = 0; i < metrics.length; i++) {
+                const metric = metrics[i];
+                res[metric.name] = metric.value;
+            }
         }
+        return res;
+    } catch (e) {
+        //ignore
     }
-    return metadata;
+}
+
+async function getManifest(client) {
+    try {
+        const manifest = await client.Page.getAppManifest();
+        if (manifest && manifest.url) {
+            return manifest;
+        }
+    } catch (e) {
+        //ignore
+    }
 }
 
 module.exports = {
-    getMetadata,
+    start,
+    stop
 };

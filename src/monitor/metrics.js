@@ -1,14 +1,11 @@
-//////////
-if (collect.JSMetrics || collect.scriptCoverage) {
-    await Profiler.enable();
-    await Profiler.setSamplingInterval({interval: 1000});
-    await Profiler.start();
+async function start(context) {
+    await context.client.Profiler.enable();
+    await context.client.Profiler.setSamplingInterval({interval: 1000});
+    await context.client.Profiler.start();
 }
 
-
-
-async function getExecutionMetrics(client, context) {
-    const {profile} = await client.Profiler.stop();
+async function stop(context) {
+    const {profile} = await context.client.Profiler.stop();
     profile.ignoredScripts = context.ignoredScripts;
     return processJSMetrics(profile);
 }
@@ -110,7 +107,6 @@ function processJSMetrics(profile) {
         functions.push(functionExecution[fId]);
     }
     functions = functions.sort((a, b) => a.executionTime > b.executionTime ? -1 : 1);
-
     //TODO: get stackTime from nodeTree
     return {
         scriptsExecution,
@@ -121,6 +117,6 @@ function processJSMetrics(profile) {
 }
 
 module.exports = {
-    getExecutionMetrics,
-    processJSMetrics
+    start,
+    stop
 };

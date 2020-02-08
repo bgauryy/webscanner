@@ -2,22 +2,21 @@ const fs = require('fs');
 const path = require('path');
 const LOG = require('./logger.js');
 const {getChromeClient} = require('./bridge');
-const {isEmptyObject, getRandomString} = require('./utils');
+const {cleanObject, getRandomString} = require('./utils');
 const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
 const frame = require('./monitor/iframe.js');
-const {getResources} = require('./monitor/resources.js');
 const network = require('./monitor/network.js');
 const style = require('./monitor/style.js');
-//////////////////////////////
-const {registerScriptExecution, getScriptCoverage} = require('./monitor/scripts.js');
-const {registerStorage, getCookies} = require('./monitor/storage.js');
-const {registerLogs, registerConsole, registerErrors} = require('./monitor/monitoring.js');
-const {getMetadata} = require('./monitor/metadata.js');
+const scripts = require('./monitor/scripts.js');
+const metadata = require('./monitor/metadata.js');
+const storage = require('./monitor/storage.js');
+const monitoring = require('./monitor/monitoring.js');
+const metrics = require('./monitor/metrics.js');
 
 async function getSession(context) {
     context.client = await getChromeClient(context.page);
     context.data = getDataObject();
-    await init(context);
+    await start(context);
     return new Proxy(context.page, {
         get: function (page, prop) {
             if (prop === 'getSessionData') {
@@ -31,23 +30,22 @@ async function getSession(context) {
     });
 }
 
-async function init(context) {
-    //Scripts Id's to ignore
+async function start(context) {
     context.ignoredScripts = {};
 
-    await initClient(context);
+    await initSession(context);
     await frame.start(context);
     await network.start(context);
     await style.start(context);
-    /*
-        await registerScriptExecution(context.client, context.data.scripts);
-        await registerStorage(context.client, context.data.webSockets);
-        await registerLogs(context.client, context.data.logs);
-        await registerConsole(context.client, context.data.console);
-        await registerErrors(context.client, context.data.errors);*/
+    await scripts.start(context);
+    await metadata.start(context);
+    await metadata.start(context);
+    await storage.start(context);
+    await monitoring.start(context);
+    await metrics.start(context);
 }
 
-async function initClient(context) {
+async function initSession(context) {
     const {client, rules} = context;
     const {Debugger, Network, Page, Runtime, Emulation} = client;
 
@@ -103,27 +101,17 @@ async function getData(context) {
     LOG.debug('Preparing data...');
     const data = {};
 
-    const resources = await getResources(context);
-    data.iframes = await frame.stop(context, resources);
+    data.iframes = await frame.stop(context);
     data.network = await network.stop(context);
     data.styles = await style.stop(context);
-
+    data.scripts = await scripts.stop(context);
+    data.metadata = await metadata.stop(context);
+    data.storage = await storage.stop(context);
+    data.monitoring = await monitoring.stop(context);
+    data.metrics = await metrics.stop(context);
     context.data = getDataObject();
-    /*
-        context.data.cookies = await getCookies(context);
-        context.data.scriptCoverage = await getScriptCoverage(context);
-        context.data.styleCoverage = await getStyleCoverage(context);
-        context.data.metadata = await getMetadata(context);
-        /////////////////////////////////////////////////////////////////
-        context.data.domEvents = await chromeClient.getAllDOMEvents(context.client);
-        context.data.JSMetrics = await chromeClient.getExecutionMetrics(context.client);
-        */
 
-    for (const prop in data) {
-        if (isEmptyObject(data[prop])) {
-            delete data[prop];
-        }
-    }
+    cleanObject(data, 1);
     return JSON.parse(JSON.stringify(data));
 }
 
@@ -145,17 +133,10 @@ function getDataObject() {
         frames: {},
         serviceWorker: {},
         webSockets: {},
+        monitoring: {},
         storage: {},
         styles: {},
-        logs: {},
-        console: {},
-        errors: [],
-        ///////////////////////////////
-        events: [],
-        research: {},
         metrics: null,
-        coverage: null,
-        contexts: {},
     };
 }
 
