@@ -1,197 +1,166 @@
-const url = require('url');
-const CRI = require('chrome-remote-interface');
-const LOG = require('./utils/logger.js');
-const {processData} = require('./dataProcessor.js');
-const chromeClient = require('./client.js');
+const fs = require('fs');
+const path = require('path');
+const LOG = require('./logger.js');
+const {getChromeClient} = require('./bridge');
+const {cleanObject, getRandomString} = require('./utils');
+const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
+const frames = require('./monitor/iframe.js');
+const network = require('./monitor/network.js');
+const style = require('./monitor/style.js');
+const scripts = require('./monitor/scripts.js');
+const metadata = require('./monitor/metadata.js');
+const storage = require('./monitor/storage.js');
+const monitoring = require('./monitor/monitoring.js');
+const performance = require('./monitor/performance.js');
 
-async function getPuppeteerSession(context) {
-    const scanner = new Scanner(context);
-    await scanner.init();
-    return new Proxy(context.page, {
+async function getSession(configuration) {
+    const context = {configuration};
+    context.client = await getChromeClient(configuration.page);
+    context.data = getDataObject();
+    context.ignoredScripts = {};
+
+    await start(context);
+
+    return new Proxy(context.configuration.page, {
         get: function (page, prop) {
-            switch (prop) {
-                case 'getData':
-                    return async function () {
-                        return await scanner.getData();
-                    };
-                case 'close':
-                    return async function () {
-                        return await scanner.close();
-                    };
-                default:
-                    return page[prop];
+            if (prop === 'getSessionData' || prop === 'getData') {
+                return getData.bind(this, context);
+            } else if (prop === 'stop') {
+                return stop.bind(this, context);
+            } else {
+                return page[prop];
             }
         }
     });
 }
 
-class Scanner {
-    constructor(context) {
-        this.client = null;
-        this.context = context;
-        this.data = getCleanDataObject();
+async function start(context) {
+    const configuration = context.configuration;
+    LOG.debug('start monitoring', configuration);
+
+    await initSession(context);
+
+    if (configuration.frames) {
+        await frames.start(context);
+    }
+    if (configuration.network) {
+        await network.start(context);
+    }
+    if (configuration.style) {
+        await style.start(context);
+    }
+    if (configuration.scripts) {
+        await scripts.start(context);
+    }
+    if (configuration.metadata) {
+        await metadata.start(context);
+    }
+    if (configuration.storage) {
+        await storage.start(context);
+    }
+    if (configuration.monitoring) {
+        await monitoring.start(context);
+    }
+    if (configuration.performance) {
+        await performance.start(context);
     }
 }
 
-Scanner.prototype.init = init;
-Scanner.prototype.close = close;
-Scanner.prototype.getData = getData;
-
-function getCleanDataObject() {
-    return {
-        scripts: {},
-        serviceWorker: {},
-        requests: {},
-        websockets: {},
-        dataURI: {},
-        events: [],
-        frames: {},
-        styles: {},
-        research: {},
-        metrics: null,
-        coverage: null,
-        logs: {},
-        console: {},
-        errors: [],
-        contexts: {},
-        storage: {}
-    };
-}
-
-async function init() {
-    LOG.debug('Initiating Scanner');
-    const collect = this.context.collect;
-    this.client = await getChromeClient(this.context.page);
-
-    if (!this.client) {
-        LOG.error('Client is missing');
-    }
-
-    await chromeClient.initScan(this.client, this.context.collect, this.context.rules);
-
-    chromeClient.registerScriptExecution(this.client, collect.scriptSource, this.data.scripts);
-    chromeClient.registerFrameEvents(this.client, this.data.frames);
-    chromeClient.setContext(this.client, this.data.contexts);
-    chromeClient.registerNetworkEvents(this.client, this.context.rules, this.context.collect, this.data.requests, this.data.scripts, this.data.dataURI);
-
-    if (collect.websocket) {
-        await chromeClient.registerWebsocket(this.client, this.data.websockets);
-    }
-    if (collect.styles) {
-        chromeClient.registerStyleEvents(this.client, collect.content, this.data.styles);
-    }
-    if (collect.serviceWorker) {
-        await setSWListener(this.client, collect.content, this.data.serviceWorker);
-    }
-    if (collect.logs) {
-        await chromeClient.setLogs(this.client, this.data.logs, this.context.rules.logsThreshold);
-    }
-    if (collect.console) {
-        await chromeClient.setConsole(this.client, this.data.console);
-    }
-    if (collect.errors) {
-        await chromeClient.setErrors(this.client, this.data.errors);
-    }
-    if (collect.storage) {
-        await chromeClient.setStorage(this.client, this.data.storage);
-    }
-}
-
-async function close() {
-    LOG.debug('Closing Scanner');
-
-    try {
-        await this.client.close();
-    } catch (e) {
-        LOG.error(e);
-    }
-}
-
-async function getChromeClient(page) {
-    const connection = page._client._connection._url;
-    const {hostname, port} = url.parse(connection, true);
-    return await CRI({host: hostname, port});
-}
-
-//TODO - move to client.js
-async function setSWListener(client, content, serviceWorkers) {
-    await chromeClient.registerServiceWorkerEvents(client, content,
-        ({registrationId, scopeURL}) => {
-            serviceWorkers[registrationId] = {
-                scopeURL
-            };
-        },
-        (_sw) => {
-            const sw = serviceWorkers[_sw.registrationId];
-            sw.version = sw.version || [];
-            sw.runningStatus = sw.runningStatus || [];
-            sw.status = sw.status || [];
-            sw.clients = sw.clients || [];
-
-            if (_sw.version) {
-                sw.version.push(_sw.version);
-            }
-            if (_sw.runningStatus) {
-                sw.runningStatus.push(_sw.runningStatus);
-            }
-            if (_sw.status) {
-                sw.status.push(_sw.status);
-            }
-            if (_sw.controlledClients && _sw.controlledClients.length) {
-                sw.clients.push(_sw.controlledClients);
-            }
-
-            sw.scriptResponseTime = sw.scriptResponseTime || _sw.scriptResponseTime;
-            sw.scriptLastModified = sw.scriptLastModified || _sw.scriptLastModified;
-            sw.url = sw.url || _sw.scriptURL;
-            sw.targetId = sw.targetId || _sw.targetId;
-        },
-        ({registrationId, errorMessage, versionId, lineNumber, columnNumber}) => {
-            const sw = serviceWorkers[registrationId];
-            if (sw) {
-                sw.errors = sw.errors || [];
-                sw.errors.push({
-                    errorMessage,
-                    lineNumber,
-                    columnNumber,
-                    versionId
-                });
-            }
-        });
-}
-
-async function getData() {
+async function getData(context) {
     LOG.debug('Preparing data...');
-    const collect = this.context.collect;
+    const data = {};
 
-    if (collect.scriptDOMEvents) {
-        this.data.domEvents = await chromeClient.getAllDOMEvents(this.client);
-    }
-    if (collect.cookies) {
-        this.data.cookies = await chromeClient.getCookies(this.client);
-    }
-    if (collect.resources) {
-        this.data.resources = await chromeClient.getResources(this.client);
-    }
-    if (collect.styleCoverage) {
-        this.data.styleCoverage = await chromeClient.getStyleCoverage(this.client);
-    }
-    if (collect.scriptCoverage) {
-        this.data.scriptCoverage = await chromeClient.getScriptCoverage(this.client);
-    }
-    if (collect.metadata) {
-        this.data.metadata = await chromeClient.getMetadata(this.client);
-    }
-    if (collect.JSMetrics) {
-        this.data.JSMetrics = await chromeClient.getExecutionMetrics(this.client);
-    }
+    data.frames = await frames.stop(context);
+    data.network = await network.stop(context);
+    data.style = await style.stop(context);
+    data.scripts = await scripts.stop(context);
+    data.metadata = await metadata.stop(context);
+    data.storage = await storage.stop(context);
+    data.monitoring = await monitoring.stop(context);
+    data.performance = await performance.stop(context);
+    context.data = getDataObject();
 
-    const data = await processData(this.data, this.context);
+    cleanObject(data, 1);
+    return JSON.parse(JSON.stringify(data));
+}
 
-    this.data = getCleanDataObject();
+async function initSession(context) {
+    const {client, configuration} = context;
+    const {Debugger, Network, Page, Runtime, Emulation} = client;
+
+    await Network.enable();
+    await Debugger.enable();
+    await Runtime.enable();
+    await Page.enable();
+
+    await Network.clearBrowserCache();
+    await Network.clearBrowserCookies();
+    await Debugger.setAsyncCallStackDepth({maxDepth: 1000});
+    await Runtime.setMaxCallStackSizeToCapture({size: 1000});
+    await Page.setDownloadBehavior({behavior: 'deny'});
+    await Page.setAdBlockingEnabled({enabled: Boolean(configuration.adBlocking)});
+    await Page.setBypassCSP({enabled: Boolean(configuration.disableCSP)});
+
+    if (configuration.userAgent) {
+        await Emulation.setUserAgentOverride({userAgent: configuration.userAgent});
+    }
+    let blockedUrls = configuration.blockedUrls || [];
+    if (configuration.disableServices) {
+        const services = getBlockedDomains().map(domain => `*${domain}*`);
+        blockedUrls = configuration.blockedUrls.concat(services);
+    }
+    if (blockedUrls.length) {
+        await Network.setBlockedURLs({urls: blockedUrls});
+    }
+    if (configuration.stealth) {
+        try {
+            const stealthUA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36';
+            const {identifier} = await client.Page.addScriptToEvaluateOnNewDocument({source: fs.readFileSync(path.resolve(__dirname, 'plugins', 'stealth.js'), {encoding: 'UTF-8'})});
+            context.ignoredScripts[identifier] = 1;
+            if (!configuration.userAgent) {
+                await client.Emulation.setUserAgentOverride({userAgent: stealthUA});
+            }
+            const randomHeader = getRandomString();
+            const addedHeaders = {
+                'Accept-Encoding': 'gzip, deflate',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'User-Agent': configuration.userAgent ? configuration.userAgent : stealthUA,
+            };
+            addedHeaders[randomHeader] = getRandomString();
+            await client.Network.setExtraHTTPHeaders({headers: addedHeaders});
+        } catch (e) {
+            LOG.error(e);
+        }
+    }
+}
+
+async function stop(context) {
+    const data = await getData(context);
+    //eslint-disable-next-line
+    for (const prop in context) {
+        //Avoid memory leaks
+        context[prop] = null;
+    }
     return data;
 }
 
+function getDataObject() {
+    return {
+        scripts: [],
+        requests: [],
+        responses: [],
+        frames: {},
+        serviceWorker: {},
+        webSockets: {},
+        monitoring: {},
+        storage: {},
+        styles: {},
+        metrics: null,
+    };
+}
+
 module.exports = {
-    getPuppeteerSession
+    getSession
 };

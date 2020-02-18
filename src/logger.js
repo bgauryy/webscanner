@@ -13,7 +13,7 @@ function warn() {
 }
 
 function error() {
-    log('error', [...arguments]);
+    log('error', [...arguments], );
 }
 
 function log(api, args) {

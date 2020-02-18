@@ -1,8 +1,6 @@
 const geoip = require('geoip-lite');
-const crypto = require('crypto');
 const LOG = require('./logger');
 
-const FILTERED_REQUESTS_HEADERS = ['Upgrade-Insecure-Requests', 'User-Agent', 'Sec-Fetch-Mode', 'Sec-Fetch-User', 'Accept-Encoding', 'Accept-Language', 'Cache-Control', 'Connection', 'Referer', 'Origin'];
 const dataURIRegex = /^data:/;
 
 function getInitiator(initiator) {
@@ -57,6 +55,18 @@ function enrichURLDetails(obj, urlProp) {
     }
 }
 
+function reduceDeepObject(obj, headersProp, prefix) {
+    const headers = obj && obj[headersProp];
+    if (!headers) {
+        return;
+    }
+    //eslint-disable-next-line
+    for (const prop in headers) {
+        obj[`${prefix}_${prop}`] = headers[prop];
+    }
+    delete obj[headersProp];
+}
+
 function enrichIPDetails(obj, IPProp) {
     if (!obj || !obj[IPProp]) {
         return;
@@ -81,61 +91,51 @@ function isDataURI(url) {
     return dataURIRegex.test(url);
 }
 
-function getHash(str) {
-    return crypto.createHash('md5').update(str).digest('hex');
-}
-
-function getHeaders(headers) {
-    let res;
-
-    for (const header in headers) {
-        if (!FILTERED_REQUESTS_HEADERS.includes(header)) {
-            res = res || {};
-            res[header] = headers[header];
-        }
-    }
-    return res;
-}
-
-function getResourcesFromFrameTree(frameTree) {
-    const resources = {};
-
-    _getResources(frameTree);
-    return resources;
-
-    function _getResources(frameTree) {
-        const frame = frameTree.frame;
-        const frameObj = resources[frame.id] = {};
-
-        frameObj.url = frame.url;
-        frameObj.name = frame.name;
-        frameObj.resources = frameTree.resources;
-        frameObj.contentSize = {};
-
-        if (frameObj.resources) {
-            for (let i = 0; i < frameObj.resources.length; i++) {
-                const resource = frameObj.resources[i];
-                frameObj.contentSize[resource.type] = frameObj.contentSize[resource.type] || 0;
-                frameObj.contentSize[resource.type] += resource.contentSize;
-            }
-        }
-
-        if (frameTree.childFrames) {
-            for (let i = 0; i < frameTree.childFrames.length; i++) {
-                frameObj.children = frameObj.children || [];
-                const childFrame = frameTree.childFrames[i];
-                frameObj.children.push(childFrame.frame.id);
-                _getResources(childFrame);
-            }
-        }
+function isEmptyValue(value) {
+    if (typeof value === 'boolean') {
+        return false;
+    } else if (value === null || value === undefined) {
+        return true;
+    } else if (typeof value === 'string' && !value) {
+        return true;
+    } else if (typeof value === 'number' && !Number.isFinite(value)) {
+        return true;
+    } else if (typeof value === 'object') {
+        return Object.keys(value).length === 0;
     }
 }
 
-function isEmptyObject(obj) {
-    if (Array.isArray(obj)) {
-        return obj.length === 0;
+function isRangeContains(p1, p2) {
+    const isStartUnion = p1.startOffset <= p2.startOffset && p1.endOffset <= p2.endOffset && p1.endOffset >= p2.startOffset;
+    const isEndUnion = p1.endOffset >= p2.endOffset && p1.startOffset >= p2.startOffset && p1.startOffset <= p2.endOffset;
+    const isUnion = (p1.startOffset > p2.startOffset && p1.endOffset < p2.endOffset) || (p1.startOffset < p2.startOffset && p1.endOffset > p2.endOffset);
+    return isStartUnion || isEndUnion || isUnion;
+}
+
+function getRandomString() {
+    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let rand = '';
+    for (let i = 0; i < 16; i++) {
+        rand += CHARS.charAt(Math.floor(Math.random() * CHARS.length));
     }
-    return !obj || Object.keys(obj).length === 0;
+    return rand;
+}
+
+function cleanObject(data, depth) {
+    if (typeof depth !== 'number') {
+        depth = 0;
+    }
+    if (depth < 0) {
+        return;
+    }
+    depth--;
+    for (const prop in data) {
+        if (isEmptyValue(data[prop])) {
+            delete data[prop];
+        } else if (data[prop] && typeof data[prop] === 'object') {
+            cleanObject(data[prop], depth);
+        }
+    }
 }
 
 module.exports = {
@@ -143,10 +143,11 @@ module.exports = {
     enrichURLDetails,
     enrichIPDetails,
     isDataURI,
-    getHash,
-    getHeaders,
-    getResourcesFromFrameTree,
-    isEmptyObject
+    isEmptyObject: isEmptyValue,
+    reduceDeepObject,
+    isRangeContains,
+    getRandomString,
+    cleanObject
 };
 
 

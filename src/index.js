@@ -1,6 +1,6 @@
-const scanner = require('./scanner.js');
-const LOG = require('./utils/logger.js');
-const {getContext} = require('./context.js');
+const Scanner = require('./scanner.js');
+const LOG = require('./logger.js');
+const {getConfiguration} = require('./configuration.js');
 
 /**
  *
@@ -9,9 +9,9 @@ const {getContext} = require('./context.js');
  * @return {Promise}
  */
 async function getSession(page, opts = {}) {
-    const context = getContext(page, opts);
-    LOG.setEnabled(context.log);
-    return await scanner.getPuppeteerSession(context);
+    const configuration = getConfiguration(page, opts);
+    LOG.setEnabled(configuration.log);
+    return await Scanner.getSession(configuration);
 }
 
 module.exports = {
