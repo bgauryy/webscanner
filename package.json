@@ -31,7 +31,7 @@
     "test": "yarn jest",
     "build": "rollup -c",
     "clean": "rimraf src/index.cjs.js src/index.esm.js",
-    "prepublishOnly": "yarn clean && yarn lint && yarn test && yarn build"
+    "prepublishOnly": "yarn clean && yarn lint && yarn build"
   },
   "husky": {
     "hooks": {
