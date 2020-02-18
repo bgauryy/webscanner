@@ -1,5 +1,5 @@
 const puppeteer = require('puppeteer');
-const Scanner = require('../src/index');
+const Scanner = require('webscanner');
 const URL = 'http://example.com';
 
 (async () => {

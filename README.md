@@ -28,80 +28,39 @@ Register a puppeteer page for a scan
 ## Example
 
  ````javascript
+const puppeteer = require('puppeteer');
+const Scanner = require('webscanner');
+const URL = 'http://example.com';
+
 (async () => {
     const browser = await puppeteer.launch({
-        args: ['--proxy-server="direct://"', '--proxy-bypass-list=*', '--enable-precise-memory-info']
+        args: ['--proxy-server="direct://"', '--proxy-bypass-list=*', '--disable-web-security']
     });
-    const page = await Scanner.getSession(await browser.newPage(), {
-        log: false,
-        rules: {
-            stealth: true,
-            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
-            disableCSP: false,
-            adBlocking: false,
-            disableServices: false,
-	    logsThreshold: 50,
-        },
-        collect: {
-            frames: true,
-            scripts: true,
-            scriptSource: true,
-            scriptDOMEvents: true,
-            scriptCoverage: true,
-            styles: true,
-            styleSource: true,
-            styleCoverage: true,
-            requests: true,
-            responses: true,
-            bodyResponse: [],
-            dataURI: true,
-            websocket: true,
-            serviceWorker: true,
-            logs: true,
-            console: true,
-            errors: true,
-            storage: true,
-            cookies: true,
-        }
+    let page = await browser.newPage();
+    //Page can be also an object with this structure {host: <string>, port: <string>}
+    //Use this flag to execute chromium with debugging port "--remote-debugging-port=<debuggingPort>"
+    page = await Scanner.getSession(page, {
+        stealth: true,
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
+        scripts: true,
+        content: true
     });
-    const url = 'https://example.com';
-    await page.goto(url, {waitUntil: ['domcontentloaded', 'load'], timeout: 0});
-    //<Your Automation Code>
-    const data = await page.getData();
+
+    await page.goto(URL, {waitUntil: 'load'});
+    await sleep(5);
+    //Get scanning data content 
+    const data = await page.getSessionData();
     await browser.close();
+    console.log('data', data);
+    async function sleep(seconds) {
+        return await new Promise(resolve => {
+            setTimeout(resolve, seconds * 1000);
+        });
+    }
 })();
 ````
-
-## Scanning Object  Structure (WIP)
-- **log** \<boolean> enable console logging 
-- **rules**\<object>
-  - **userAgent** \<string> automation user agent
-  - **disableCSP**  \<boolean> disable CSP restriction
-  - **adBlocking** \<boolean> enable ad blocking feature
-  - **disableServices** \<boolean> disable common third party services
-  - **logsThreshold** \<number> the threshold (in milliseconds) to trigger upon
-- **collect** <obj>
-	- **frames** \<boolean> Collect iframes
-	- **scripts** \<boolean> Collect scripts
-	- **scriptSource**\<boolean> Get scripts sources
-	- **scriptDOMEvents**\<boolean> DOM Events registration
-	- **scriptCoverage**\<boolean> Calculate scripts coverage
-	- **styles**\<boolean> Collect CSS 
-	- **styleSource**\<boolean>  Get CSS sources
-	- **styleCoverage**\<boolean>  Calculate CSS coverage
-	- **serviceWorker**\<boolean> Collect Service workers data
-	- **requests**\<boolean> Collect page requests data
-	- 	**dataURI**\<boolean>, //Collect data URI requests (returns url hash)
-	- **responses**\<boolean>  Collect responses 
-	- **bodyResponse**: [\<string>]  Collects response body (by *src/dest* regex array)
-	- **websocket**\<boolean> Collect websocket connections
-	- **cookies**\<boolean>  Returns all cookies from the page
-	- **storage**\<boolean> Collect localStorage and sessionStorage entities
-	- **logs**\<boolean> Collect browser logs 
-	- **console**\<boolean> Collect console API usage
-	- **errors**\<boolean> Collect unhandled page errors
-
-## Received Data Structure (WIP)
+## API Structure (WIP)
+## Data Structure (WIP)
 
 
 
