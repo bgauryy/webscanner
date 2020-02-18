@@ -1,7 +1,7 @@
 {
   "name": "webscanner",
-  "version": "1.0.31",
-  "description": "Network resources and web scanner",
+  "version": "2.0.0",
+  "description": "Automation scanner for web resources",
   "repository": "https://github.com/bgauryy/webscanner",
   "author": {
     "name": "Guy Bary",
