@@ -23,7 +23,7 @@ async function getSession(configuration) {
 
     return new Proxy(context.configuration.page, {
         get: function (page, prop) {
-            if (prop === 'getSessionData') {
+            if (prop === 'getSessionData' || prop === 'getData') {
                 return getData.bind(this, context);
             } else if (prop === 'stop') {
                 return stop.bind(this, context);
@@ -36,6 +36,7 @@ async function getSession(configuration) {
 
 async function start(context) {
     const configuration = context.configuration;
+    LOG.debug('start monitoring', configuration);
 
     await initSession(context);
 

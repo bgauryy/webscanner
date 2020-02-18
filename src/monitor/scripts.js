@@ -23,8 +23,13 @@ function registerScriptExecution(context) {
         delete scriptObj.executionContextAuxData;
 
         if (context.configuration.content) {
-            const {scriptSource} = await context.client.Debugger.getScriptSource({scriptId: scriptObj.scriptId});
-            scriptObj.source = scriptSource;
+            try {
+                const {scriptSource} = await context.client.Debugger.getScriptSource({scriptId: scriptObj.scriptId});
+                scriptObj.source = scriptSource;
+            } catch (e) {
+                //ignore
+            }
+
         }
         context.data.scripts.push(scriptObj);
     });

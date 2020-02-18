@@ -10,15 +10,15 @@ const defaultConfiguration = {
     //collect
     frames: true,
     network: true,
-    style: false,
-    scripts: false,
-    metadata: false,
-    storage: false,
-    monitoring: false,
+    style: true,
+    scripts: true,
+    metadata: true,
+    storage: true,
+    monitoring: true,
     performance: false, //experimental
     //metadata
     domEvents: false,
-    content: false,
+    content: true,
     coverage: false,
     networkContent: false,
     dataURI: false,
