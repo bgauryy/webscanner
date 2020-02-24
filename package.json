@@ -1,8 +1,6 @@
 {
   "name": "webscanner",
   "version": "2.0.2",
-  "description": "Automation scanner for web resources",
-  "repository": "https://github.com/bgauryy/webscanner",
   "author": {
     "name": "Guy Bary",
     "email": "bgauryy@gmail.com"
