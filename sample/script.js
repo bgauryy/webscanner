@@ -20,7 +20,7 @@ const URL = 'http://example.com';
     });
 
     await page.goto(URL, {waitUntil: 'load'});
-    await sleep(5);
+    await sleep(1);
     const data = await page.getSessionData();
     await browser.close();
     console.log('data', data);

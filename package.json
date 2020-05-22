@@ -3,7 +3,6 @@
   "version": "2.0.3",
   "type": "module",
   "main": "src/index.js",
-  "module": "src/index.esm.js",
   "description": "Automation scanner for web resources",
   "repository": "https://github.com/bgauryy/webscanner",
   "author": {
