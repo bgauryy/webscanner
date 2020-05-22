@@ -19,6 +19,7 @@ function getFrameResources(frameTree, resources) {
     if (frameObj.resources) {
         for (let i = 0; i < frameObj.resources.length; i++) {
             const resource = frameObj.resources[i];
+
             frameObj.contentSize[resource.type] = frameObj.contentSize[resource.type] || 0;
             frameObj.contentSize[resource.type] += resource.contentSize;
         }
@@ -28,6 +29,7 @@ function getFrameResources(frameTree, resources) {
         for (let i = 0; i < frameTree.childFrames.length; i++) {
             frameObj.children = frameObj.children || [];
             const childFrame = frameTree.childFrames[i];
+
             frameObj.children.push(childFrame.frame.id);
             getFrameResources(childFrame, resources);
         }

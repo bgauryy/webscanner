@@ -10,7 +10,8 @@
   },
   "extends": "eslint:recommended",
   "rules": {
-    "import/no-cycle": 1,
+    "newline-after-var": 2,
+    "import/no-cycle": 2,
     "complexity": 2,
     "no-console": 2,
     "import/export": 2,

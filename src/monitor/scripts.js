@@ -25,6 +25,7 @@ function registerScriptExecution(context) {
         if (context.configuration.content) {
             try {
                 const {scriptSource} = await context.client.Debugger.getScriptSource({scriptId: scriptObj.scriptId});
+
                 scriptObj.source = scriptSource;
             } catch (e) {
                 //ignore
@@ -37,6 +38,7 @@ function registerScriptExecution(context) {
 
 async function getScriptCoverage({client}) {
     const {result} = await client.Profiler.getBestEffortCoverage();
+
     return result;
 }
 
@@ -45,10 +47,12 @@ async function processScripts(context) {
 
     if (context.configuration.coverage) {
         const coverage = await getScriptCoverage(context);
+
         processScriptCoverage(scripts, coverage);
     }
     if (context.configuration.domEvents) {
         const domEvents = await getAllDOMEvents(context.client);
+
         processScriptEvents(scripts, domEvents);
     }
     for (let i = 0; i < scripts.length; i++) {
@@ -74,10 +78,12 @@ function processScriptCoverage(scripts, scriptCoverage) {
 
     for (let i = 0; i < coverage.length; i++) {
         const {scriptId, functions, url} = coverage[i];
+
         if (url === '__puppeteer_evaluation_script__') {
             continue;
         }
         const script = scripts[scriptId];
+
         if (!script) {
             continue;
         }
@@ -102,6 +108,7 @@ function processScriptCoverage(scripts, scriptCoverage) {
             }
 
             let merged = false;
+
             for (let j = 0; j < ranges.length; j++) {
                 const coverage = ranges[j];
 
@@ -119,8 +126,10 @@ function processScriptCoverage(scripts, scriptCoverage) {
             }
         }
         let usedBytes = 0;
+
         for (let i = 0; i < ranges.length; i++) {
             const {startOffset, endOffset} = ranges[i];
+
             usedBytes += endOffset - startOffset;
         }
         script.functionCoverage = {
@@ -136,6 +145,7 @@ function processScriptEvents(scripts, domEvents) {
     for (let i = 0; i < domEvents.length; i++) {
         const eventObj = domEvents[i];
         const script = scripts.filter(s => s.scriptId === eventObj.scriptId)[0];
+
         if (script) {
             script.DOMEvents = script.DOMEvents || [];
             script.DOMEvents.push(eventObj);

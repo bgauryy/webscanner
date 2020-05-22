@@ -11,6 +11,7 @@ async function stop(context) {
         return;
     }
     const {profile} = await context.client.Profiler.stop();
+
     profile.ignoredScripts = context.ignoredScripts;
     return {
         ...profile,
@@ -60,6 +61,7 @@ function processJSMetrics(profile) {
         }
 
         const functionId = `${scriptId}${functionName}${lineNumber}${columnNumber}`;
+
         functionExecution[functionId] = functionExecution[functionId] || {
             url,
             scriptId,
@@ -99,6 +101,7 @@ function processJSMetrics(profile) {
     //eslint-disable-next-line
     nodes = nodes.map(nodeId => {
         const node = nodesMap[nodeId];
+
         if (!node.hasParent) {
             delete node.nodeId;
             if (node.scriptId === INTERNAL_SCRIPT_ID) {
@@ -110,6 +113,7 @@ function processJSMetrics(profile) {
     }).filter(node => !!node);
 
     let functions = [];
+
     //eslint-disable-next-line
     for (const fId in functionExecution) {
         functions.push(functionExecution[fId]);

@@ -17,6 +17,7 @@ function stop(context) {
 async function registerStorage(client, storage) {
     client.DOMStorage.domStorageItemAdded(({key, newValue: value, storageId: {securityOrigin, isLocalStorage}}) => {
         const storageType = isLocalStorage ? 'localStorage' : 'sessionStorage';
+
         storage[securityOrigin] = storage[securityOrigin] || {};
         storage[securityOrigin][storageType] = storage[securityOrigin][storageType] || [];
         storage[securityOrigin][storageType].push({key, value});

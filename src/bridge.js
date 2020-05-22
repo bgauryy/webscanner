@@ -12,6 +12,7 @@ async function getChromeClient(page) {
     } else {
         const connection = page._client._connection._url;
         const {hostname, port} = url.parse(connection, true);
+
         return await CRI({host: hostname, port});
     }
 }
