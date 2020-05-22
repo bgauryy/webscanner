@@ -45,11 +45,11 @@ function enrichURLDetails(obj, urlProp) {
 
     try {
         const urlObj = new URL(obj[urlProp]);
-        obj.host = urlObj.host || undefined;
-        obj.pathname = urlObj.pathname || undefined;
-        obj.port = urlObj.port || undefined;
-        obj.path = urlObj.path || undefined;
-        obj.query = urlObj.query || undefined;
+        obj.host = urlObj.host;
+        obj.pathname = urlObj.pathname;
+        obj.port = urlObj.port;
+        obj.path = urlObj.path;
+        obj.query = urlObj.query;
     } catch (e) {
         //ignore
     }
@@ -94,9 +94,7 @@ function isDataURI(url) {
 function isEmptyValue(value) {
     if (typeof value === 'boolean') {
         return false;
-    } else if (value === null || value === undefined) {
-        return true;
-    } else if (typeof value === 'string' && !value) {
+    } else if (!value) {
         return true;
     } else if (typeof value === 'number' && !Number.isFinite(value)) {
         return true;
@@ -143,7 +141,6 @@ module.exports = {
     enrichURLDetails,
     enrichIPDetails,
     isDataURI,
-    isEmptyObject: isEmptyValue,
     reduceDeepObject,
     isRangeContains,
     getRandomString,
