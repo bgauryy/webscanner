@@ -1,13 +1,13 @@
 let started = false;
 
-async function start(context) {
+export async function start(context) {
     started = true;
     await context.client.DOMStorage.enable();
     await registerStorage(context.client, context.data.storage);
     //TODO:add indexedDB
 }
 
-function stop(context) {
+export function stop(context) {
     if (!started) {
         return;
     }
@@ -23,8 +23,3 @@ async function registerStorage(client, storage) {
         storage[securityOrigin][storageType].push({key, value});
     });
 }
-
-module.exports = {
-    start,
-    stop
-};

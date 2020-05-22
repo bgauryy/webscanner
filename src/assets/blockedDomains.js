@@ -1,10 +1,10 @@
 //TODO:https://easylist.to/easylist/easylist.txt
 //https://raw.githubusercontent.com/brave/tracking-protection/60b028ac90ab31d3fd9200fed58df3574ad99a56/data/disconnect.json
-const {categories} = require('./disable.json');
+import {categories} from './disable.json';
 
 const customDomains = ['sitelabweb.com'];
 
-function getBlockedDomains() {
+export function getBlockedDomains() {
     let badDomains = [].concat(customDomains);
 
     for (const prop in categories) {
@@ -26,7 +26,3 @@ function getBlockedDomains() {
 
     return badDomains;
 }
-
-module.exports = {
-    getBlockedDomains
-};

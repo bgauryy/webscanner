@@ -1,12 +1,12 @@
 let started = false;
 
-async function start(context) {
+export async function start(context) {
     started = true;
     await context.client.Profiler.enable();
     await context.client.Profiler.start();
 }
 
-async function stop(context) {
+export async function stop(context) {
     if (!started) {
         return;
     }
@@ -127,8 +127,3 @@ function processJSMetrics(profile) {
         functions
     };
 }
-
-module.exports = {
-    start,
-    stop
-};

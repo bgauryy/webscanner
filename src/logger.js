@@ -1,22 +1,22 @@
 let isEnabled = false;
 
-function setEnabled(_isEnabled) {
+export function setEnabled(_isEnabled) {
     isEnabled = _isEnabled;
 }
 
-function debug() {
-    log('debug', [...arguments]);
+export function debug() {
+    _log('debug', [...arguments]);
 }
 
-function warn() {
-    log('warn', [...arguments]);
+export function warn() {
+    _log('warn', [...arguments]);
 }
 
-function error() {
-    log('error', [...arguments], );
+export function error() {
+    _log('error', [...arguments],);
 }
 
-function log(api, args) {
+function _log(api, args) {
     if (!isEnabled) {
         return;
     }
@@ -24,12 +24,4 @@ function log(api, args) {
     // eslint-disable-next-line
     console[api].apply(this, args);
 }
-
-
-module.exports = {
-    debug,
-    warn,
-    error,
-    setEnabled
-};
 

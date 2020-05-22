@@ -1,8 +1,9 @@
 const {enrichURLDetails} = require('../utils');
 const LOG = require('../logger');
+
 let started = false;
 
-async function start(context) {
+export async function start(context) {
     started = true;
 
     const client = context.client;
@@ -16,7 +17,7 @@ async function start(context) {
     registerStyleEvents(client, styles);
 }
 
-async function stop(context) {
+export async function stop(context) {
     if (!started) {
         return;
     }
@@ -73,8 +74,3 @@ function processStyle(styles, styleCoverage,) {
 
     return styles;
 }
-
-module.exports = {
-    start,
-    stop
-};

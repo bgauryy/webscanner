@@ -30,7 +30,7 @@
     "lint": "eslint src",
     "test": "yarn jest",
     "build": "rollup -c",
-    "clean": "rimraf src/index.cjs.js src/index.esm.js",
+    "clean": "rimraf src/index.cjs src/index.esm",
     "prepublishOnly": "yarn clean && yarn lint && yarn build"
   },
   "husky": {

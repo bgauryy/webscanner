@@ -1,15 +1,16 @@
-const {enrichURLDetails} = require('../utils');
-const {getResources} = require('./resources.js');
+import {enrichURLDetails} from '../utils';
+import {getResources} from './resources.js';
+
 let started = false;
 
-async function start(context) {
+export async function start(context) {
     started = true;
     await context.client.Page.enable();
     registerFrameEvents(context.client, context.data.frames);
 }
 
-async function stop(context) {
-    if (!started){
+export async function stop(context) {
+    if (!started) {
         return;
     }
     const frames = Object.keys(context.data.frames).map(id => context.data.frames[id]);
@@ -76,8 +77,3 @@ function handleIframeEvent(frameObj, state, frames) {
         frames[id].states.push(state);
     }
 }
-
-module.exports = {
-    start,
-    stop
-};

@@ -1,9 +1,9 @@
-const geoip = require('geoip-lite');
-const LOG = require('./logger');
+import * as geoip from 'geoip-lite';
+import * as LOG from './logger';
 
 const dataURIRegex = /^data:/;
 
-function getInitiator(initiator) {
+export function getInitiator(initiator) {
     if (initiator.type === 'parser') {
         return 'parser';
     } else if (initiator.type === 'other') {
@@ -39,7 +39,7 @@ function getInitiator(initiator) {
     }
 }
 
-function enrichURLDetails(obj, urlProp) {
+export function enrichURLDetails(obj, urlProp) {
     if (!obj || !obj[urlProp]) {
         return;
     }
@@ -57,20 +57,7 @@ function enrichURLDetails(obj, urlProp) {
     }
 }
 
-function reduceDeepObject(obj, headersProp, prefix) {
-    const headers = obj && obj[headersProp];
-
-    if (!headers) {
-        return;
-    }
-    //eslint-disable-next-line
-    for (const prop in headers) {
-        obj[`${prefix}_${prop}`] = headers[prop];
-    }
-    delete obj[headersProp];
-}
-
-function enrichIPDetails(obj, IPProp) {
+export function enrichIPDetails(obj, IPProp) {
     if (!obj || !obj[IPProp]) {
         return;
     }
@@ -91,11 +78,59 @@ function enrichIPDetails(obj, IPProp) {
     }
 }
 
-function isDataURI(url) {
+export function isDataURI(url) {
     return dataURIRegex.test(url);
 }
 
-function isEmptyValue(value) {
+export function reduceDeepObject(obj, headersProp, prefix) {
+    const headers = obj && obj[headersProp];
+
+    if (!headers) {
+        return;
+    }
+    //eslint-disable-next-line
+    for (const prop in headers) {
+        obj[`${prefix}_${prop}`] = headers[prop];
+    }
+    delete obj[headersProp];
+}
+
+export function isRangeContains(p1, p2) {
+    const isStartUnion = p1.startOffset <= p2.startOffset && p1.endOffset <= p2.endOffset && p1.endOffset >= p2.startOffset;
+    const isEndUnion = p1.endOffset >= p2.endOffset && p1.startOffset >= p2.startOffset && p1.startOffset <= p2.endOffset;
+    const isUnion = (p1.startOffset > p2.startOffset && p1.endOffset < p2.endOffset) || (p1.startOffset < p2.startOffset && p1.endOffset > p2.endOffset);
+
+    return isStartUnion || isEndUnion || isUnion;
+}
+
+export function getRandomString() {
+    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let rand = '';
+
+    for (let i = 0; i < 16; i++) {
+        rand += CHARS.charAt(Math.floor(Math.random() * CHARS.length));
+    }
+    return rand;
+}
+
+export function cleanObject(data, depth) {
+    if (typeof depth !== 'number') {
+        depth = 0;
+    }
+    if (depth < 0) {
+        return;
+    }
+    depth--;
+    for (const prop in data) {
+        if (_isEmptyValue(data[prop])) {
+            delete data[prop];
+        } else if (data[prop] && typeof data[prop] === 'object') {
+            cleanObject(data[prop], depth);
+        }
+    }
+}
+
+function _isEmptyValue(value) {
     if (typeof value === 'boolean') {
         return false;
     } else if (!value) {
@@ -106,51 +141,4 @@ function isEmptyValue(value) {
         return Object.keys(value).length === 0;
     }
 }
-
-function isRangeContains(p1, p2) {
-    const isStartUnion = p1.startOffset <= p2.startOffset && p1.endOffset <= p2.endOffset && p1.endOffset >= p2.startOffset;
-    const isEndUnion = p1.endOffset >= p2.endOffset && p1.startOffset >= p2.startOffset && p1.startOffset <= p2.endOffset;
-    const isUnion = (p1.startOffset > p2.startOffset && p1.endOffset < p2.endOffset) || (p1.startOffset < p2.startOffset && p1.endOffset > p2.endOffset);
-
-    return isStartUnion || isEndUnion || isUnion;
-}
-
-function getRandomString() {
-    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let rand = '';
-
-    for (let i = 0; i < 16; i++) {
-        rand += CHARS.charAt(Math.floor(Math.random() * CHARS.length));
-    }
-    return rand;
-}
-
-function cleanObject(data, depth) {
-    if (typeof depth !== 'number') {
-        depth = 0;
-    }
-    if (depth < 0) {
-        return;
-    }
-    depth--;
-    for (const prop in data) {
-        if (isEmptyValue(data[prop])) {
-            delete data[prop];
-        } else if (data[prop] && typeof data[prop] === 'object') {
-            cleanObject(data[prop], depth);
-        }
-    }
-}
-
-module.exports = {
-    getInitiator,
-    enrichURLDetails,
-    enrichIPDetails,
-    isDataURI,
-    reduceDeepObject,
-    isRangeContains,
-    getRandomString,
-    cleanObject
-};
-
 

@@ -1,4 +1,5 @@
-const Scanner = require('./scanner.js');
+import * as Scanner from './scanner.js';
+
 const LOG = require('./logger.js');
 const {getConfiguration} = require('./configuration.js');
 

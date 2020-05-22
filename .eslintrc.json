@@ -12,6 +12,7 @@
   "rules": {
     "newline-after-var": 2,
     "import/no-cycle": 2,
+    "import/newline-after-import": 2,
     "complexity": 2,
     "no-console": 2,
     "import/export": 2,

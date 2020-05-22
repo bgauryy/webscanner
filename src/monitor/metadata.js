@@ -1,11 +1,11 @@
 let started = false;
 
-async function start({client}) {
+export async function start({client}) {
     started = true;
     await client.Performance.enable();
 }
 
-async function stop({client}) {
+export async function stop({client}) {
     if (!started) {
         return;
     }
@@ -46,8 +46,3 @@ async function getManifest(client) {
         //ignore
     }
 }
-
-module.exports = {
-    start,
-    stop
-};

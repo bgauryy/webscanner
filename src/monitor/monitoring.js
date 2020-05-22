@@ -1,6 +1,6 @@
 let started = false;
 
-async function start(context) {
+export async function start(context) {
     started = true;
     await context.client.Log.enable();
     //TODO:handle threshold
@@ -9,7 +9,7 @@ async function start(context) {
     await registerConsole(context.client, context.data.monitoring);
 }
 
-async function stop(context) {
+export async function stop(context) {
     if (!started) {
         return;
     }
@@ -63,8 +63,3 @@ async function registerConsole(client, monitoring) {
         });
     });
 }
-
-module.exports = {
-    start,
-    stop
-};

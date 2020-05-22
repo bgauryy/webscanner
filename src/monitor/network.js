@@ -1,8 +1,9 @@
-const {isDataURI, enrichURLDetails, reduceDeepObject, getInitiator, enrichIPDetails} = require('../utils');
-const atob = require('atob');
+import {isDataURI, enrichURLDetails, reduceDeepObject, getInitiator, enrichIPDetails} from '../utils';
+import atob from 'atob';
+
 let started = false;
 
-async function start(context) {
+export async function start(context) {
     started = true;
     const {client, rules, collect, data: {requests, responses, webSockets, serviceWorker}} = context;
 
@@ -14,7 +15,7 @@ async function start(context) {
     await registerServiceWorkerEvents(client, serviceWorker);
 }
 
-async function stop(context) {
+export async function stop(context) {
     if (!started) {
         return;
     }
@@ -190,8 +191,3 @@ async function registerServiceWorkerEvents(client, serviceWorkers) {
         }
     });
 }
-
-module.exports = {
-    start,
-    stop
-};

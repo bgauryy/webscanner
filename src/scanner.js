@@ -1,19 +1,19 @@
-const fs = require('fs');
-const path = require('path');
-const LOG = require('./logger.js');
-const {getChromeClient} = require('./bridge');
-const {cleanObject, getRandomString} = require('./utils');
-const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
-const frames = require('./monitor/iframe.js');
-const network = require('./monitor/network.js');
-const style = require('./monitor/style.js');
-const scripts = require('./monitor/scripts.js');
-const metadata = require('./monitor/metadata.js');
-const storage = require('./monitor/storage.js');
-const monitoring = require('./monitor/monitoring.js');
-const performance = require('./monitor/performance.js');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as LOG from './logger';
+import {getChromeClient} from './bridge';
+import {cleanObject, getRandomString} from './utils';
+import {getBlockedDomains} from '../src/assets/blockedDomains.js';
+import * as frames from './monitor/iframe.js';
+import * as network from './monitor/network.js';
+import * as style from './monitor/style.js';
+import * as scripts from './monitor/scripts.js';
+import * as metadata from './monitor/metadata.js';
+import * as storage from './monitor/storage.js';
+import * as monitoring from './monitor/monitoring.js';
+import * as performance from './monitor/performance.js';
 
-async function getSession(configuration) {
+export async function getSession(configuration) {
     const context = {configuration};
 
     context.client = await getChromeClient(configuration.page);
@@ -167,7 +167,3 @@ function getDataObject() {
         metrics: null,
     };
 }
-
-module.exports = {
-    getSession
-};

@@ -1,13 +1,14 @@
 const {isRangeContains} = require('../utils');
 const {getAllDOMEvents} = require('./dom');
+
 let started = false;
 
-async function start(context) {
+export async function start(context) {
     started = true;
     registerScriptExecution(context);
 }
 
-async function stop(context) {
+export async function stop(context) {
     if (!started) {
         return;
     }
@@ -152,8 +153,3 @@ function processScriptEvents(scripts, domEvents) {
         }
     }
 }
-
-module.exports = {
-    start,
-    stop
-};

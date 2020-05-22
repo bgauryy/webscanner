@@ -1,12 +1,12 @@
-const CRI = require('chrome-remote-interface');
-const url = require('url');
+import * as CRI from 'chrome-remote-interface';
+import * as url from 'url';
 
 /**
  * @param page
  * Puppeteer Page object or object with this structure: {host, port}
  * @return {Promise<unknown>}
  */
-async function getChromeClient(page) {
+export async function getChromeClient(page) {
     if (page.hostname && page.port) {
         return await CRI({host: page.hostname, port: page.port});
     } else {
@@ -16,7 +16,3 @@ async function getChromeClient(page) {
         return await CRI({host: hostname, port});
     }
 }
-
-module.exports = {
-    getChromeClient
-};
