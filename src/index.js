@@ -1,18 +1,18 @@
 const Scanner = require('./scanner.js');
 const LOG = require('./logger.js');
-const {getConfiguration} = require('./configuration.js');
+const {getContext} = require('./context.js');
 
 /**
  *
- * @param page - puppeteer page
+ * @param pageObject - puppeteer pageObject
  * @param opts - scanning configuration
  * @return {Promise}
  */
-async function getSession(page, opts = {}) {
-    const configuration = getConfiguration(page, opts);
+async function getSession(pageObject, opts = {}) {
+    const context = await getContext(pageObject, opts);
 
-    LOG.setEnabled(configuration.log);
-    return await Scanner.getSession(configuration);
+    LOG.setEnabled(context.configuration.log);
+    return await Scanner.getSession(context);
 }
 
 module.exports = {

@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const LOG = require('./logger.js');
-const {getChromeClient} = require('./bridge');
 const {cleanObject, getRandomString} = require('./utils');
 const {getBlockedDomains} = require('../src/assets/blockedDomains.js');
 const frames = require('./monitor/iframe.js');
@@ -13,26 +12,12 @@ const storage = require('./monitor/storage.js');
 const monitoring = require('./monitor/monitoring.js');
 const performance = require('./monitor/performance.js');
 
-async function getSession(configuration) {
-    const context = {configuration};
-
-    context.client = await getChromeClient(configuration.page);
-    context.data = getDataObject();
-    context.ignoredScripts = {};
-
+async function getSession(context) {
     await start(context);
-
-    return new Proxy(context.configuration.page, {
-        get: function (page, prop) {
-            if (prop === 'getSessionData' || prop === 'getData') {
-                return getData.bind(this, context);
-            } else if (prop === 'stop') {
-                return stop.bind(this, context);
-            } else {
-                return page[prop];
-            }
-        }
-    });
+    return {
+        getData: getData.bind(null, context),
+        stop: stop.bind(null, context)
+    };
 }
 
 async function start(context) {
@@ -80,7 +65,6 @@ async function getData(context) {
     data.storage = await storage.stop(context);
     data.monitoring = await monitoring.stop(context);
     data.performance = await performance.stop(context);
-    context.data = getDataObject();
 
     cleanObject(data, 1);
     return JSON.parse(JSON.stringify(data));
@@ -151,21 +135,6 @@ async function stop(context) {
         context[prop] = null;
     }
     return data;
-}
-
-function getDataObject() {
-    return {
-        scripts: [],
-        requests: [],
-        responses: [],
-        frames: {},
-        serviceWorker: {},
-        webSockets: {},
-        monitoring: {},
-        storage: {},
-        styles: {},
-        metrics: null,
-    };
 }
 
 module.exports = {
