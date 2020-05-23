@@ -1,5 +1,8 @@
+//TODO - fix dependencies
+//import url from 'url';
+const url = require('url');
+
 import CRI from 'chrome-remote-interface';
-import * as url from 'url';
 
 /**
  * @param page

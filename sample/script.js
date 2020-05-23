@@ -1,9 +1,11 @@
 const puppeteer = require('puppeteer');
-const Scanner = require('../src/index');
+const Scanner = require('../dist/index.cjs.js');
 const URL = 'http://example.com';
 
-(async () => {
+debugger;
+/*(async () => {
     const browser = await puppeteer.launch({
+        headless: false,
         args: ['--proxy-server="direct://"', '--proxy-bypass-list=*', '--disable-web-security']
     });
     let page = await browser.newPage();
@@ -30,6 +32,6 @@ const URL = 'http://example.com';
             setTimeout(resolve, seconds * 1000);
         });
     }
-})();
+})();*/
 
 

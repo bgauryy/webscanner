@@ -1,5 +1,9 @@
-import fs from 'fs';
-import path from 'path';
+/*import * as fs from 'fs';
+import * as path from 'path';*/
+//TODO - fix dependencies
+const fs = require('fs');
+const path = require('path');
+
 import * as LOG from './logger';
 import {getChromeClient} from './bridge';
 import {cleanObject, getRandomString} from './utils';
