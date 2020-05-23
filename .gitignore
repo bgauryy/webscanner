@@ -5,5 +5,4 @@ coverage
 example/node_modules
 example/yarn.lock
 prj
-dist
 package-lock.json
