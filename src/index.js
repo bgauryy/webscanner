@@ -10,6 +10,7 @@ const {getConfiguration} = require('./configuration.js');
  */
 async function getSession(page, opts = {}) {
     const configuration = getConfiguration(page, opts);
+
     LOG.setEnabled(configuration.log);
     return await Scanner.getSession(configuration);
 }

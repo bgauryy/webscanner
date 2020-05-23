@@ -1,5 +1,6 @@
 const {enrichURLDetails} = require('../utils');
 const {getResources} = require('./resources.js');
+
 let started = false;
 
 async function start(context) {
@@ -17,8 +18,10 @@ async function stop(context) {
 
     for (let i = 0; i < frames.length; i++) {
         const frame = frames[i];
+
         frame.url = frame.url || 'about:blank';
         const resourcesObj = resourcesTree[frame.frameId];
+
         if (resourcesObj) {
             frame.resources = resourcesObj.resources;
             frame.contentSize = resourcesObj.contentSize;

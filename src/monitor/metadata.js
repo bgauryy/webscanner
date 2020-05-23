@@ -25,6 +25,7 @@ async function getMetrics(client) {
         if (metrics) {
             for (let i = 0; i < metrics.length; i++) {
                 const metric = metrics[i];
+
                 res[metric.name] = metric.value;
             }
         }
@@ -37,6 +38,7 @@ async function getMetrics(client) {
 async function getManifest(client) {
     try {
         const manifest = await client.Page.getAppManifest();
+
         if (manifest && manifest.url) {
             return manifest;
         }

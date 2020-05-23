@@ -15,6 +15,7 @@ const performance = require('./monitor/performance.js');
 
 async function getSession(configuration) {
     const context = {configuration};
+
     context.client = await getChromeClient(configuration.page);
     context.data = getDataObject();
     context.ignoredScripts = {};
@@ -36,6 +37,7 @@ async function getSession(configuration) {
 
 async function start(context) {
     const configuration = context.configuration;
+
     LOG.debug('start monitoring', configuration);
 
     await initSession(context);
@@ -105,8 +107,10 @@ async function initSession(context) {
         await Emulation.setUserAgentOverride({userAgent: configuration.userAgent});
     }
     let blockedUrls = configuration.blockedUrls || [];
+
     if (configuration.disableServices) {
         const services = getBlockedDomains().map(domain => `*${domain}*`);
+
         blockedUrls = configuration.blockedUrls.concat(services);
     }
     if (blockedUrls.length) {
@@ -116,6 +120,7 @@ async function initSession(context) {
         try {
             const stealthUA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36';
             const {identifier} = await client.Page.addScriptToEvaluateOnNewDocument({source: fs.readFileSync(path.resolve(__dirname, 'plugins', 'stealth.js'), {encoding: 'UTF-8'})});
+
             context.ignoredScripts[identifier] = 1;
             if (!configuration.userAgent) {
                 await client.Emulation.setUserAgentOverride({userAgent: stealthUA});
@@ -128,6 +133,7 @@ async function initSession(context) {
                 'Connection': 'keep-alive',
                 'User-Agent': configuration.userAgent ? configuration.userAgent : stealthUA,
             };
+
             addedHeaders[randomHeader] = getRandomString();
             await client.Network.setExtraHTTPHeaders({headers: addedHeaders});
         } catch (e) {
@@ -138,6 +144,7 @@ async function initSession(context) {
 
 async function stop(context) {
     const data = await getData(context);
+
     //eslint-disable-next-line
     for (const prop in context) {
         //Avoid memory leaks

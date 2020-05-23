@@ -21,7 +21,7 @@ function log(api, args) {
         return;
     }
     args[0] = `WebInspector ${new Date()}: ${args[0]}`;
-    // eslint-disable-next-line no-console
+    //eslint-disable-next-line
     console[api].apply(this, args);
 }
 

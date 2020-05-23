@@ -1,5 +1,6 @@
 const {enrichURLDetails} = require('../utils');
 const LOG = require('../logger');
+
 let started = false;
 
 async function start(context) {
@@ -38,6 +39,7 @@ function registerStyleEvents(client, styles) {
         }
         try {
             const {scriptSource} = await client.CSS.getStyleSheetText({styleSheetId: styleObj.styleSheetId});
+
             styleObj.source = scriptSource;
         } catch (e) {
             LOG.error(e);
@@ -64,6 +66,7 @@ function processStyle(styles, styleCoverage,) {
     //eslint-disable-next-line
     for (const styleId in styles) {
         const style = styles[styleId];
+
         if (style.coverage) {
             style.coverage.usage = style.coverage.usedBytes / style.length;
         }

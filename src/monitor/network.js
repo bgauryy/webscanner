@@ -1,10 +1,12 @@
 const {isDataURI, enrichURLDetails, reduceDeepObject, getInitiator, enrichIPDetails} = require('../utils');
 const atob = require('atob');
+
 let started = false;
 
 async function start(context) {
     started = true;
     const {client, rules, collect, data: {requests, responses, webSockets, serviceWorker}} = context;
+
     await client.Network.enable();
 
     handleRequests(client, rules, collect, requests);
@@ -23,6 +25,7 @@ async function stop(context) {
     const requests = context.data.requests;
     const responses = context.data.responses;
     const cookies = await getCookies(context);
+
     return {
         requests,
         responses,
@@ -66,6 +69,7 @@ function handleResponse(client, rules, collect, responses) {
 
     async function handleResponse(responseObj) {
         const response = {...responseObj, ...responseObj.response};
+
         delete response.response;
         delete response.requestHeaders;
 
@@ -76,6 +80,7 @@ function handleResponse(client, rules, collect, responses) {
         enrichIPDetails(response, 'remoteIPAddress');
         try {
             const content = await client.Network.getResponseBody({requestId: response.requestId});
+
             if (content.base64Encoded) {
                 content.body = atob(content.body);
             }
@@ -87,13 +92,16 @@ function handleResponse(client, rules, collect, responses) {
         if (response.securityDetails) {
             reduceDeepObject(response, 'securityDetails', 'certificate');
             let date = new Date(0);
+
             date.setUTCSeconds(response.certificate_validFrom);
             delete response.certificate_validFrom;
             const validFrom = date;
+
             date = new Date(0);
             date.setUTCSeconds(response.certificate_validTo);
             delete response.certificate_validTo;
             const validTo = date;
+
             response.certificate_age_days = Math.round((new Date() - validFrom) / 86400000);
             response.certificate_expiration_days = Math.round((validTo - new Date()) / 86400000);
         }
@@ -115,11 +123,13 @@ function handleResponse(client, rules, collect, responses) {
 function registerWebsocket(client, websockets) {
     client.Network.webSocketCreated(({requestId, url, initiator}) => {
         const wsObj = {url, initiator};
+
         wsObj.Initiatorscript = getInitiator(initiator);
         websockets[requestId] = wsObj;
     });
     client.Network.webSocketFrameSent(({requestId, timestamp, response}) => {
         const ws = websockets[requestId];
+
         if (!ws) {
             return;
         }
@@ -132,6 +142,7 @@ function registerWebsocket(client, websockets) {
     });
     client.Network.webSocketFrameReceived(({requestId, timestamp, response}) => {
         const ws = websockets[requestId];
+
         if (!ws) {
             return;
         }
@@ -144,10 +155,12 @@ function registerWebsocket(client, websockets) {
     });
     client.Network.webSocketClosed(({requestId, timestamp}) => {
         const ws = websockets[requestId];
+
         ws.closed = timestamp;
     });
     client.Network.webSocketFrameError(({requestId, timestamp, errorMessage}) => {
         const ws = websockets[requestId];
+
         ws.errors = ws.errors || [];
         ws.errors.push({timestamp, errorMessage});
     });
@@ -159,6 +172,7 @@ async function registerServiceWorkerEvents(client, serviceWorkers) {
     client.ServiceWorker.workerRegistrationUpdated(async (res) => {
         res = {...res, ...res.registrations};
         const serviceWorkerObj = res.registrations && res.registrations[0];
+
         if (serviceWorkerObj) {
             serviceWorkers[serviceWorkerObj.registrationId] = serviceWorkerObj;
         }
@@ -167,9 +181,11 @@ async function registerServiceWorkerEvents(client, serviceWorkers) {
     client.ServiceWorker.workerVersionUpdated(async (res) => {
         res = {...res, ...res.versions};
         let serviceWorkerObj = res.versions && res.versions[0];
+
         if (serviceWorkerObj) {
             //TODO: change code to handle status changes
             const serviceWorkerObjOld = serviceWorkers[serviceWorkerObj.registrationId] || {};
+
             serviceWorkerObj = {...serviceWorkerObjOld, ...serviceWorkerObj};
             serviceWorkers[serviceWorkerObj.registrationId] = serviceWorkerObj;
         }

@@ -14,6 +14,7 @@ function getInitiator(initiator) {
 
     for (let i = 0; i < frames.length; i++) {
         const callFrames = frames[i];
+
         for (let j = 0; j < callFrames.length; j++) {
             if (callFrames[j].scriptId) {
                 return callFrames[j].scriptId;
@@ -45,11 +46,12 @@ function enrichURLDetails(obj, urlProp) {
 
     try {
         const urlObj = new URL(obj[urlProp]);
-        obj.host = urlObj.host || undefined;
-        obj.pathname = urlObj.pathname || undefined;
-        obj.port = urlObj.port || undefined;
-        obj.path = urlObj.path || undefined;
-        obj.query = urlObj.query || undefined;
+
+        obj.host = urlObj.host;
+        obj.pathname = urlObj.pathname;
+        obj.port = urlObj.port;
+        obj.path = urlObj.path;
+        obj.query = urlObj.query;
     } catch (e) {
         //ignore
     }
@@ -57,6 +59,7 @@ function enrichURLDetails(obj, urlProp) {
 
 function reduceDeepObject(obj, headersProp, prefix) {
     const headers = obj && obj[headersProp];
+
     if (!headers) {
         return;
     }
@@ -75,6 +78,7 @@ function enrichIPDetails(obj, IPProp) {
 
     try {
         const lookup = geoip.lookup(ip);
+
         obj.country = lookup.country; // 2 letter ISO-3166-1 country code
         obj.region = lookup.region; // Up to 3 alphanumeric variable length characters as ISO 3166-2 code
         obj.timezone = lookup.timezone;// Timezone from IANA Time Zone Database
@@ -94,27 +98,26 @@ function isDataURI(url) {
 function isEmptyValue(value) {
     if (typeof value === 'boolean') {
         return false;
-    } else if (value === null || value === undefined) {
-        return true;
-    } else if (typeof value === 'string' && !value) {
-        return true;
     } else if (typeof value === 'number' && !Number.isFinite(value)) {
         return true;
     } else if (typeof value === 'object') {
         return Object.keys(value).length === 0;
     }
+    return !value;
 }
 
 function isRangeContains(p1, p2) {
     const isStartUnion = p1.startOffset <= p2.startOffset && p1.endOffset <= p2.endOffset && p1.endOffset >= p2.startOffset;
     const isEndUnion = p1.endOffset >= p2.endOffset && p1.startOffset >= p2.startOffset && p1.startOffset <= p2.endOffset;
     const isUnion = (p1.startOffset > p2.startOffset && p1.endOffset < p2.endOffset) || (p1.startOffset < p2.startOffset && p1.endOffset > p2.endOffset);
+
     return isStartUnion || isEndUnion || isUnion;
 }
 
 function getRandomString() {
     const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let rand = '';
+
     for (let i = 0; i < 16; i++) {
         rand += CHARS.charAt(Math.floor(Math.random() * CHARS.length));
     }

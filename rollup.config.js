@@ -1,22 +1,24 @@
-import babel from 'rollup-plugin-babel';
+import resolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import babel from '@rollup/plugin-babel';
+import json from '@rollup/plugin-json';
+import pkg from './package.json';
 
 export default {
     input: 'src/index.js',
-    output: [
-        {
-            file: 'src/index.cjs.js',
-            format: 'cjs'
-        },
-        {
-            file: 'src/index.esm.js',
-            format: 'esm'
-        }
-    ],
     plugins: [
+        commonjs(),
+        resolve(),
+        json(),
         babel({
-            exclude: 'node_modules/**',
-            presets: [['@babel/preset-env', {targets: {node: 8}}]]
+            babelHelpers: 'bundled',
+            exclude: 'node_modules/**'
         })
     ],
-    external: ['path', 'read-pkg', 'write-pkg']
-}
+    output: [
+        {
+            file: pkg.module,
+            format: 'es'
+        }
+    ]
+};

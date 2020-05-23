@@ -6,17 +6,20 @@ const customDomains = ['sitelabweb.com'];
 
 function getBlockedDomains() {
     let badDomains = [].concat(customDomains);
+
     for (const prop in categories) {
         //eslint-disable-next-line
         if (!categories.hasOwnProperty(prop)) {
             continue;
         }
         const category = categories[prop];
+
         for (let i = 0; i < category.length; i++) {
             const obj = category[i];
 
             const domain = obj[Object.keys(obj)[0]];
             const badOrigins = domain[Object.keys(domain)[0]];
+
             badDomains = badDomains.concat(badOrigins);
         }
     }
