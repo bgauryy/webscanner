@@ -1,9 +1,12 @@
 let started = false;
 
-async function start(context) {
+async function start({configuration, client}) {
+    if (!configuration.performance) {
+        return;
+    }
     started = true;
-    await context.client.Profiler.enable();
-    await context.client.Profiler.start();
+    await client.Profiler.enable();
+    await client.Profiler.start();
 }
 
 async function stop(context) {

@@ -1,9 +1,12 @@
 let started = false;
 
-async function start(context) {
+async function start({configuration, client, data}) {
+    if (!configuration.storage) {
+        return;
+    }
     started = true;
-    await context.client.DOMStorage.enable();
-    await registerStorage(context.client, context.data.storage);
+    await client.DOMStorage.enable();
+    await registerStorage(client, data.storage);
     //TODO:add indexedDB
 }
 

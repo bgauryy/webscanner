@@ -1,12 +1,15 @@
 let started = false;
 
-async function start(context) {
+async function start({configuration, client, data}) {
+    if (!configuration.monitoring) {
+        return;
+    }
     started = true;
-    await context.client.Log.enable();
+    await client.Log.enable();
     //TODO:handle threshold
-    await registerLogs(context.client, context.data.monitoring, 100);
-    await registerErrors(context.client, context.data.monitoring);
-    await registerConsole(context.client, context.data.monitoring);
+    await registerLogs(client, data.monitoring, 100);
+    await registerErrors(client, data.monitoring);
+    await registerConsole(client, data.monitoring);
 }
 
 async function stop(context) {

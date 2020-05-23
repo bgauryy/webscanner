@@ -21,36 +21,16 @@ async function getSession(context) {
 }
 
 async function start(context) {
-    const configuration = context.configuration;
-
-    LOG.debug('start monitoring', configuration);
-
+    LOG.debug('start scanning', context);
     await initSession(context);
-
-    if (configuration.frames) {
-        await frames.start(context);
-    }
-    if (configuration.network) {
-        await network.start(context);
-    }
-    if (configuration.style) {
-        await style.start(context);
-    }
-    if (configuration.scripts) {
-        await scripts.start(context);
-    }
-    if (configuration.metadata) {
-        await metadata.start(context);
-    }
-    if (configuration.storage) {
-        await storage.start(context);
-    }
-    if (configuration.monitoring) {
-        await monitoring.start(context);
-    }
-    if (configuration.performance) {
-        await performance.start(context);
-    }
+    await frames.start(context);
+    await network.start(context);
+    await style.start(context);
+    await scripts.start(context);
+    await metadata.start(context);
+    await storage.start(context);
+    await monitoring.start(context);
+    await performance.start(context);
 }
 
 async function getData(context) {
@@ -65,7 +45,6 @@ async function getData(context) {
     data.storage = await storage.stop(context);
     data.monitoring = await monitoring.stop(context);
     data.performance = await performance.stop(context);
-
     cleanObject(data, 1);
     return JSON.parse(JSON.stringify(data));
 }

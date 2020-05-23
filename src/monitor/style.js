@@ -3,11 +3,12 @@ const LOG = require('../logger');
 
 let started = false;
 
-async function start(context) {
+async function start({configuration, client, data}) {
+    if (!configuration.style) {
+        return;
+    }
     started = true;
-
-    const client = context.client;
-    const styles = context.data.styles;
+    const styles = data.styles;
 
     await client.DOM.enable();
     await client.CSS.enable();

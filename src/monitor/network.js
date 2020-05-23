@@ -3,14 +3,16 @@ const atob = require('atob');
 
 let started = false;
 
-async function start(context) {
+async function start({configuration, client, data}) {
+    if (!configuration.network) {
+        return;
+    }
     started = true;
-    const {client, rules, collect, data: {requests, responses, webSockets, serviceWorker}} = context;
+    const {requests, responses, webSockets, serviceWorker} = data;
 
     await client.Network.enable();
-
-    handleRequests(client, rules, collect, requests);
-    handleResponse(client, rules, collect, responses);
+    handleRequests(client, requests);
+    handleResponse(client, responses);
     registerWebsocket(client, webSockets);
     await registerServiceWorkerEvents(client, serviceWorker);
 }
@@ -39,7 +41,7 @@ async function getCookies({client}) {
     return await client.Page.getCookies();
 }
 
-function handleRequests(client, rules, collect, requests) {
+function handleRequests(client, requests) {
     client.Network.requestWillBeSent(async (requestObj) => {
         requestObj = {...requestObj, ...requestObj.request};
         delete requestObj.request;
@@ -63,7 +65,7 @@ function handleRequests(client, rules, collect, requests) {
     });
 }
 
-function handleResponse(client, rules, collect, responses) {
+function handleResponse(client, responses) {
     client.Network.responseReceived(handleResponse);
     client.Network.eventSourceMessageReceived(handleResponse);
 

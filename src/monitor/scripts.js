@@ -3,9 +3,12 @@ const {getAllDOMEvents} = require('./dom');
 
 let started = false;
 
-async function start(context) {
+async function start({configuration, client, data}) {
+    if (!configuration.scripts) {
+        return;
+    }
     started = true;
-    registerScriptExecution(context);
+    registerScriptExecution(configuration, client, data);
 }
 
 async function stop(context) {
@@ -15,17 +18,17 @@ async function stop(context) {
     return await processScripts(context);
 }
 
-function registerScriptExecution(context) {
-    context.client.Debugger.scriptParsed(async function (scriptObj) {
+function registerScriptExecution(configuration, client, data) {
+    client.Debugger.scriptParsed(async function (scriptObj) {
         if (scriptObj.url === '__puppeteer_evaluation_script__' || scriptObj.url === '') {
             return;
         }
         scriptObj = {...scriptObj, ...scriptObj.executionContextAuxData};
         delete scriptObj.executionContextAuxData;
 
-        if (context.configuration.content) {
+        if (configuration.content) {
             try {
-                const {scriptSource} = await context.client.Debugger.getScriptSource({scriptId: scriptObj.scriptId});
+                const {scriptSource} = await client.Debugger.getScriptSource({scriptId: scriptObj.scriptId});
 
                 scriptObj.source = scriptSource;
             } catch (e) {
@@ -33,7 +36,7 @@ function registerScriptExecution(context) {
             }
 
         }
-        context.data.scripts.push(scriptObj);
+        data.scripts.push(scriptObj);
     });
 }
 

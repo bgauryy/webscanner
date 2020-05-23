@@ -1,6 +1,9 @@
 let started = false;
 
-async function start({client}) {
+async function start({configuration, client}) {
+    if (!configuration.metadata) {
+        return;
+    }
     started = true;
     await client.Performance.enable();
 }

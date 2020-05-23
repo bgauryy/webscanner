@@ -3,14 +3,17 @@ const {getResources} = require('./resources.js');
 
 let started = false;
 
-async function start(context) {
+async function start({configuration, client, data}) {
+    if (!configuration.frames) {
+        return;
+    }
     started = true;
-    await context.client.Page.enable();
-    registerFrameEvents(context.client, context.data.frames);
+    await client.Page.enable();
+    registerFrameEvents(client, data.frames);
 }
 
 async function stop(context) {
-    if (!started){
+    if (!started) {
         return;
     }
     const frames = Object.keys(context.data.frames).map(id => context.data.frames[id]);
