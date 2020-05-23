@@ -96,10 +96,13 @@ function isDataURI(url) {
 }
 
 function isEmptyValue(value) {
-    if (typeof value === 'boolean') {
-        return false;
-    } else if (typeof value === 'number' && !Number.isFinite(value)) {
+    //eslint-disable-next-line
+    if (value === undefined || value === null) {
         return true;
+    } else if (typeof value === 'boolean') {
+        return false;
+    } else if (typeof value === 'number') {
+        return !Number.isFinite(value);
     } else if (typeof value === 'object') {
         return Object.keys(value).length === 0;
     }
