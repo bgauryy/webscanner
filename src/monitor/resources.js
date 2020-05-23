@@ -1,4 +1,4 @@
-async function getResources({client}) {
+export async function getResources({client}) {
     const resources = await client.Page.getResourceTree();
     const frameTree = resources.frameTree;
     const framesResources = {};
@@ -35,7 +35,3 @@ function getFrameResources(frameTree, resources) {
         }
     }
 }
-
-module.exports = {
-    getResources
-};

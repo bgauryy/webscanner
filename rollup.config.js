@@ -1,4 +1,5 @@
-import babel from 'rollup-plugin-babel';
+import babel from '@rollup/plugin-babel';
+import json from '@rollup/plugin-json';
 
 export default {
     input: 'src/index.js',
@@ -15,8 +16,8 @@ export default {
     plugins: [
         babel({
             exclude: 'node_modules/**',
-            presets: [['@babel/preset-env', {targets: {node: 8}}]]
-        })
-    ],
-    external: ['path', 'read-pkg', 'write-pkg']
+            presets: [['@babel/preset-env', {targets: {node: 10}}]]
+        }),
+        json()
+    ]
 }

@@ -1,4 +1,4 @@
-import * as CRI from 'chrome-remote-interface';
+import CRI from 'chrome-remote-interface';
 import * as url from 'url';
 
 /**
