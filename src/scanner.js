@@ -15,8 +15,7 @@ const performance = require('./monitor/performance.js');
 async function getSession(context) {
     await start(context);
     return {
-        getData: getData.bind(null, context),
-        stop: stop.bind(null, context)
+        getData: getData.bind(null, context)
     };
 }
 
@@ -31,22 +30,6 @@ async function start(context) {
     await storage.start(context);
     await monitoring.start(context);
     await performance.start(context);
-}
-
-async function getData(context) {
-    LOG.debug('Preparing data...');
-    const data = {};
-
-    data.frames = await frames.stop(context);
-    data.network = await network.stop(context);
-    data.style = await style.stop(context);
-    data.scripts = await scripts.stop(context);
-    data.metadata = await metadata.stop(context);
-    data.storage = await storage.stop(context);
-    data.monitoring = await monitoring.stop(context);
-    data.performance = await performance.stop(context);
-    cleanObject(data, 1);
-    return JSON.parse(JSON.stringify(data));
 }
 
 async function initSession(context) {
@@ -105,15 +88,20 @@ async function initSession(context) {
     }
 }
 
-async function stop(context) {
-    const data = await getData(context);
+async function getData(context) {
+    LOG.debug('Preparing data...');
+    const data = {};
 
-    //eslint-disable-next-line
-    for (const prop in context) {
-        //Avoid memory leaks
-        context[prop] = null;
-    }
-    return data;
+    data.frames = await frames.stop(context);
+    data.network = await network.stop(context);
+    data.style = await style.stop(context);
+    data.scripts = await scripts.stop(context);
+    data.metadata = await metadata.stop(context);
+    data.storage = await storage.stop(context);
+    data.monitoring = await monitoring.stop(context);
+    data.performance = await performance.stop(context);
+    cleanObject(data, 1);
+    return JSON.parse(JSON.stringify(data));
 }
 
 module.exports = {
