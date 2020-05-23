@@ -28,13 +28,13 @@
   "scripts": {
     "inspect": "node index.js",
     "lint": "eslint src",
-    "test": "yarn jest",
+    "test": "npm run lint && jest",
     "build": "rollup -c",
-    "prepublishOnly": "yarn clean && yarn lint && yarn build"
+    "prepublishOnly": "npm run test && npm run build"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn lint"
+      "pre-commit": "npm run lint"
     }
   },
   "dependencies": {
