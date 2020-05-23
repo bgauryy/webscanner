@@ -1,9 +1,0 @@
-{
-  "name": "webscanner-sample",
-  "version": "1.0.0",
-  "dependencies": {
-    "webscanner": "^2.0.0",
-    "puppeteer": "^2.0.0"
-  },
-  "license": "MIT"
-}
