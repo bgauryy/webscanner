@@ -1,5 +1,5 @@
 
-# Web Scanner
+# Web Scanner - !!WIP!!
 
 The missing piece of web automation sessions.
 WebScanner is a puppeteer extension that enriches web automation sessions with important data using advanced [chrome devtools protocol API](https://chromedevtools.github.io/devtools-protocol/)
@@ -38,20 +38,23 @@ const URL = 'http://example.com';
     });
     let page = await browser.newPage();
     //Page can be also an object with this structure {host: <string>, port: <string>}
-    //Use this flag to execute chromium with debugging port "--remote-debugging-port=<debuggingPort>"
-    page = await Scanner.getSession(page, {
+    //--remote-debugging-port=<debuggingPort>
+    const session = await Scanner.getSession(page, {
         stealth: true,
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
+        disableCSP: false,
+        adBlocking: false,
+        disableServices: false,
         scripts: true,
         content: true
     });
 
     await page.goto(URL, {waitUntil: 'load'});
     await sleep(5);
-    //Get scanning data content 
-    const data = await page.getSessionData();
+    const data = await session.getData();
     await browser.close();
     console.log('data', data);
+
     async function sleep(seconds) {
         return await new Promise(resolve => {
             setTimeout(resolve, seconds * 1000);
