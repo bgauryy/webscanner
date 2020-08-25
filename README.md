@@ -3,7 +3,7 @@
 # WebScanner
 
 The missing piece of web automation sessions.
-px-scanner is chromium process extension that enriches automated sessions with important data using [chrome devtools protocol API](https://chromedevtools.github.io/devtools-protocol/)
+The scanner is a chromium process extension that enriches automated sessions with important data using [chrome devtools protocol API](https://chromedevtools.github.io/devtools-protocol/)
 
 **Collected data:**
 - Resources data
