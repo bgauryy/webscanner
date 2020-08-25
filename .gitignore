@@ -2,7 +2,6 @@
 .vscode
 node_modules
 coverage
-example/node_modules
-example/yarn.lock
-prj
-package-lock.json
+yarn.lock
+sample/node_modules
+sample/yarn.lock

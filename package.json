@@ -1,6 +1,6 @@
 {
   "name": "webscanner",
-  "version": "2.0.3",
+  "version": "0.0.1",
   "description": "Automation scanner for web resources",
   "repository": "https://github.com/bgauryy/webscanner",
   "author": {
@@ -38,8 +38,12 @@
       "pre-commit": "yarn lint"
     }
   },
-  "devDependencies": {
+  "dependencies": {
     "atob": "^2.1.2",
+    "chrome-remote-interface": "^0.27.1",
+    "geoip-lite": "^1.3.8"
+  },
+  "devDependencies": {
     "eslint": "^6.5.1",
     "husky": "^3.0.5",
     "jest": "^24.9.0",
@@ -47,10 +51,6 @@
     "rollup": "^1.31.1",
     "rollup-plugin-babel": "^4.3.3",
     "@babel/preset-env": "^7.8.4"
-  },
-  "dependencies": {
-    "chrome-remote-interface": "^0.27.1",
-    "geoip-lite": "^1.3.8"
   },
   "license": "MIT"
 }

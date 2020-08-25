@@ -11,6 +11,7 @@ const scripts = require('./monitor/scripts.js');
 const metadata = require('./monitor/metadata.js');
 const storage = require('./monitor/storage.js');
 const monitoring = require('./monitor/monitoring.js');
+const dom = require('./monitor/dom.js');
 const performance = require('./monitor/performance.js');
 
 async function getSession(configuration) {
@@ -21,12 +22,15 @@ async function getSession(configuration) {
 
     await start(context);
 
+    const scanningObj = {
+        getData: getData.bind(this, context),
+        stop: stop.bind(this, context)
+    };
+
     return new Proxy(context.configuration.page, {
         get: function (page, prop) {
-            if (prop === 'getSessionData' || prop === 'getData') {
-                return getData.bind(this, context);
-            } else if (prop === 'stop') {
-                return stop.bind(this, context);
+            if (prop === 'scanner') {
+                return scanningObj;
             } else {
                 return page[prop];
             }
@@ -78,6 +82,8 @@ async function getData(context) {
     data.storage = await storage.stop(context);
     data.monitoring = await monitoring.stop(context);
     data.performance = await performance.stop(context);
+    data.domEvents = await dom.getAllDOMEvents(context.client);
+
     context.data = getDataObject();
 
     cleanObject(data, 1);

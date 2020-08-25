@@ -1,8 +1,9 @@
 
-# Web Scanner
+
+# px-scanner - WIP
 
 The missing piece of web automation sessions.
-WebScanner is a puppeteer extension that enriches web automation sessions with important data using advanced [chrome devtools protocol API](https://chromedevtools.github.io/devtools-protocol/)
+px-scanner is chromium process extension that enriches automated sessions with important data using [chrome devtools protocol API](https://chromedevtools.github.io/devtools-protocol/)
 
 **Collected data:**
 - Resources data
@@ -12,24 +13,25 @@ WebScanner is a puppeteer extension that enriches web automation sessions with i
 - Service workers
 - DOM events
 - Error logs
+...
 
 ## API
 
-### `Scanner.getPuppeteerSession (page <object>, opts <object>)` 
-Register a puppeteer page for a scan
-- **page**  \<object> 
-	     [puppeteer page](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#class-page) 
- - **opts** \<object> 
+`Scanner.getSession(page <object>, opts <object>)`
+Register chromium process for scanning and returns proxy to the page object
+- `page`  \<object> [puppeteer page](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#class-page) **or** an object with the structure of {host: \<chromium host>, port: \<chromium port> (\*requires\* *--remote-debugging-port* flag)
+ - `opts` \<object> 
 
-**returns** \<object>: page proxy object 
-- ***page.getData()***
-	-  returns scanning data (*must be called call before closing the browser*)
+
+`<page>.scanner.getData()`
+
+returns collected data 
 
 ## Example
 
  ````javascript
 const puppeteer = require('puppeteer');
-const Scanner = require('webscanner');
+const Scanner = require('../src/index');
 const URL = 'http://example.com';
 
 (async () => {
@@ -37,21 +39,22 @@ const URL = 'http://example.com';
         args: ['--proxy-server="direct://"', '--proxy-bypass-list=*', '--disable-web-security']
     });
     let page = await browser.newPage();
-    //Page can be also an object with this structure {host: <string>, port: <string>}
-    //Use this flag to execute chromium with debugging port "--remote-debugging-port=<debuggingPort>"
     page = await Scanner.getSession(page, {
         stealth: true,
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3933.0 Safari/537.36',
+        disableCSP: false,
+        adBlocking: false,
+        disableServices: false,
         scripts: true,
         content: true
     });
 
     await page.goto(URL, {waitUntil: 'load'});
     await sleep(5);
-    //Get scanning data content 
-    const data = await page.getSessionData();
+    const data = await page.scanner.getData();
     await browser.close();
     console.log('data', data);
+
     async function sleep(seconds) {
         return await new Promise(resolve => {
             setTimeout(resolve, seconds * 1000);
@@ -59,8 +62,3 @@ const URL = 'http://example.com';
     }
 })();
 ````
-## API Structure (WIP)
-## Data Structure (WIP)
-
-
-

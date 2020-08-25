@@ -1,5 +1,4 @@
 const {enrichURLDetails} = require('../utils');
-const {getResources} = require('./resources.js');
 let started = false;
 
 async function start(context) {
@@ -9,22 +8,10 @@ async function start(context) {
 }
 
 async function stop(context) {
-    if (!started){
+    if (!started) {
         return;
     }
-    const frames = Object.keys(context.data.frames).map(id => context.data.frames[id]);
-    const resourcesTree = await getResources(context) || {};
-
-    for (let i = 0; i < frames.length; i++) {
-        const frame = frames[i];
-        frame.url = frame.url || 'about:blank';
-        const resourcesObj = resourcesTree[frame.frameId];
-        if (resourcesObj) {
-            frame.resources = resourcesObj.resources;
-            frame.contentSize = resourcesObj.contentSize;
-        }
-    }
-    return frames;
+    return Object.keys(context.data.frames).map(id => context.data.frames[id]);
 }
 
 function registerFrameEvents(client, frames) {
