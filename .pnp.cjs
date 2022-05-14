@@ -43,6 +43,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["husky", "npm:8.0.1"],\
             ["jest", "virtual:0e5ddf4062a3a42cdbb31f94638bc830a3d8cf9c73e06917b56b689c9010ccee6910e0fbaa11a458f94767d7fa936a3d2731f066f6282511790617b698d2d14a#npm:28.1.0"],\
             ["prettier", "npm:2.6.2"],\
+            ["rimraf", "npm:3.0.2"],\
             ["rollup", "npm:2.73.0"],\
             ["rollup-plugin-babel", "virtual:0e5ddf4062a3a42cdbb31f94638bc830a3d8cf9c73e06917b56b689c9010ccee6910e0fbaa11a458f94767d7fa936a3d2731f066f6282511790617b698d2d14a#npm:4.4.0"]\
           ],\
@@ -6934,6 +6935,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["husky", "npm:8.0.1"],\
             ["jest", "virtual:0e5ddf4062a3a42cdbb31f94638bc830a3d8cf9c73e06917b56b689c9010ccee6910e0fbaa11a458f94767d7fa936a3d2731f066f6282511790617b698d2d14a#npm:28.1.0"],\
             ["prettier", "npm:2.6.2"],\
+            ["rimraf", "npm:3.0.2"],\
             ["rollup", "npm:2.73.0"],\
             ["rollup-plugin-babel", "virtual:0e5ddf4062a3a42cdbb31f94638bc830a3d8cf9c73e06917b56b689c9010ccee6910e0fbaa11a458f94767d7fa936a3d2731f066f6282511790617b698d2d14a#npm:4.4.0"]\
           ],\
