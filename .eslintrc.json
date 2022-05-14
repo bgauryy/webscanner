@@ -8,6 +8,7 @@
         "ecmaVersion": 2018,
         "sourceType": "module"
     },
+    "plugins": ["prettier"],
     "extends": "eslint:recommended",
     "rules": {
         "indent": [0, 4, { "SwitchCase": 1 }],
@@ -44,6 +45,7 @@
         "no-const-assign": 2,
         "linebreak-style": [2, "unix"],
         "quotes": [2, "single"],
-        "no-duplicate-imports": 2
+        "no-duplicate-imports": 2,
+        "prettier/prettier": 1
     }
 }

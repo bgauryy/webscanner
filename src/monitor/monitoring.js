@@ -1,70 +1,74 @@
 let started = false;
 
 async function start(context) {
-    started = true;
-    await context.client.Log.enable();
-    //TODO:handle threshold
-    await registerLogs(context.client, context.data.monitoring, 100);
-    await registerErrors(context.client, context.data.monitoring);
-    await registerConsole(context.client, context.data.monitoring);
+  started = true;
+  await context.client.Log.enable();
+  //TODO:handle threshold
+  await registerLogs(context.client, context.data.monitoring, 100);
+  await registerErrors(context.client, context.data.monitoring);
+  await registerConsole(context.client, context.data.monitoring);
 }
 
 async function stop(context) {
-    if (!started) {
-        return;
-    }
-    return {
-        logs: context.data.monitoring.logs,
-        errors: context.data.monitoring.errors,
-        console: context.data.monitoring.console,
-    };
+  if (!started) {
+    return;
+  }
+  return {
+    logs: context.data.monitoring.logs,
+    errors: context.data.monitoring.errors,
+    console: context.data.monitoring.console,
+  };
 }
 
 async function registerLogs(client, monitoring, threshold) {
-    monitoring.logs = {};
-    await client.Log.startViolationsReport({
-        config: [
-            {name: 'longTask', threshold},
-            {name: 'longLayout', threshold},
-            {name: 'blockedEvent', threshold},
-            {name: 'blockedParser', threshold},
-            {name: 'discouragedAPIUse', threshold},
-            {name: 'handler', threshold},
-            {name: 'recurringHandler', threshold},
-        ]
-    });
-    client.Log.entryAdded(({entry: {source, level, text, timestamp, url}}) => {
-        monitoring.logs[level] = monitoring.logs[level] || [];
-        monitoring.logs[level].push({text, source, timestamp, url});
-    });
+  monitoring.logs = {};
+  await client.Log.startViolationsReport({
+    config: [
+      { name: 'longTask', threshold },
+      { name: 'longLayout', threshold },
+      { name: 'blockedEvent', threshold },
+      { name: 'blockedParser', threshold },
+      { name: 'discouragedAPIUse', threshold },
+      { name: 'handler', threshold },
+      { name: 'recurringHandler', threshold },
+    ],
+  });
+  client.Log.entryAdded(
+    ({ entry: { source, level, text, timestamp, url } }) => {
+      monitoring.logs[level] = monitoring.logs[level] || [];
+      monitoring.logs[level].push({ text, source, timestamp, url });
+    }
+  );
 }
 
 async function registerErrors(client, monitoring) {
-    monitoring.errors = [];
+  monitoring.errors = [];
 
-    client.Runtime.exceptionThrown((errorObj) => {
-        errorObj = {...errorObj, ...errorObj.exceptionDetails};
-        delete errorObj.exceptionDetails;
-        delete errorObj.exception.preview;
-        monitoring.errors.push(errorObj);
-    });
+  client.Runtime.exceptionThrown((errorObj) => {
+    errorObj = { ...errorObj, ...errorObj.exceptionDetails };
+    delete errorObj.exceptionDetails;
+    delete errorObj.exception.preview;
+    monitoring.errors.push(errorObj);
+  });
 }
 
 async function registerConsole(client, monitoring) {
-    monitoring.console = {};
+  monitoring.console = {};
 
-    client.Runtime.consoleAPICalled(({type, executionContextId, timestamp, stackTrace, args}) => {
-        monitoring.console[type] = monitoring.console[type] || [];
-        monitoring.console[type].push({
-            value: args[0].value,
-            executionContextId,
-            timestamp,
-            stackTrace
-        });
-    });
+  client.Runtime.consoleAPICalled(
+    ({ type, executionContextId, timestamp, stackTrace, args }) => {
+      monitoring.console[type] = monitoring.console[type] || [];
+      monitoring.console[type].push({
+        value: args[0].value,
+        executionContextId,
+        timestamp,
+        stackTrace,
+      });
+    }
+  );
 }
 
 module.exports = {
-    start,
-    stop
+  start,
+  stop,
 };

@@ -5,3 +5,4 @@ coverage
 yarn.lock
 sample/node_modules
 sample/yarn.lock
+.yarn

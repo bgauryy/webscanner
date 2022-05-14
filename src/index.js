@@ -1,6 +1,6 @@
 const Scanner = require('./scanner.js');
 const LOG = require('./logger.js');
-const {getConfiguration} = require('./configuration.js');
+const { getConfiguration } = require('./configuration.js');
 
 /**
  *
@@ -9,11 +9,11 @@ const {getConfiguration} = require('./configuration.js');
  * @return {Promise}
  */
 async function getSession(page, opts = {}) {
-    const configuration = getConfiguration(page, opts);
-    LOG.setEnabled(configuration.log);
-    return await Scanner.getSession(configuration);
+  const configuration = getConfiguration(page, opts);
+  LOG.setEnabled(configuration.log);
+  return await Scanner.getSession(configuration);
 }
 
 module.exports = {
-    getSession
+  getSession,
 };

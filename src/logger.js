@@ -1,35 +1,33 @@
 let isEnabled = false;
 
 function setEnabled(_isEnabled) {
-    isEnabled = _isEnabled;
+  isEnabled = _isEnabled;
 }
 
 function debug() {
-    log('debug', [...arguments]);
+  log('debug', [...arguments]);
 }
 
 function warn() {
-    log('warn', [...arguments]);
+  log('warn', [...arguments]);
 }
 
 function error() {
-    log('error', [...arguments], );
+  log('error', [...arguments]);
 }
 
 function log(api, args) {
-    if (!isEnabled) {
-        return;
-    }
-    args[0] = `WebInspector ${new Date()}: ${args[0]}`;
-    // eslint-disable-next-line no-console
-    console[api].apply(this, args);
+  if (!isEnabled) {
+    return;
+  }
+  args[0] = `WebInspector ${new Date()}: ${args[0]}`;
+  // eslint-disable-next-line no-console
+  console[api].apply(this, args);
 }
 
-
 module.exports = {
-    debug,
-    warn,
-    error,
-    setEnabled
+  debug,
+  warn,
+  error,
+  setEnabled,
 };
-
